@@ -11,10 +11,10 @@ const initialState = {
 }
 
 // Reducer que maneja la autenticación y el resto de los estados
-const changeState = (state = initialState, { type, payload }) => {
+const changeState = (state = initialState, { type, payload, ...rest }) => {
   switch (type) {
     case 'set':
-      return { ...state, ...payload }
+      return { ...state, ...rest }
     case 'LOGIN_SUCCESS':
       return {
         ...state,

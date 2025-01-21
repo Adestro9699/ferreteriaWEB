@@ -27,6 +27,20 @@ const _nav = [
       text: 'NEW',
     },
   },
+
+  {
+    component: CNavTitle,
+    name: 'Adestro',
+  },
+
+  {
+    component: CNavItem,
+    name: 'Cotización',
+    to: '/adestro/cotizacion',
+    icon: <CIcon icon={cilDrop} customClassName="nav-icon" />,
+  },
+
+
   {
     component: CNavTitle,
     name: 'Theme',

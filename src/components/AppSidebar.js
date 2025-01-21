@@ -24,6 +24,7 @@ const AppSidebar = () => {
   const unfoldable = useSelector((state) => state.sidebarUnfoldable)
   const sidebarShow = useSelector((state) => state.sidebarShow)
 
+
   return (
     <CSidebar
       className="border-end"
@@ -40,16 +41,18 @@ const AppSidebar = () => {
           <CIcon customClassName="sidebar-brand-full" icon={logo} height={32} />
           <CIcon customClassName="sidebar-brand-narrow" icon={sygnet} height={32} />
         </CSidebarBrand>
+        
         <CCloseButton
           className="d-lg-none"
           dark
-          onClick={() => dispatch({ type: 'set', sidebarShow: false })}
-        />
+          onClick={() => dispatch({ type: 'set',  sidebarShow: false  })}
+       />
+
       </CSidebarHeader>
       <AppSidebarNav items={navigation} />
       <CSidebarFooter className="border-top d-none d-lg-flex">
         <CSidebarToggler
-          onClick={() => dispatch({ type: 'set', sidebarUnfoldable: !unfoldable })}
+          onClick={() => dispatch({ type: 'set', sidebarUnfoldable: !unfoldable  })}
         />
       </CSidebarFooter>
     </CSidebar>
