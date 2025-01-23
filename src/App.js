@@ -17,12 +17,11 @@ const Register = React.lazy(() => import('./views/pages/register/Register'))
 const Page404 = React.lazy(() => import('./views/pages/page404/Page404'))
 const Page500 = React.lazy(() => import('./views/pages/page500/Page500'))
 
+
+
 const App = () => {
   const { isColorModeSet, setColorMode } = useColorModes('coreui-free-react-admin-template-theme')
   const storedTheme = useSelector((state) => state.theme)
-
-  // Obtener el estado de autenticación
-  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated)
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.href.split('?')[1])
@@ -48,18 +47,18 @@ const App = () => {
         }
       >
         <Routes>
-          {/* Rutas de la aplicación */}
-          {!isAuthenticated ? (
-            <>
-              <Route path="/" element={<Navigate to="/login" />} /> {/* Redirige a Login si no está autenticado */}
-              <Route path="/login" name="Login Page" element={<Login />} />
-              <Route path="/register" name="Register Page" element={<Register />} />
-            </>
-          ) : (
-            <Route path="*" name="Home" element={<DefaultLayout />} />
-          )}
-          <Route path="/404" name="Page 404" element={<Page404 />} />
-          <Route path="/500" name="Page 500" element={<Page500 />} />
+       {/* Rutas públicas */}
+       <Route path="/login" name="Login Page" element={<Login />} />
+       <Route path="/register" name="Register Page" element={<Register />} />
+       <Route path="/404" name="Page 404" element={<Page404 />} />
+       <Route path="/500" name="Page 500" element={<Page500 />} />
+  
+       {/* Redirigir a login si no está autenticado */}
+       <Route path="/" element={<Navigate to="/login" />} />
+  
+       {/* Rutas de la interfaz principal después del login */}
+       <Route path="*" name="Home" element={<DefaultLayout />} />
+
         </Routes>
       </Suspense>
     </HashRouter>

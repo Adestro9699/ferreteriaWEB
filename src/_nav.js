@@ -35,8 +35,15 @@ const _nav = [
 
   {
     component: CNavItem,
+    name: 'Productos',
+    to: '/producto',
+    icon: <CIcon icon={cilDrop} customClassName="nav-icon" />,
+  },
+
+  {
+    component: CNavItem,
     name: 'Cotización',
-    to: '/adestro/cotizacion',
+    to: '/cotizacion',
     icon: <CIcon icon={cilDrop} customClassName="nav-icon" />,
   },
 
@@ -432,11 +439,6 @@ const _nav = [
     name: 'Pages',
     icon: <CIcon icon={cilStar} customClassName="nav-icon" />,
     items: [
-      {
-        component: CNavItem,
-        name: 'Login',
-        to: '/login',
-      },
       {
         component: CNavItem,
         name: 'Register',
