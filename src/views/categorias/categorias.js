@@ -110,7 +110,7 @@ const Categoria = () => {
     const matchesFilter = filter === 'all' || (filter === 'category' && !item.subcategoria) || (filter === 'subcategory' && item.subcategoria);
     const matchesStatus = statusFilter === 'all' || (statusFilter === 'active' && item.estado === 'Activo') || (statusFilter === 'inactive' && item.estado === 'Inactivo');
     const matchesSearch = item.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          item.descripcion.toLowerCase().includes(searchTerm.toLowerCase());
+      item.descripcion.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesFilter && matchesStatus && matchesSearch;
   });
 
@@ -146,62 +146,68 @@ const Categoria = () => {
 
       <CRow>
         <CCol xs={12}>
-          <CNavbar colorScheme="light" expand="lg" className="mb-4 shadow-sm rounded">
-            <CContainer>
-              <CNavbarNav className="me-auto">
-                <CNavItem>
-                <CNavLink
-                    active={filter === 'all'}
-                    onClick={() => setFilter('all')}
-                    className={`${filter === 'all' ? 'fw-bold' : ''}`}
-                    style={{
-                      backgroundColor: filter === 'all'
-                        ? (document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#ffffff' : '#f8f9fa')
-                        : (document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#343a40' : 'transparent'),
-                      color: filter === 'all'
-                        ? (document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#000000' : '#000000')
-                        : (document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#ffffff' : '#000000'),
-                      border: filter === 'all' ? '1px solid #ddd' : 'none',
-                      borderRadius: '5px',
-                      padding: '10px 20px',
-                      fontSize: '16px',
-                      fontFamily: 'Arial, sans-serif',
-                      transition: 'all 0.3s ease',
-                    }}
-                  >
-                    TODAS
-                  </CNavLink>
-                </CNavItem>
-                <CButtonGroup className="ms-3">
-                  <CButton
-                    color={filter === 'category' ? 'primary' : 'secondary'}
-                    onClick={() => setFilter('category')}
-                  >
-                    Categorías
-                  </CButton>
-                  <CButton
-                    color={filter === 'subcategory' ? 'primary' : 'secondary'}
-                    onClick={() => setFilter('subcategory')}
-                  >
-                    Subcategorías
-                  </CButton>
-                </CButtonGroup>
-                <CFormSelect
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="ms-3"
-                  style={{
-                    backgroundColor: document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#343a40' : '#ffffff',
-                    color: document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#ffffff' : '#000000',
-                  }}
-                >
-                  <option value="all">Todos los estados</option>
-                  <option value="active">Activo</option>
-                  <option value="inactive">Inactivo</option>
-                </CFormSelect>
-              </CNavbarNav>
-            </CContainer>
-          </CNavbar>
+        <CNavbar colorScheme="light" expand="lg" className="mb-4 shadow-sm rounded">
+  <CContainer>
+    <CNavbarNav className="w-100 d-flex justify-content-between align-items-center">
+      {/* Elementos a la izquierda */}
+      <div className="d-flex align-items-center">
+        <CNavItem>
+          <CNavLink
+            active={filter === 'all'}
+            onClick={() => setFilter('all')}
+            className={`${filter === 'all' ? 'fw-bold' : ''}`}
+            style={{
+              backgroundColor: filter === 'all'
+                ? (document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#ffffff' : '#f8f9fa')
+                : (document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#343a40' : 'transparent'),
+              color: filter === 'all'
+                ? (document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#000000' : '#000000')
+                : (document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#ffffff' : '#000000'),
+              border: filter === 'all' ? '1px solid #ddd' : 'none',
+              borderRadius: '5px',
+              padding: '10px 20px',
+              fontSize: '16px',
+              fontFamily: 'Arial, sans-serif',
+              transition: 'all 0.3s ease',
+            }}
+          >
+            TODAS
+          </CNavLink>
+        </CNavItem>
+        <CButtonGroup className="ms-3">
+          <CButton
+            color={filter === 'category' ? 'primary' : 'secondary'}
+            onClick={() => setFilter('category')}
+          >
+            Categorías
+          </CButton>
+          <CButton
+            color={filter === 'subcategory' ? 'primary' : 'secondary'}
+            onClick={() => setFilter('subcategory')}
+          >
+            Subcategorías
+          </CButton>
+        </CButtonGroup>
+      </div>
+
+      {/* CFormSelect alineado a la derecha */}
+      <CFormSelect
+        value={statusFilter}
+        onChange={(e) => setStatusFilter(e.target.value)}
+        className="ms-3" // Agrega un margen izquierdo para separarlo de los botones
+        style={{
+          width: '200px', // Define un ancho fijo o máximo
+          backgroundColor: document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#343a40' : '#ffffff',
+          color: document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#ffffff' : '#000000',
+        }}
+      >
+        <option value="all">Todos los estados</option>
+        <option value="active">Activo</option>
+        <option value="inactive">Inactivo</option>
+      </CFormSelect>
+    </CNavbarNav>
+  </CContainer>
+</CNavbar>
           <CCard className="mb-4 shadow-sm rounded">
             <CCardHeader>
               <CRow>
@@ -231,67 +237,67 @@ const Categoria = () => {
               </CRow>
             </CCardHeader>
             <CCardBody>
-            <CTable>
-  <CTableHead>
-    <CTableRow>
-      <CTableHeaderCell style={{ width: '50px' }}>
-        <CFormCheck
-          checked={selectedItems.length === items.length}
-          onChange={() => {
-            if (selectedItems.length === items.length) {
-              setSelectedItems([]);
-            } else {
-              setSelectedItems(items.map(item => item.id));
-            }
-          }}
-        />
-      </CTableHeaderCell>
-      <CTableHeaderCell style={{ width: '200px' }} onClick={() => handleSort('nombre')}>
-        Nombre {sortField === 'nombre' ? (
-          <span style={{ color: document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#fff' : '#000' }}>
-            {sortDirection === 'asc' ? '↑' : '↓'}
-          </span>
-        ) : ''}
-      </CTableHeaderCell>
-      <CTableHeaderCell style={{ width: '300px' }} onClick={() => handleSort('descripcion')}>
-        Descripción {sortField === 'descripcion' ? (
-          <span style={{ color: document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#fff' : '#000' }}>
-            {sortDirection === 'asc' ? '↑' : '↓'}
-          </span>
-        ) : ''}
-      </CTableHeaderCell>
-      <CTableHeaderCell style={{ width: '100px' }}>Estado</CTableHeaderCell>
-      <CTableHeaderCell style={{ width: '150px' }}>Acciones</CTableHeaderCell>
-    </CTableRow>
-  </CTableHead>
-  <CTableBody>
-    {currentItems.map((item) => (
-      <CTableRow key={item.id}>
-        <CTableDataCell style={{ width: '50px' }}>
-          <CFormCheck
-            checked={selectedItems.includes(item.id)}
-            onChange={() => handleSelectItem(item.id)}
-          />
-        </CTableDataCell>
-        <CTableDataCell style={{ width: '200px' }}>{item.nombre}</CTableDataCell>
-        <CTableDataCell style={{ width: '300px' }}>{item.descripcion}</CTableDataCell>
-        <CTableDataCell style={{ width: '100px' }}>
-          <CBadge color={item.estado === 'Activo' ? 'success' : 'danger'}>
-            {item.estado}
-          </CBadge>
-        </CTableDataCell>
-        <CTableDataCell style={{ width: '150px' }}>
-          <CButton color="warning" size="sm" className="me-2">
-            <CIcon icon={cilPencil} />
-          </CButton>
-          <CButton color="danger" size="sm" onClick={() => handleDelete(item.id)}>
-            <CIcon icon={cilTrash} />
-          </CButton>
-        </CTableDataCell>
-      </CTableRow>
-    ))}
-  </CTableBody>
-</CTable>
+              <CTable>
+                <CTableHead>
+                  <CTableRow>
+                    <CTableHeaderCell style={{ width: '50px' }}>
+                      <CFormCheck
+                        checked={selectedItems.length === items.length}
+                        onChange={() => {
+                          if (selectedItems.length === items.length) {
+                            setSelectedItems([]);
+                          } else {
+                            setSelectedItems(items.map(item => item.id));
+                          }
+                        }}
+                      />
+                    </CTableHeaderCell>
+                    <CTableHeaderCell style={{ width: '200px' }} onClick={() => handleSort('nombre')}>
+                      Nombre {sortField === 'nombre' ? (
+                        <span style={{ color: document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#fff' : '#000' }}>
+                          {sortDirection === 'asc' ? '↑' : '↓'}
+                        </span>
+                      ) : ''}
+                    </CTableHeaderCell>
+                    <CTableHeaderCell style={{ width: '300px' }} onClick={() => handleSort('descripcion')}>
+                      Descripción {sortField === 'descripcion' ? (
+                        <span style={{ color: document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#fff' : '#000' }}>
+                          {sortDirection === 'asc' ? '↑' : '↓'}
+                        </span>
+                      ) : ''}
+                    </CTableHeaderCell>
+                    <CTableHeaderCell style={{ width: '100px' }}>Estado</CTableHeaderCell>
+                    <CTableHeaderCell style={{ width: '150px' }}>Acciones</CTableHeaderCell>
+                  </CTableRow>
+                </CTableHead>
+                <CTableBody>
+                  {currentItems.map((item) => (
+                    <CTableRow key={item.id}>
+                      <CTableDataCell style={{ width: '50px' }}>
+                        <CFormCheck
+                          checked={selectedItems.includes(item.id)}
+                          onChange={() => handleSelectItem(item.id)}
+                        />
+                      </CTableDataCell>
+                      <CTableDataCell style={{ width: '200px' }}>{item.nombre}</CTableDataCell>
+                      <CTableDataCell style={{ width: '300px' }}>{item.descripcion}</CTableDataCell>
+                      <CTableDataCell style={{ width: '100px' }}>
+                        <CBadge color={item.estado === 'Activo' ? 'success' : 'danger'}>
+                          {item.estado}
+                        </CBadge>
+                      </CTableDataCell>
+                      <CTableDataCell style={{ width: '150px' }}>
+                        <CButton color="warning" size="sm" className="me-2">
+                          <CIcon icon={cilPencil} />
+                        </CButton>
+                        <CButton color="danger" size="sm" onClick={() => handleDelete(item.id)}>
+                          <CIcon icon={cilTrash} />
+                        </CButton>
+                      </CTableDataCell>
+                    </CTableRow>
+                  ))}
+                </CTableBody>
+              </CTable>
 
               {/* Paginación y Selector de items por página */}
               <CRow className="mt-3 align-items-center p-3 bg-body rounded mb-3">
