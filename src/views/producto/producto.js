@@ -633,7 +633,7 @@ const AdvancedTableExample = () => {
                         onClick={() => toggleDetails(item.idProducto)}
                         className="me-2"
                       >
-                        {details.includes(item.idProducto) ? 'Hide' : 'Show'}
+                        {details.includes(item.idProducto) ? 'Ocultar' : 'Mostrar'}
                       </CButton>
                       <CButton
                         color="warning"

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { loginSuccess } from 'src/actions/authActions'; // Adjust the path according to your project structure
+import { loginSuccess } from 'src/actions/authActions'; // Ajusta la ruta según la estructura de tu proyecto
 import {
   CButton,
   CCard,
@@ -26,7 +26,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Evita el comportamiento por defecto del formulario
 
     try {
       const response = await fetch('http://localhost:8080/fs/usuarios/login', {
@@ -54,6 +54,13 @@ const Login = () => {
     }
   };
 
+  // Función para manejar la tecla Enter en el campo de la contraseña
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleSubmit(e); // Llama a handleSubmit si se presiona Enter
+    }
+  };
+
   return (
     <div className="bg-body-tertiary min-vh-100 d-flex flex-row align-items-center">
       <CContainer>
@@ -62,52 +69,52 @@ const Login = () => {
             <CCardGroup>
               <CCard className="p-4">
                 <CCardBody>
-                  <CForm>
+                  <CForm onSubmit={handleSubmit}> {/* Agrega onSubmit al formulario */}
                     <h1>Iniciar sesión</h1>
                     <p className="text-body-secondary">Ingresa a tu cuenta</p>
-                    
+
                     <CInputGroup className="mb-3">
-  <CInputGroupText>
-    <CIcon icon={cilUser} />
-  </CInputGroupText>
-  <CFormInput
-    placeholder="Usuario"
-    autoComplete="username"
-    value={username}
-    onChange={(e) => setUsername(e.target.value)}
-  />
-</CInputGroup>
-<CInputGroup className="mb-4">
-  <CInputGroupText>
-    <CIcon icon={cilLockLocked} />
-  </CInputGroupText>
-  <CFormInput
-    type="password"
-    placeholder="Contraseña"
-    autoComplete="current-password"
-    value={password}
-    onChange={(e) => setPassword(e.target.value)}
-  />
-</CInputGroup>
+                      <CInputGroupText>
+                        <CIcon icon={cilUser} />
+                      </CInputGroupText>
+                      <CFormInput
+                        placeholder="Usuario"
+                        autoComplete="username"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                      />
+                    </CInputGroup>
 
-                    
-<CRow>
-  <CCol xs={6}>
-    <CButton 
-      color="primary" 
-      className="px-4" 
-      onClick={handleSubmit} // Aquí está el cambio
-    >
-      Iniciar sesión
-    </CButton>
-  </CCol>
-  <CCol xs={6} className="text-right">
-    <CButton color="link" className="px-0">
-      Olvidó contraseña?
-    </CButton>
-  </CCol>
-</CRow>
+                    <CInputGroup className="mb-4">
+                      <CInputGroupText>
+                        <CIcon icon={cilLockLocked} />
+                      </CInputGroupText>
+                      <CFormInput
+                        type="password"
+                        placeholder="Contraseña"
+                        autoComplete="current-password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        onKeyDown={handleKeyDown} // Captura el evento onKeyDown
+                      />
+                    </CInputGroup>
 
+                    <CRow>
+                      <CCol xs={6}>
+                        <CButton
+                          color="primary"
+                          className="px-4"
+                          onClick={handleSubmit} // Iniciar sesión al hacer clic
+                        >
+                          Iniciar sesión
+                        </CButton>
+                      </CCol>
+                      <CCol xs={6} className="text-right">
+                        <CButton color="link" className="px-0">
+                          Olvidó contraseña?
+                        </CButton>
+                      </CCol>
+                    </CRow>
                   </CForm>
                 </CCardBody>
               </CCard>
@@ -131,9 +138,7 @@ const Login = () => {
         </CRow>
       </CContainer>
     </div>
-  )
-}
+  );
+};
 
-export default Login
-
-
+export default Login;
