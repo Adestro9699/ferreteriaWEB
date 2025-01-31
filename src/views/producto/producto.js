@@ -605,7 +605,9 @@ const AdvancedTableExample = () => {
                 <CTableHeaderCell onClick={() => handleAdvancedSort('fechaModificacion')}>
                   Fecha Modificación {sortColumn === 'fechaModificacion' && (sortDirection === 'asc' ? <CIcon icon={cilSortAlphaDown} /> : <CIcon icon={cilSortAlphaUp} />)}
                 </CTableHeaderCell>
+                <CTableHeaderCell>Estado</CTableHeaderCell>
                 <CTableHeaderCell>Acciones</CTableHeaderCell>
+
               </CTableRow>
             </CTableHead>
             <CTableBody>
