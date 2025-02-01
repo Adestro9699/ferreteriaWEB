@@ -1,141 +1,85 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
-  CButton,
-  CFormInput,
-  CModal,
-  CModalHeader,
-  CModalTitle,
-  CModalBody,
-  CModalFooter,
+  CCard,
+  CCardBody,
   CTable,
   CTableHead,
   CTableRow,
   CTableHeaderCell,
   CTableBody,
   CTableDataCell,
-  CBadge,
+  CFormInput,
+  CButton,
 } from '@coreui/react';
-import axios from 'axios';
 
-const VentaUI = () => {
-  // Estado para el modal de búsqueda de clientes
-  const [showClientesModal, setShowClientesModal] = useState(false);
+const DetalleVenta = () => {
+  // Array vacío para los productos vendidos
+  const productosVendidos = [];
 
-  // Estado para la lista de clientes
-  const [clientes, setClientes] = useState([]);
-
-  // Estado para el cliente seleccionado
-  const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
-
-  // Obtener la lista de clientes desde el backend
-  useEffect(() => {
-    if (showClientesModal) {
-      const fetchClientes = async () => {
-        try {
-          const response = await axios.get('http://localhost:8080/fs/clientes');
-          setClientes(response.data);
-        } catch (error) {
-          console.error('Error al obtener los clientes:', error);
-        }
-      };
-
-      fetchClientes();
-    }
-  }, [showClientesModal]);
-
-  // Abrir el modal de búsqueda de clientes
-  const handleBuscarCliente = () => {
-    setShowClientesModal(true);
-  };
-
-  // Seleccionar un cliente y cerrar el modal
-  const handleSeleccionarCliente = (cliente) => {
-    setClienteSeleccionado(cliente);
-    setShowClientesModal(false);
-  };
-
-  // Función para mostrar el tipo de cliente
-  const getTipoClienteBadge = (tipoCliente) => {
-    switch (tipoCliente) {
-      case 'NATURAL':
-        return <CBadge color="primary">Natural</CBadge>;
-      case 'JURIDICA':
-        return <CBadge color="success">Jurídica</CBadge>;
-      default:
-        return <CBadge color="secondary">Desconocido</CBadge>;
-    }
+  // Función para manejar el clic en "Añadir Producto"
+  const handleAñadirProducto = () => {
+    // Aquí puedes agregar la lógica para añadir un producto
+    console.log('Añadir Producto');
   };
 
   return (
-    <div>
-      {/* Campo de búsqueda de cliente */}
-      <div className="mb-3">
-        <CFormInput
-          type="text"
-          placeholder="Buscar cliente..."
-          value={clienteSeleccionado ? (clienteSeleccionado.tipoCliente === 'NATURAL' ? clienteSeleccionado.nombreCompletoCliente : clienteSeleccionado.razonSocial) : ''}
-          readOnly
-        />
-        <CButton color="primary" onClick={handleBuscarCliente} className="mt-2">
-          Buscar Cliente
-        </CButton>
-      </div>
-
-      {/* Modal para mostrar la lista de clientes */}
-      <CModal visible={showClientesModal} onClose={() => setShowClientesModal(false)} size="lg">
-        <CModalHeader>
-          <CModalTitle>Seleccionar Cliente</CModalTitle>
-        </CModalHeader>
-        <CModalBody>
-          <CTable striped hover responsive>
-            <CTableHead>
-              <CTableRow>
-                <CTableHeaderCell>Tipo</CTableHeaderCell>
-                <CTableHeaderCell>Nombre/Razón Social</CTableHeaderCell>
-                <CTableHeaderCell>Documento</CTableHeaderCell>
-                <CTableHeaderCell>Dirección</CTableHeaderCell>
-                <CTableHeaderCell>Teléfono</CTableHeaderCell>
-                <CTableHeaderCell>Correo</CTableHeaderCell>
-                <CTableHeaderCell>Acciones</CTableHeaderCell>
+    <CCard>
+      <CCardBody>
+        {/* Tabla de detalle de la venta */}
+        <CTable striped hover responsive>
+          <CTableHead>
+            <CTableRow>
+              <CTableHeaderCell>Item</CTableHeaderCell>
+              <CTableHeaderCell>Producto</CTableHeaderCell>
+              <CTableHeaderCell className="text-end">Precio</CTableHeaderCell>
+              <CTableHeaderCell className="text-end">Unidad de Medida</CTableHeaderCell>
+              <CTableHeaderCell className="text-end">Cantidad</CTableHeaderCell>
+              <CTableHeaderCell className="text-end">Descuento</CTableHeaderCell>
+              <CTableHeaderCell className="text-end">Subtotal</CTableHeaderCell>
+            </CTableRow>
+          </CTableHead>
+          <CTableBody>
+            {productosVendidos.map((producto) => (
+              <CTableRow key={producto.item}>
+                <CTableDataCell>{producto.item}</CTableDataCell>
+                <CTableDataCell>
+                  {/* Campo vacío para mostrar el producto seleccionado */}
+                  <CFormInput
+                    type="text"
+                    placeholder="Producto seleccionado"
+                    size="sm"
+                    value={producto.producto || ''}
+                    readOnly
+                  />
+                </CTableDataCell>
+                <CTableDataCell className="text-end">
+                  ${producto.precio.toFixed(2)}
+                  {/* Campo reducido debajo de Precio */}
+                  <CFormInput
+                    type="text"
+                    placeholder="Precio"
+                    size="sm"
+                    className="mt-1 text-end"
+                  />
+                </CTableDataCell>
+                <CTableDataCell className="text-end">{producto.unidadMedida}</CTableDataCell>
+                <CTableDataCell className="text-end">{producto.cantidad}</CTableDataCell>
+                <CTableDataCell className="text-end">${producto.descuento.toFixed(2)}</CTableDataCell>
+                <CTableDataCell className="text-end">${producto.subtotal.toFixed(2)}</CTableDataCell>
               </CTableRow>
-            </CTableHead>
-            <CTableBody>
-              {clientes.map((cliente) => (
-                <CTableRow key={cliente.idCliente}>
-                  <CTableDataCell>{getTipoClienteBadge(cliente.tipoCliente)}</CTableDataCell>
-                  <CTableDataCell>
-                    {cliente.tipoCliente === 'NATURAL' ? cliente.nombreCompletoCliente : cliente.razonSocial}
-                  </CTableDataCell>
-                  <CTableDataCell>
-                    {cliente.tipoCliente === 'NATURAL' ? cliente.dniCliente : cliente.ruc}
-                  </CTableDataCell>
-                  <CTableDataCell>{cliente.direccionCliente}</CTableDataCell>
-                  <CTableDataCell>{cliente.telefonoCliente}</CTableDataCell>
-                  <CTableDataCell>{cliente.correoCliente}</CTableDataCell>
-                  <CTableDataCell>
-                    <CButton color="primary" size="sm" onClick={() => handleSeleccionarCliente(cliente)}>
-                      Seleccionar
-                    </CButton>
-                  </CTableDataCell>
-                </CTableRow>
-              ))}
-            </CTableBody>
-          </CTable>
-        </CModalBody>
-        <CModalFooter>
-          <CButton color="secondary" onClick={() => setShowClientesModal(false)}>
-            Cerrar
-          </CButton>
-        </CModalFooter>
-      </CModal>
+            ))}
+          </CTableBody>
+        </CTable>
 
-      {/* Resto de la interfaz de ventas */}
-      <div>
-        <h3>Detalles de la Venta</h3>
-        {/* Aquí puedes agregar más campos para la venta */}
-      </div>
-    </div>
+        {/* Botón "Añadir Producto" */}
+        <div className="d-flex justify-content-end mt-3">
+          <CButton color="primary" onClick={handleAñadirProducto}>
+            Añadir Producto
+          </CButton>
+        </div>
+      </CCardBody>
+    </CCard>
   );
 };
 
-export default VentaUI;
+export default DetalleVenta;
