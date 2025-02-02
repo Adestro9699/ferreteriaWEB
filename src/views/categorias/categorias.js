@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   CButton,
   CCard,
@@ -48,12 +48,22 @@ const Categoria = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [filter, setFilter] = useState('all'); // 'all', 'category', 'subcategory'
   const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'active', 'inactive'
-  const [sortField, setSortField] = useState(null);
-  const [sortDirection, setSortDirection] = useState('asc');
+  const [sortField, setSortField] = useState('nombre'); // Ordenar por 'nombre' por defecto
+  const [sortDirection, setSortDirection] = useState('asc'); // Orden ascendente por defecto
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Ordenar los items al cargar el componente
+  useEffect(() => {
+    const sorted = [...items].sort((a, b) => {
+      if (a.nombre < b.nombre) return sortDirection === 'asc' ? -1 : 1;
+      if (a.nombre > b.nombre) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+    setItems(sorted);
+  }, []); // Solo se ejecuta una vez al cargar el componente
 
   const handleSelectItem = (id) => {
     if (selectedItems.includes(id)) {
@@ -194,9 +204,9 @@ const Categoria = () => {
                 <CFormSelect
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="ms-3" // Agrega un margen izquierdo para separarlo de los botones
+                  className="ms-3"
                   style={{
-                    width: '200px', // Define un ancho fijo o máximo
+                    width: '200px',
                     backgroundColor: document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#343a40' : '#ffffff',
                     color: document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#ffffff' : '#000000',
                   }}
@@ -253,18 +263,18 @@ const Categoria = () => {
                       />
                     </CTableHeaderCell>
                     <CTableHeaderCell style={{ width: '200px' }} onClick={() => handleSort('nombre')}>
-                      Nombre {sortField === 'nombre' ? (
+                      Nombre {sortField === 'nombre' && (
                         <span style={{ color: document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#fff' : '#000' }}>
                           {sortDirection === 'asc' ? '↑' : '↓'}
                         </span>
-                      ) : ''}
+                      )}
                     </CTableHeaderCell>
                     <CTableHeaderCell style={{ width: '300px' }} onClick={() => handleSort('descripcion')}>
-                      Descripción {sortField === 'descripcion' ? (
+                      Descripción {sortField === 'descripcion' && (
                         <span style={{ color: document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#fff' : '#000' }}>
                           {sortDirection === 'asc' ? '↑' : '↓'}
                         </span>
-                      ) : ''}
+                      )}
                     </CTableHeaderCell>
                     <CTableHeaderCell style={{ width: '100px' }}>Estado</CTableHeaderCell>
                     <CTableHeaderCell style={{ width: '150px' }}>Acciones</CTableHeaderCell>
