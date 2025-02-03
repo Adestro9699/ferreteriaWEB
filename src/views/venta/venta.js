@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 import React, { useState } from 'react';
-=======
-import React from 'react';
->>>>>>> a11dc689cf1b3a637eca9adc4d1bf0ddec54f878
 import {
   CCard,
   CCardBody,
@@ -15,74 +11,102 @@ import {
   CFormInput,
   CButton,
 } from '@coreui/react';
+import ModalProductos from './modalProductos'; // Importamos el modal
 
 const DetalleVenta = () => {
-  // Array vacío para los productos vendidos
-  const productosVendidos = [];
+  const [modalVisible, setModalVisible] = useState(false);
+  const [productosVendidos, setProductosVendidos] = useState([]);
 
-  // Función para manejar el clic en "Añadir Producto"
+  // Función para abrir el modal
   const handleAñadirProducto = () => {
-    // Aquí puedes agregar la lógica para añadir un producto
-    console.log('Añadir Producto');
+    setModalVisible(true);
+  };
+
+  // Función para recibir los productos seleccionados desde el modal
+  const handleProductosSeleccionados = (productosSeleccionados) => {
+    setProductosVendidos(productosSeleccionados);
+    setModalVisible(false);
   };
 
   return (
-    <CCard>
-      <CCardBody>
-        {/* Tabla de detalle de la venta */}
-        <CTable striped hover responsive>
-          <CTableHead>
-            <CTableRow>
-              <CTableHeaderCell>Item</CTableHeaderCell>
-              <CTableHeaderCell>Producto</CTableHeaderCell>
-              <CTableHeaderCell className="text-end">Precio</CTableHeaderCell>
-              <CTableHeaderCell className="text-end">Unidad de Medida</CTableHeaderCell>
-              <CTableHeaderCell className="text-end">Cantidad</CTableHeaderCell>
-              <CTableHeaderCell className="text-end">Descuento</CTableHeaderCell>
-              <CTableHeaderCell className="text-end">Subtotal</CTableHeaderCell>
-            </CTableRow>
-          </CTableHead>
-          <CTableBody>
-            {productosVendidos.map((producto) => (
-              <CTableRow key={producto.item}>
-                <CTableDataCell>{producto.item}</CTableDataCell>
-                <CTableDataCell>
-                  {/* Campo vacío para mostrar el producto seleccionado */}
-                  <CFormInput
-                    type="text"
-                    placeholder="Producto seleccionado"
-                    size="sm"
-                    value={producto.producto || ''}
-                    readOnly
-                  />
-                </CTableDataCell>
-                <CTableDataCell className="text-end">
-                  ${producto.precio.toFixed(2)}
-                  {/* Campo reducido debajo de Precio */}
-                  <CFormInput
-                    type="text"
-                    placeholder="Precio"
-                    size="sm"
-                    className="mt-1 text-end"
-                  />
-                </CTableDataCell>
-                <CTableDataCell className="text-end">{producto.unidadMedida}</CTableDataCell>
-                <CTableDataCell className="text-end">{producto.cantidad}</CTableDataCell>
-                <CTableDataCell className="text-end">${producto.descuento.toFixed(2)}</CTableDataCell>
-                <CTableDataCell className="text-end">${producto.subtotal.toFixed(2)}</CTableDataCell>
-              </CTableRow>
-            ))}
-          </CTableBody>
-        </CTable>
+    <>
+      {/* Modal para seleccionar productos */}
+      <ModalProductos
+        modalVisible={modalVisible}
+        setModalVisible={setModalVisible}
+        handleProductosSeleccionados={handleProductosSeleccionados}
+      />
 
-        {/* Botón "Añadir Producto" */}
-        <div className="d-flex justify-content-end mt-3">
-          <CButton color="primary" onClick={handleAñadirProducto}>
-            Añadir Producto
-          </CButton>
-        </div>
-      </CCardBody>
-    </CCard>
+      {/* Tabla de productos seleccionados */}
+      <CCard>
+        <CCardBody>
+          {/* Botón para abrir el modal */}
+          <div className="d-flex justify-content-center mb-3">
+            <CButton color="primary" onClick={handleAñadirProducto}>
+              Añadir Producto
+            </CButton>
+          </div>
+
+          {/* Tabla de productos seleccionados */}
+          <CTable striped hover responsive>
+            <CTableHead>
+              <CTableRow>
+                <CTableHeaderCell>Item</CTableHeaderCell>
+                <CTableHeaderCell>Producto</CTableHeaderCell>
+                <CTableHeaderCell className="text-end">Precio</CTableHeaderCell>
+                <CTableHeaderCell className="text-end">Unidad de Medida</CTableHeaderCell>
+                <CTableHeaderCell className="text-end">Cantidad</CTableHeaderCell>
+                <CTableHeaderCell className="text-end">Descuento</CTableHeaderCell>
+                <CTableHeaderCell className="text-end">Subtotal</CTableHeaderCell>
+              </CTableRow>
+            </CTableHead>
+            <CTableBody>
+              {productosVendidos.map((producto, index) => (
+                <CTableRow key={index}>
+                  <CTableDataCell>{index + 1}</CTableDataCell>
+                  <CTableDataCell>
+                    <CFormInput
+                      type="text"
+                      placeholder="Producto seleccionado"
+                      size="sm"
+                      value={producto.nombre}
+                      readOnly
+                    />
+                  </CTableDataCell>
+                  <CTableDataCell className="text-end">${producto.precio.toFixed(2)}</CTableDataCell>
+                  <CTableDataCell className="text-end">{producto.unidadMedida}</CTableDataCell>
+                  <CTableDataCell className="text-end">
+                    <CFormInput
+                      type="number"
+                      placeholder="Cantidad"
+                      size="sm"
+                      value={producto.cantidad || 1}
+                      readOnly
+                    />
+                  </CTableDataCell>
+                  <CTableDataCell className="text-end">
+                    <CFormInput
+                      type="number"
+                      placeholder="Descuento"
+                      size="sm"
+                    />
+                  </CTableDataCell>
+                  <CTableDataCell className="text-end">
+                    <CFormInput
+                      type="text"
+                      placeholder="Subtotal"
+                      size="sm"
+                      value={(producto.precio * (producto.cantidad || 1)).toFixed(2)}
+                      readOnly
+                    />
+                  </CTableDataCell>
+                </CTableRow>
+              ))}
+            </CTableBody>
+          </CTable>
+        </CCardBody>
+      </CCard>
+    </>
   );
 };
 
