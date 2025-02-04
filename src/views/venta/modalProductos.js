@@ -109,16 +109,32 @@ const ModalProductos = ({ modalVisible, setModalVisible, handleProductosSeleccio
 
   // Función para manejar el clic en "Agregar"
   const handleAgregar = () => {
+    // Validar que todos los productos seleccionados tengan una cantidad válida
+    const isValid = selectedProducts.every((producto) => {
+      const cantidad = parseFloat(cantidades[producto.idProducto]);
+      return (
+        cantidad !== '' &&
+        !isNaN(cantidad) &&
+        cantidad > 0 &&
+        cantidad <= producto.stock
+      );
+    });
+  
+    if (!isValid) {
+      alert('Por favor, ingresar cantidad válida para el/los productos seleccionados.');
+      return;
+    }
+  
+    // Continuar con el proceso normal
     const productosConCantidad = selectedProducts.map((producto) => ({
       idProducto: producto.idProducto,
       nombre: producto.nombreProducto,
       precio: producto.precio,
       unidadMedida: producto.unidadMedida?.abreviatura || '',
-      cantidad: cantidades[producto.idProducto] || 1,
-      descuento: 0,
-      subtotal: (producto.precio * (cantidades[producto.idProducto] || 1)).toFixed(2),
+      cantidad: parseFloat(cantidades[producto.idProducto]) || 1,
+      stock: producto.stock, // Incluir el stock aquí
     }));
-
+  
     handleProductosSeleccionados(productosConCantidad);
     setModalVisible(false);
   };
@@ -210,7 +226,14 @@ const ModalProductos = ({ modalVisible, setModalVisible, handleProductosSeleccio
           Productos seleccionados ({selectedProducts.length})
         </CButton>
         <div style={{ flex: 1 }}></div>
-        <CButton color="primary" onClick={handleAgregar}>
+        <CButton
+          color="primary"
+          onClick={handleAgregar}
+          disabled={
+            selectedProducts.length === 0 ||
+            !selectedProducts.every((p) => cantidades[p.idProducto] && !isNaN(cantidades[p.idProducto]) && parseFloat(cantidades[p.idProducto]) > 0)
+          }
+        >
           Agregar
         </CButton>
         <CButton color="secondary" onClick={() => setModalVisible(false)}>
