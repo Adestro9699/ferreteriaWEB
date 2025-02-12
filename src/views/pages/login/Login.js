@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { loginSuccess } from 'src/actions/authActions'; // Ajusta la ruta según la estructura de tu proyecto
+import { loginSuccess } from 'src/actions/authActions'; // Importa la acción de autenticación
+import apiClient from '../../../services/apiClient'; // Importa el cliente Axios personalizado
+import { jwtDecode } from 'jwt-decode';
 import {
   CButton,
   CCard,
@@ -21,43 +23,35 @@ import { cilLockLocked, cilUser } from '@coreui/icons';
 const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
   const handleSubmit = async (e) => {
-    e.preventDefault(); // Evita el comportamiento por defecto del formulario
-
+    e.preventDefault();
     try {
-      const response = await fetch('http://localhost:8080/fs/usuarios/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ nombreUsuario: username, contrasena: password }),
+      // Usar apiClient para enviar las credenciales al backend
+      const response = await apiClient.post('/fs/usuarios/login', {
+        nombreUsuario: username,
+        contrasena: password,
       });
 
-      if (response.ok) {
-        const message = await response.text();
-        console.log(message);
-        // Dispatch the loginSuccess action with the user data
-        dispatch(loginSuccess({ username }));
-        navigate('/dashboard');
-      } else {
-        const errorMessage = await response.text();
-        console.error(errorMessage);
-        alert('Credenciales inválidas. Intenta nuevamente.');
-      }
-    } catch (error) {
-      console.error('Error al autenticar:', error);
-      alert('Hubo un problema con la autenticación. Intenta nuevamente más tarde.');
-    }
-  };
+      const token = response.data.token; // Extraer el token del backend
 
-  // Función para manejar la tecla Enter en el campo de la contraseña
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      handleSubmit(e); // Llama a handleSubmit si se presiona Enter
+      // Decodificar el token para obtener el rol del usuario
+      const decodedToken = jwtDecode(token);
+      const userRole = decodedToken.cargo; // Extraer el campo "cargo" (rol)
+
+      // Almacenar el token en localStorage
+      localStorage.setItem('token', token);
+
+      // Actualizar el estado de autenticación en Redux (incluyendo el rol)
+      dispatch(loginSuccess({ username, role: userRole }));
+
+      // Redirigir al usuario al dashboard
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Error al iniciar sesión:', error);
+      alert('Credenciales inválidas. Intenta nuevamente.');
     }
   };
 
@@ -69,22 +63,19 @@ const Login = () => {
             <CCardGroup>
               <CCard className="p-4">
                 <CCardBody>
-                  <CForm onSubmit={handleSubmit}> {/* Agrega onSubmit al formulario */}
+                  <CForm onSubmit={handleSubmit}>
                     <h1>Iniciar sesión</h1>
                     <p className="text-body-secondary">Ingresa a tu cuenta</p>
-
                     <CInputGroup className="mb-3">
                       <CInputGroupText>
                         <CIcon icon={cilUser} />
                       </CInputGroupText>
                       <CFormInput
                         placeholder="Usuario"
-                        autoComplete="username"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                       />
                     </CInputGroup>
-
                     <CInputGroup className="mb-4">
                       <CInputGroupText>
                         <CIcon icon={cilLockLocked} />
@@ -92,20 +83,13 @@ const Login = () => {
                       <CFormInput
                         type="password"
                         placeholder="Contraseña"
-                        autoComplete="current-password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        onKeyDown={handleKeyDown} // Captura el evento onKeyDown
                       />
                     </CInputGroup>
-
                     <CRow>
                       <CCol xs={6}>
-                        <CButton
-                          color="primary"
-                          className="px-4"
-                          onClick={handleSubmit} // Iniciar sesión al hacer clic
-                        >
+                        <CButton color="primary" className="px-4" type="submit">
                           Iniciar sesión
                         </CButton>
                       </CCol>
@@ -123,7 +107,7 @@ const Login = () => {
                   <div>
                     <h2>Crea tu cuenta</h2>
                     <p>
-                      Crea tu cuenta para ingresar al sistema de gestión de la Ferretería ... Nombre
+                      Crea tu cuenta para ingresar al sistema de gestión de la Ferretería ...
                     </p>
                     <Link to="/register">
                       <CButton color="primary" className="mt-3" active tabIndex={-1}>

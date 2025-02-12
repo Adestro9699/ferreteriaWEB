@@ -39,6 +39,7 @@ import { cilPencil, cilTrash, cilX, cilSortAlphaDown, cilSortAlphaUp, cilCloudDo
 import CIcon from '@coreui/icons-react';
 import axios from 'axios';
 import CrearProducto from './crearProducto'; // Importar el componente CrearProducto
+import apiClient from '../../services/apiClient';
 
 
 const getBadge = (status) => {
@@ -106,19 +107,19 @@ const AdvancedTableExample = () => {
     const fetchData = async () => {
       try {
         // Obtener productos
-        const productosResponse = await axios.get('http://localhost:8080/fs/productos');
+        const productosResponse = await apiClient.get('/fs/productos');
         setItems(productosResponse.data);
 
         // Obtener categorías
-        const categoriasResponse = await axios.get('http://localhost:8080/fs/categorias');
+        const categoriasResponse = await apiClient.get('/fs/categorias');
         setCategorias(categoriasResponse.data);
 
         // Obtener proveedores
-        const proveedoresResponse = await axios.get('http://localhost:8080/fs/proveedores');
+        const proveedoresResponse = await apiClient.get('/fs/proveedores');
         setProveedores(proveedoresResponse.data);
 
         // Obtener subcategorías
-        const subcategoriasResponse = await axios.get('http://localhost:8080/fs/subcategorias');
+        const subcategoriasResponse = await apiClient.get('/fs/subcategorias');
         setSubcategorias(subcategoriasResponse.data);
 
         setLoading(false);
@@ -149,15 +150,16 @@ const AdvancedTableExample = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get('http://localhost:8080/fs/productos');
+        const response = await apiClient.get('/fs/productos');
         setItems(response.data);
-        setLoading(false);
       } catch (error) {
-        setError(error.message);
-        setLoading(false);
+        if (error.response && error.response.status === 403) {
+          setError('No tienes permiso para acceder a esta página.');
+        } else {
+          setError('Error al cargar los datos.');
+        }
       }
     };
-
     fetchData();
   }, []);
 
@@ -169,12 +171,10 @@ const AdvancedTableExample = () => {
         fechaModificacion: new Date().toISOString(), // Fecha actual en formato ISO
       };
 
-      console.log("Datos a enviar al backend:", productWithDate); // Verificar los datos antes de enviar
 
       // Enviar el nuevo producto al backend
-      const response = await axios.post('http://localhost:8080/fs/productos', productWithDate);
+      const response = await apiClient.post('/fs/productos', productWithDate);
 
-      console.log("Respuesta del backend:", response.data); // Verificar la respuesta del backend
 
       // Agregar el nuevo producto a la lista
       setItems([...items, response.data]);
@@ -217,7 +217,7 @@ const AdvancedTableExample = () => {
           ];
 
           const responses = await Promise.all(
-            endpoints.map((endpoint) => axios.get(endpoint).catch(() => null))
+            endpoints.map((endpoint) => apiClient.get(endpoint).catch(() => null))
           );
 
           // Combinar y eliminar duplicados
@@ -235,7 +235,7 @@ const AdvancedTableExample = () => {
       }
 
       // Si no hay filtro o no se usó la búsqueda en paralelo, hacer la búsqueda por defecto
-      const response = await axios.get(url);
+      const response = await apiClient.get(url);
       setItems(response.data);
     } catch (error) {
       console.error('Error al buscar los datos:', error);
@@ -252,8 +252,8 @@ const AdvancedTableExample = () => {
 
     try {
       // Cargar la lista completa de productos
-      const response = await axios.get('http://localhost:8080/fs/productos');
-      setItems(response.data);
+      const response = await apiClient.get('/fs/productos');
+            setItems(response.data);
     } catch (error) {
       console.error('Error al cargar los datos:', error);
       addToast('Error al cargar los datos', 'danger');
@@ -339,7 +339,7 @@ const AdvancedTableExample = () => {
 
     try {
       // Enviar una solicitud DELETE al backend con los IDs seleccionados
-      await axios.delete('http://localhost:8080/fs/productos/eliminar-multiples', {
+      await apiClient.delete('/fs/productos/eliminar-multiples', {
         data: selectedItems,  // Enviar solo el array de IDs
       });
 
@@ -393,7 +393,6 @@ const AdvancedTableExample = () => {
 
   // Exportar datos
   const exportData = (format) => {
-    console.log(`Exportando datos en formato ${format}`);
     // Aquí puedes implementar la lógica para exportar a Excel, CSV, PDF, etc.
   };
 
@@ -421,7 +420,7 @@ const AdvancedTableExample = () => {
       };
 
       // Enviar el producto actualizado al backend
-      const response = await axios.put(
+      const response = await apiClient.put(
         `http://localhost:8080/fs/productos/${currentProduct.idProducto}`,
         currentProduct
       );
@@ -452,7 +451,7 @@ const AdvancedTableExample = () => {
     if (!productToDelete) return;
 
     try {
-      await axios.delete(`http://localhost:8080/fs/productos/${productToDelete}`);
+      await apiClient.delete(`/fs/productos/${productToDelete}`);
 
       const updatedItems = items.filter((item) => item.idProducto !== productToDelete);
       setItems(updatedItems);

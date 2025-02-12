@@ -1,34 +1,50 @@
-import { legacy_createStore as createStore } from 'redux'
+import { legacy_createStore as createStore } from 'redux';
 
-// Estado inicial que incluye la autenticación
 const initialState = {
   sidebarShow: true,
+  sidebarUnfoldable: false, // Inicializa este campo
   theme: 'light',
   auth: {
-    isAuthenticated: false,  // Estado de autenticación
-    user: null,              // Información del usuario
-  }
-}
+    isAuthenticated: false,
+    user: null,
+    role: null,
+  },
+};
 
-// Reducer que maneja la autenticación y el resto de los estados
-const changeState = (state = initialState, { type, payload, ...rest }) => {
+const changeState = (state = initialState, { type, payload }) => {
   switch (type) {
     case 'set':
-      return { ...state, ...rest }
+
+      return {
+        ...state,
+        ...payload, // Actualiza múltiples campos
+      }; 
     case 'LOGIN_SUCCESS':
       return {
         ...state,
-        auth: { isAuthenticated: true, user: payload },
-      }
+        auth: {
+          isAuthenticated: true,
+          user: payload.user,
+          role: payload.role,
+        },
+      };
     case 'LOGOUT':
       return {
         ...state,
-        auth: { isAuthenticated: false, user: null },
-      }
+        auth: {
+          isAuthenticated: false,
+          user: null,
+          role: null,
+        },
+      };
     default:
-      return state
+      return state;
   }
-}
+};
 
-const store = createStore(changeState)
-export default store
+const store = createStore(
+  changeState,
+  window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
+);
+
+export default store;
