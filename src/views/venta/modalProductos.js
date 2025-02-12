@@ -244,4 +244,5 @@ const ModalProductos = ({ modalVisible, setModalVisible, handleProductosSeleccio
   );
 };
 
+
 export default ModalProductos;

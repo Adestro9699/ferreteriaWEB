@@ -19,6 +19,7 @@ const DetalleVenta = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [productosVendidos, setProductosVendidos] = useState([]);
 
+  
   const handleCantidadChange = (index, value) => {
     // Si el valor está vacío, actualizar el estado sin validaciones
     if (value === '') {
