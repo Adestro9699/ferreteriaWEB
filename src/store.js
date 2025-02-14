@@ -1,5 +1,6 @@
 import { legacy_createStore as createStore } from 'redux';
 
+// Estado inicial
 const initialState = {
   sidebarShow: true,
   sidebarUnfoldable: false, // Inicializa este campo
@@ -8,17 +9,19 @@ const initialState = {
     isAuthenticated: false,
     user: null,
     role: null,
+    permissions: {}, // Agrega los permisos aquí
   },
 };
 
+// Reducer
 const changeState = (state = initialState, { type, payload }) => {
   switch (type) {
     case 'set':
-
       return {
         ...state,
         ...payload, // Actualiza múltiples campos
-      }; 
+      };
+
     case 'LOGIN_SUCCESS':
       return {
         ...state,
@@ -26,8 +29,11 @@ const changeState = (state = initialState, { type, payload }) => {
           isAuthenticated: true,
           user: payload.user,
           role: payload.role,
+          permissions: payload.permissions || {}, // Asegúrate de que siempre sea un objeto
+          token: payload.token, // Almacena el token aquí
         },
       };
+
     case 'LOGOUT':
       return {
         ...state,
@@ -35,13 +41,16 @@ const changeState = (state = initialState, { type, payload }) => {
           isAuthenticated: false,
           user: null,
           role: null,
+          permissions: {}, // Limpia los permisos al hacer logout
         },
       };
+
     default:
       return state;
   }
 };
 
+// Crear el store
 const store = createStore(
   changeState,
   window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()

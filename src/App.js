@@ -12,8 +12,10 @@ const Page404 = React.lazy(() => import('./views/pages/page404/Page404'));
 const Page500 = React.lazy(() => import('./views/pages/page500/Page500'));
 
 const App = () => {
-  // Obtener el estado de autenticación desde Redux
+  // Obtener el estado de autenticación y el rol desde Redux
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
+  const userRole = useSelector((state) => state.auth.role);
+  const userPermissions = useSelector((state) => state.auth.permissions);
 
   return (
     <HashRouter>
@@ -28,7 +30,17 @@ const App = () => {
           {/* Redirigir al login si no está autenticado */}
           <Route
             path="/"
-            element={isAuthenticated ? <Navigate to="/dashboard" /> : <Navigate to="/login" />}
+            element={
+              isAuthenticated ? (
+                Object.keys(userPermissions).length === 0 && userRole === 'USER' ? (
+                  <Navigate to="/dashboard" />
+                ) : (
+                  <DefaultLayout />
+                )
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
           />
 
           {/* Rutas protegidas */}

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { loginSuccess } from 'src/actions/authActions'; // Importa la acción de autenticación
 import apiClient from '../../../services/apiClient'; // Importa el cliente Axios personalizado
-import { jwtDecode } from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode'; // Decodificador de tokens JWT
 import {
   CButton,
   CCard,
@@ -28,24 +28,33 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     try {
-      // Usar apiClient para enviar las credenciales al backend
+      // Enviar las credenciales al backend para iniciar sesión
       const response = await apiClient.post('/fs/usuarios/login', {
         nombreUsuario: username,
         contrasena: password,
       });
 
-      const token = response.data.token; // Extraer el token del backend
+      // Extraer el token del backend
+      const token = response.data.token;
 
-      // Decodificar el token para obtener el rol del usuario
+      // Decodificar el token para obtener el rol y los permisos del usuario
       const decodedToken = jwtDecode(token);
-      const userRole = decodedToken.cargo; // Extraer el campo "cargo" (rol)
+      const userRole = decodedToken.rol; // Extraer el campo "rol"
+      const userPermissions = decodedToken.permisos; // Extraer los permisos
 
       // Almacenar el token en localStorage
       localStorage.setItem('token', token);
 
-      // Actualizar el estado de autenticación en Redux (incluyendo el rol)
-      dispatch(loginSuccess({ username, role: userRole }));
+      // Actualizar el estado de autenticación en Redux (incluyendo el rol y los permisos)
+      dispatch(
+        loginSuccess({
+          username: decodedToken.sub, // Nombre de usuario
+          role: userRole, // Rol del usuario
+          permissions: userPermissions, // Permisos del usuario
+        })
+      );
 
       // Redirigir al usuario al dashboard
       navigate('/dashboard');
