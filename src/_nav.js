@@ -165,9 +165,10 @@ const _nav = () => {
     {
       component: CNavItem,
       name: 'Usuarios',
-      to: '/usuarios',
+      to: '/usuario',
       icon: <CIcon icon={cilSpeedometer} customClassName="nav-icon" />,
-      show: isAuthenticated && hasPermission('/usuarios'),
+      permissionsRequired: ['/usuarios'],
+      show: isAuthenticated && hasPermission(['/usuarios']),
     },
     {
       component: CNavItem,
