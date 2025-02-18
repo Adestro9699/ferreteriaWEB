@@ -28,16 +28,23 @@ const _nav = () => {
   console.log('Permisos del usuario:', userPermissions);
 
   // Función auxiliar para verificar permisos
-  const hasPermission = (requiredPermission) => {
-    const result = userRole === 'ADMIN' || userPermissions?.[requiredPermission];
-    console.log(`Verificando permiso para ${requiredPermission}:`, result);
-    return !!result; // Asegura que siempre devuelva `true` o `false`
+  const hasPermission = (requiredPermissions) => {
+    // Si el usuario es ADMIN, siempre tiene acceso
+    if (userRole === 'ADMIN') return true;
+
+    // Si requiredPermissions es un array, verificar que todos los permisos sean true
+    if (Array.isArray(requiredPermissions)) {
+      return requiredPermissions.every((permission) => userPermissions[permission]);
+    }
+
+    // Si requiredPermissions es un solo permiso, verificarlo directamente
+    return !!userPermissions[requiredPermissions];
   };
 
-  // Estructura del menú
+  // Estructura del menú para mostrar el título dependiendo si hay algún subelemento activado(endpoint activados)
   const menuStructure = {
     inventario: ['/producto', '/categorias', '/proveedores', '/movimientos'],
-    facturacion: ['/venta', '/lis-tventas', '/compras', '/cotizaciones', '/trans'], 
+    facturacion: ['/venta', '/lis-tventas', '/compras', '/cotizaciones', '/trans'],
     clientes: ['/clientes', '/creditos'],
     usuarios: ['/usuarios', '/roles', '/cajas'],
     reportes: ['/reportes-ventas', '/reportes-compras', '/reportes-inventario', '/reportes-transferencias'],
@@ -48,7 +55,7 @@ const _nav = () => {
   // Lista de elementos del menú
   const rawItems = [
     {
-      component: CNavItem,  
+      component: CNavItem,
       name: 'Dashboard',
       to: '/dashboard',
       icon: <CIcon icon={cilSpeedometer} customClassName="nav-icon" />,
@@ -57,21 +64,25 @@ const _nav = () => {
     {
       component: CNavTitle,
       name: 'Inventario',
-      show: isAuthenticated && (hasPermission('/producto') || hasPermission('/categorias')),
     },
     {
       component: CNavItem,
       name: 'Productos',
       to: '/producto',
       icon: <CIcon icon={cilDrop} customClassName="nav-icon" />,
-      show: isAuthenticated && hasPermission('/producto'),
+
+      //Esto significa que todos estos permisos deben estar habilitados para que el usuario tenga acceso completo a la vista de productos.
+      permissionsRequired: ['/productos', '/categorias', '/subcategorias', '/proveedores'],
+      //Determina si este elemento debe ser visible en el menú lateral.
+      show: isAuthenticated && hasPermission(['/productos', '/categorias', '/subcategorias', '/proveedores']),
     },
     {
       component: CNavItem,
       name: 'Categorías',
       to: '/categorias',
       icon: <CIcon icon={cilNotes} customClassName="nav-icon" />,
-      show: isAuthenticated && hasPermission('/categorias'),
+      permissionsRequired: ['/categorias', '/subcategorias'],
+      show: isAuthenticated && hasPermission(['/categorias', '/subcategorias']),
     },
     {
       component: CNavItem,
@@ -261,40 +272,23 @@ const _nav = () => {
 
   // Filtra las rutas basadas en los permisos del usuario
   const filteredItems = rawItems.filter((item) => {
-    if (!isAuthenticated) {
-      console.log('Usuario no autenticado. Ocultando todos los elementos.');
-      return false; // Si no está autenticado, ocultar todo
-    }
-    if (userRole === 'ADMIN') {
-      console.log('Usuario es ADMIN. Mostrando todos los elementos.');
-      return true; // Si es ADMIN, mostrar todo
-    }
-    if (Object.keys(userPermissions).length === 0) {
-      console.log('Usuario sin permisos. Mostrando solo el dashboard.');
-      return item.to === '/dashboard'; // Si el usuario tiene permisos vacíos, solo mostrar el dashboard
-    }
+    if (!isAuthenticated) return false;
+    if (item.to === '/dashboard') return true;
+    if (userRole === 'ADMIN') return true;
+    if (Object.keys(userPermissions).length === 0) return item.to === '/dashboard';
 
-    // Para títulos principales, verificar si tienen subelementos visibles
     if (item.component === CNavTitle) {
       const relatedPermissions = menuStructure[item.name.toLowerCase()];
-      if (!relatedPermissions) {
-        console.log(`No se encontraron permisos para el título "${item.name}"`);
-        return false;
-      }
-      const isVisible = relatedPermissions.some((perm) => userPermissions[perm]);
-      console.log(`Título principal "${item.name}" visible:`, isVisible);
-      return isVisible;
+      if (!relatedPermissions) return false;
+      return relatedPermissions.some((perm) => userPermissions[perm]);
     }
 
-    // Para otros elementos, verificar los permisos directamente
-    const requiredPermission = item.to;
-    const isVisible = !requiredPermission || userPermissions[requiredPermission];
-    console.log(`Elemento "${item.name}" visible:`, isVisible);
-    return isVisible;
+    const requiredPermissions = item.permissionsRequired || [item.to];
+    return hasPermission(requiredPermissions);
   });
 
-  console.log('Elementos filtrados del menú:', filteredItems);
-  return filteredItems.map(({ show, ...rest }) => rest); // Elimina la propiedad `show`
+  // Elimina la propiedad `permissionsRequired` antes de retornar los elementos
+  return filteredItems.map(({ permissionsRequired, show, ...rest }) => rest);
 };
 
 export default _nav;
