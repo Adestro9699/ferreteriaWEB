@@ -19,20 +19,38 @@ import {
 } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilX } from '@coreui/icons';
-import axios from 'axios';
+import apiClient from '../../services/apiClient';
 
 const ModalProductos = ({ modalVisible, setModalVisible, handleProductosSeleccionados }) => {
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [cantidades, setCantidades] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [productos, setProductos] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Llamar al endpoint cuando el modal se abra o cambie el término de búsqueda
+  // Cargar datos iniciales cuando el modal se abre
   useEffect(() => {
     if (modalVisible) {
-      handleSearchChange({ target: { value: searchTerm } });
+      setLoading(true);
+      setError(null);
+
+      const fetchData = async () => {
+        try {
+          // Obtener productos
+          const productosResponse = await apiClient.get('/fs/productos');
+          setProductos(productosResponse.data);
+          setLoading(false);
+        } catch (error) {
+          console.error('Error al cargar los productos:', error);
+          setError('Error al cargar los productos. Inténtalo de nuevo.');
+          setLoading(false);
+        }
+      };
+
+      fetchData();
     }
-  }, [searchTerm, modalVisible]);
+  }, [modalVisible]);
 
   // Búsqueda avanzada
   const handleSearchChange = async (e) => {
@@ -40,32 +58,28 @@ const ModalProductos = ({ modalVisible, setModalVisible, handleProductosSeleccio
     setSearchTerm(value);
 
     try {
-      let url = 'http://localhost:8080/fs/productos';
+      let url = '/fs/productos';
 
       if (value.length > 0) {
         if (/^\d+$/.test(value)) {
-          // Si el filtro es solo números, buscar por código de barra
-          url = `http://localhost:8080/fs/productos/buscarPorCodigoBarra?codigoBarra=${value}`;
+          url = `/fs/productos/buscarPorCodigoBarra?codigoBarra=${value}`;
         } else if (value.toLowerCase() === 'activo' || value.toLowerCase() === 'inactivo') {
-          // Si el filtro es "activo" o "inactivo", buscar por estado
-          url = `http://localhost:8080/fs/productos/buscarPorEstado?estado=${value.toUpperCase()}`;
+          url = `/fs/productos/buscarPorEstado?estado=${value.toUpperCase()}`;
         } else {
-          // Búsqueda en paralelo en múltiples endpoints
           const endpoints = [
-            `http://localhost:8080/fs/productos/buscarPorNombre?nombre=${encodeURIComponent(value)}`,
-            `http://localhost:8080/fs/productos/buscarPorMarca?marca=${encodeURIComponent(value)}`,
-            `http://localhost:8080/fs/productos/buscarPorCategoria?categoria=${encodeURIComponent(value)}`,
-            `http://localhost:8080/fs/productos/buscarPorMaterial?material=${encodeURIComponent(value)}`,
-            `http://localhost:8080/fs/productos/buscarPorNombreProveedor?nombreProveedor=${encodeURIComponent(value)}`,
-            `http://localhost:8080/fs/productos/buscarPorNombreSubcategoria?nombreSubcategoria=${encodeURIComponent(value)}`,
-            `http://localhost:8080/fs/productos/buscarPorCodigoSKU?codigoSKU=${encodeURIComponent(value)}`,
+            `/fs/productos/buscarPorNombre?nombre=${encodeURIComponent(value)}`,
+            `/fs/productos/buscarPorMarca?marca=${encodeURIComponent(value)}`,
+            `/fs/productos/buscarPorCategoria?categoria=${encodeURIComponent(value)}`,
+            `/fs/productos/buscarPorMaterial?material=${encodeURIComponent(value)}`,
+            `/fs/productos/buscarPorNombreProveedor?nombreProveedor=${encodeURIComponent(value)}`,
+            `/fs/productos/buscarPorNombreSubcategoria?nombreSubcategoria=${encodeURIComponent(value)}`,
+            `/fs/productos/buscarPorCodigoSKU?codigoSKU=${encodeURIComponent(value)}`,
           ];
 
           const responses = await Promise.all(
-            endpoints.map((endpoint) => axios.get(endpoint).catch(() => null))
+            endpoints.map((endpoint) => apiClient.get(endpoint).catch(() => null))
           );
 
-          // Combinar y eliminar duplicados
           const combinedResults = responses
             .filter((response) => response && response.data.length > 0)
             .flatMap((response) => response.data);
@@ -79,11 +93,11 @@ const ModalProductos = ({ modalVisible, setModalVisible, handleProductosSeleccio
         }
       }
 
-      // Si no hay filtro o no se usó la búsqueda en paralelo, hacer la búsqueda por defecto
-      const response = await axios.get(url);
+      const response = await apiClient.get(url);
       setProductos(response.data);
     } catch (error) {
       console.error('Error al buscar los datos:', error);
+      setError('Error al buscar los productos. Inténtalo de nuevo.');
     }
   };
 
@@ -119,12 +133,12 @@ const ModalProductos = ({ modalVisible, setModalVisible, handleProductosSeleccio
         cantidad <= producto.stock
       );
     });
-  
+
     if (!isValid) {
       alert('Por favor, ingresar cantidad válida para el/los productos seleccionados.');
       return;
     }
-  
+
     // Continuar con el proceso normal
     const productosConCantidad = selectedProducts.map((producto) => ({
       idProducto: producto.idProducto,
@@ -132,9 +146,9 @@ const ModalProductos = ({ modalVisible, setModalVisible, handleProductosSeleccio
       precio: producto.precio,
       unidadMedida: producto.unidadMedida?.abreviatura || '',
       cantidad: parseFloat(cantidades[producto.idProducto]) || 1,
-      stock: producto.stock, // Incluir el stock aquí
+      stock: producto.stock,
     }));
-  
+
     handleProductosSeleccionados(productosConCantidad);
     setModalVisible(false);
   };
@@ -168,58 +182,64 @@ const ModalProductos = ({ modalVisible, setModalVisible, handleProductosSeleccio
       </CModalHeader>
 
       <CModalBody>
-        <CTable striped hover responsive>
-          <CTableHead>
-            <CTableRow>
-              <CTableHeaderCell>Check</CTableHeaderCell>
-              <CTableHeaderCell>Cantidad</CTableHeaderCell>
-              <CTableHeaderCell>Nombre</CTableHeaderCell>
-              <CTableHeaderCell>Precio</CTableHeaderCell>
-              <CTableHeaderCell>Und. Medida</CTableHeaderCell>
-              <CTableHeaderCell>Stock</CTableHeaderCell>
-              <CTableHeaderCell>SKU</CTableHeaderCell>
-              <CTableHeaderCell>Marca</CTableHeaderCell>
-              <CTableHeaderCell>Material</CTableHeaderCell>
-              <CTableHeaderCell>Código de Barra</CTableHeaderCell>
-              <CTableHeaderCell>Categoría</CTableHeaderCell>
-              <CTableHeaderCell>Subcategoría</CTableHeaderCell>
-            </CTableRow>
-          </CTableHead>
-          <CTableBody>
-            {productos.map((producto, index) => (
-              <CTableRow key={index}>
-                <CTableDataCell>
-                  <CFormCheck
-                    id={`checkbox-${producto.idProducto}`}
-                    onChange={() => handleCheckboxChange(producto)}
-                    checked={selectedProducts.some((p) => p.idProducto === producto.idProducto)}
-                  />
-                </CTableDataCell>
-                <CTableDataCell>
-                  {selectedProducts.some((p) => p.idProducto === producto.idProducto) && (
-                    <CFormInput
-                      type="text"
-                      value={cantidades[producto.idProducto] || ''}
-                      onChange={(e) => handleCantidadChange(producto.idProducto, e.target.value)}
-                      size="sm"
-                      style={{ width: '60px' }}
-                    />
-                  )}
-                </CTableDataCell>
-                <CTableDataCell>{producto.nombreProducto}</CTableDataCell>
-                <CTableDataCell>{producto.precio}</CTableDataCell>
-                <CTableDataCell>{producto.unidadMedida?.abreviatura}</CTableDataCell>
-                <CTableDataCell>{producto.stock}</CTableDataCell>
-                <CTableDataCell>{producto.codigoSKU}</CTableDataCell>
-                <CTableDataCell>{producto.marca}</CTableDataCell>
-                <CTableDataCell>{producto.material}</CTableDataCell>
-                <CTableDataCell>{producto.codigoBarra}</CTableDataCell>
-                <CTableDataCell>{producto.categoria?.nombre}</CTableDataCell>
-                <CTableDataCell>{producto.subcategoria?.nombre}</CTableDataCell>
+        {loading ? (
+          <div>Cargando productos...</div>
+        ) : error ? (
+          <div className="alert alert-danger">{error}</div>
+        ) : (
+          <CTable striped hover responsive>
+            <CTableHead>
+              <CTableRow>
+                <CTableHeaderCell>Check</CTableHeaderCell>
+                <CTableHeaderCell>Cantidad</CTableHeaderCell>
+                <CTableHeaderCell>Nombre</CTableHeaderCell>
+                <CTableHeaderCell>Precio</CTableHeaderCell>
+                <CTableHeaderCell>Und. Medida</CTableHeaderCell>
+                <CTableHeaderCell>Stock</CTableHeaderCell>
+                <CTableHeaderCell>SKU</CTableHeaderCell>
+                <CTableHeaderCell>Marca</CTableHeaderCell>
+                <CTableHeaderCell>Material</CTableHeaderCell>
+                <CTableHeaderCell>Código de Barra</CTableHeaderCell>
+                <CTableHeaderCell>Categoría</CTableHeaderCell>
+                <CTableHeaderCell>Subcategoría</CTableHeaderCell>
               </CTableRow>
-            ))}
-          </CTableBody>
-        </CTable>
+            </CTableHead>
+            <CTableBody>
+              {productos.map((producto, index) => (
+                <CTableRow key={index}>
+                  <CTableDataCell>
+                    <CFormCheck
+                      id={`checkbox-${producto.idProducto}`}
+                      onChange={() => handleCheckboxChange(producto)}
+                      checked={selectedProducts.some((p) => p.idProducto === producto.idProducto)}
+                    />
+                  </CTableDataCell>
+                  <CTableDataCell>
+                    {selectedProducts.some((p) => p.idProducto === producto.idProducto) && (
+                      <CFormInput
+                        type="text"
+                        value={cantidades[producto.idProducto] || ''}
+                        onChange={(e) => handleCantidadChange(producto.idProducto, e.target.value)}
+                        size="sm"
+                        style={{ width: '60px' }}
+                      />
+                    )}
+                  </CTableDataCell>
+                  <CTableDataCell>{producto.nombreProducto}</CTableDataCell>
+                  <CTableDataCell>{producto.precio}</CTableDataCell>
+                  <CTableDataCell>{producto.unidadMedida?.abreviatura}</CTableDataCell>
+                  <CTableDataCell>{producto.stock}</CTableDataCell>
+                  <CTableDataCell>{producto.codigoSKU}</CTableDataCell>
+                  <CTableDataCell>{producto.marca}</CTableDataCell>
+                  <CTableDataCell>{producto.material}</CTableDataCell>
+                  <CTableDataCell>{producto.codigoBarra}</CTableDataCell>
+                  <CTableDataCell>{producto.categoria?.nombre}</CTableDataCell>
+                  <CTableDataCell>{producto.subcategoria?.nombre}</CTableDataCell>
+                </CTableRow>
+              ))}
+            </CTableBody>
+          </CTable>
+        )}
       </CModalBody>
       <CModalFooter>
         <CButton color="info" disabled>
@@ -243,6 +263,5 @@ const ModalProductos = ({ modalVisible, setModalVisible, handleProductosSeleccio
     </CModal>
   );
 };
-
 
 export default ModalProductos;

@@ -13,52 +13,76 @@ import {
   CFormInput,
   CButton,
 } from '@coreui/react';
-import ModalProductos from './modalProductos'; // Importamos el modal
+import ModalProductos from './modalProducto'; // Importamos el modal
 
 const DetalleVenta = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [productosVendidos, setProductosVendidos] = useState([]);
 
-  
+  // Función para manejar cambios en la cantidad
   const handleCantidadChange = (index, value) => {
-    // Si el valor está vacío, actualizar el estado sin validaciones
     if (value === '') {
       setProductosVendidos((prevProductos) => {
         const nuevosProductos = [...prevProductos];
-        nuevosProductos[index].cantidad = value; // Guardar como cadena vacía
-        nuevosProductos[index].subtotal = ''; // Limpiar el subtotal
+        nuevosProductos[index].cantidad = value;
+        nuevosProductos[index].subtotal = '';
         return nuevosProductos;
       });
       return;
     }
 
-    // Si el valor no está vacío, validar que sea un número válido
     const nuevaCantidad = parseFloat(value);
     if (isNaN(nuevaCantidad) || nuevaCantidad <= 0) {
       alert('La cantidad debe ser un número positivo.');
-      return; // Ignorar valores inválidos
+      return;
     }
 
-    // Obtener el stock del producto correspondiente
     const producto = productosVendidos[index];
     const stockDisponible = producto.stock;
 
-    // Validar que la cantidad no exceda el stock disponible
     if (nuevaCantidad > stockDisponible) {
       alert(`La cantidad no puede exceder el stock disponible`);
       return;
     }
 
-    // Actualizar el estado con la nueva cantidad
     setProductosVendidos((prevProductos) => {
       const nuevosProductos = [...prevProductos];
       nuevosProductos[index].cantidad = nuevaCantidad;
-
-      // Recalcular el subtotal
       nuevosProductos[index].subtotal = (
-        nuevosProductos[index].precio * nuevaCantidad
+        (nuevosProductos[index].precio - (nuevosProductos[index].descuento || 0)) *
+        nuevaCantidad
       ).toFixed(2);
+      return nuevosProductos;
+    });
+  };
 
+  // Función para manejar cambios en el descuento
+  const handleDescuentoChange = (index, value) => {
+    if (value === '') {
+      setProductosVendidos((prevProductos) => {
+        const nuevosProductos = [...prevProductos];
+        nuevosProductos[index].descuento = 0; // Establecer descuento en 0 si el campo está vacío
+        nuevosProductos[index].subtotal = (
+          nuevosProductos[index].precio * (nuevosProductos[index].cantidad || 1)
+        ).toFixed(2);
+        return nuevosProductos;
+      });
+      return;
+    }
+
+    const nuevoDescuento = parseFloat(value);
+    if (isNaN(nuevoDescuento) || nuevoDescuento < 0) {
+      alert('El descuento debe ser un número positivo.');
+      return;
+    }
+
+    setProductosVendidos((prevProductos) => {
+      const nuevosProductos = [...prevProductos];
+      nuevosProductos[index].descuento = nuevoDescuento;
+      nuevosProductos[index].subtotal = (
+        (nuevosProductos[index].precio - nuevoDescuento) *
+        (nuevosProductos[index].cantidad || 1)
+      ).toFixed(2);
       return nuevosProductos;
     });
   };
@@ -71,14 +95,11 @@ const DetalleVenta = () => {
   // Función para recibir los productos seleccionados desde el modal
   const handleProductosSeleccionados = (productosSeleccionados) => {
     setProductosVendidos((prevProductos) => {
-      // Filtrar los productos seleccionados para evitar duplicados
       const nuevosProductos = productosSeleccionados.filter(
         (nuevo) => !prevProductos.some((existente) => existente.idProducto === nuevo.idProducto)
       );
-      // Combinar los productos existentes con los nuevos
       return [...prevProductos, ...nuevosProductos];
     });
-    // Cerrar el modal
     setModalVisible(false);
   };
 
@@ -88,6 +109,56 @@ const DetalleVenta = () => {
       prevProductos.filter((_, i) => i !== index)
     );
   };
+
+  // Función para guardar la venta
+  const handleGuardarVenta = async () => {
+    if (productosVendidos.length === 0) {
+      alert('Debes agregar al menos un producto para guardar la venta.');
+      return;
+    }
+
+    const productosInvalidos = productosVendidos.some(
+      (producto) => !producto.cantidad || isNaN(producto.cantidad) || producto.cantidad <= 0
+    );
+
+    if (productosInvalidos) {
+      alert('Por favor, ingresa una cantidad válida para todos los productos.');
+      return;
+    }
+
+    // Preparar los datos para enviar al backend
+    const ventaData = {
+      productos: productosVendidos.map((producto) => ({
+        idProducto: producto.idProducto,
+        cantidad: producto.cantidad,
+        descuento: producto.descuento || 0, // Enviar el descuento (0 si no se ingresó)
+      })),
+    };
+
+    try {
+      // Enviar la venta al backend
+      const response = await apiClient.post('/fs/ventas', ventaData);
+      console.log('Venta guardada:', response.data);
+      alert('Venta guardada correctamente.');
+      setProductosVendidos([]); // Limpiar la lista de productos vendidos
+    } catch (error) {
+      console.error('Error al guardar la venta:', error);
+      alert('Error al guardar la venta. Inténtalo de nuevo.');
+    }
+  };
+
+  // Función para completar la venta
+  const handleCompletarVenta = () => {
+    // Aquí puedes agregar la lógica para completar la venta
+    alert('Venta completada correctamente.');
+  };
+
+  // Calcular el total general
+  const totalGeneral = productosVendidos.reduce(
+    (total, producto) =>
+      total + ((producto.precio - (producto.descuento || 0)) * (producto.cantidad || 1)),
+    0
+  ).toFixed(2);
 
   return (
     <>
@@ -101,10 +172,18 @@ const DetalleVenta = () => {
       {/* Tabla de productos seleccionados */}
       <CCard>
         <CCardBody>
-          {/* Botón para abrir el modal */}
-          <div className="d-flex justify-content-start mb-3">
-            <CButton color="primary" onClick={handleAñadirProducto}>
-              Añadir Producto
+          {/* Botones para añadir producto, completar venta y guardar venta */}
+          <div className="d-flex justify-content-between mb-3">
+            <div>
+              <CButton color="primary" onClick={handleAñadirProducto} className="me-2">
+                Añadir Producto
+              </CButton>
+              <CButton color="warning" onClick={handleCompletarVenta}>
+                Completar Venta
+              </CButton>
+            </div>
+            <CButton color="success" onClick={handleGuardarVenta}>
+              Guardar Venta
             </CButton>
           </div>
 
@@ -133,7 +212,7 @@ const DetalleVenta = () => {
                       size="sm"
                       value={producto.nombre}
                       readOnly
-                      style={{ width: '290px' }} // Ajusta el ancho según tus necesidades
+                      style={{ width: '290px' }}
                     />
                   </CTableDataCell>
                   <CTableDataCell>{producto.unidadMedida}</CTableDataCell>
@@ -143,7 +222,7 @@ const DetalleVenta = () => {
                       type="number"
                       placeholder="Cantidad"
                       size="sm"
-                      value={producto.cantidad} // Sin valor por defecto
+                      value={producto.cantidad}
                       onChange={(e) => handleCantidadChange(index, e.target.value)}
                       style={{ width: '60px', textAlign: 'right' }}
                     />
@@ -153,8 +232,9 @@ const DetalleVenta = () => {
                       type="number"
                       placeholder="Descuento"
                       size="sm"
-                      value={producto.descuento || 0}
-                      readOnly
+                      value={producto.descuento || ''}
+                      onChange={(e) => handleDescuentoChange(index, e.target.value)}
+                      style={{ width: '80px', textAlign: 'right' }}
                     />
                   </CTableDataCell>
                   <CTableDataCell className="text-end">
@@ -162,7 +242,10 @@ const DetalleVenta = () => {
                       type="text"
                       placeholder="Subtotal"
                       size="sm"
-                      value={(producto.precio * (producto.cantidad || 1)).toFixed(2)}
+                      value={(
+                        (producto.precio - (producto.descuento || 0)) *
+                        (producto.cantidad || 1)
+                      ).toFixed(2)}
                       readOnly
                     />
                   </CTableDataCell>
@@ -183,14 +266,7 @@ const DetalleVenta = () => {
                   <CFormInput
                     type="text"
                     size="sm"
-                    value={
-                      productosVendidos
-                        .reduce(
-                          (total, p) => total + ((p.precio - (p.descuento || 0)) * (p.cantidad || 1)),
-                          0
-                        )
-                        .toFixed(2)
-                    }
+                    value={totalGeneral}
                     readOnly
                     style={{ width: '100px', textAlign: 'right' }}
                   />
