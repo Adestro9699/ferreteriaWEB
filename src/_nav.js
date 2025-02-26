@@ -146,7 +146,7 @@ const _nav = () => {
     {
       component: CNavItem,
       name: 'Lista de Clientes',
-      to: '/clientes',
+      to: '/cliente',
       icon: <CIcon icon={cilSpeedometer} customClassName="nav-icon" />,
       show: isAuthenticated && hasPermission('/listclientes'),
     },

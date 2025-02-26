@@ -13,7 +13,7 @@ const AppFooter = () => {
       <div className="ms-auto">
         <span className="me-1">Powered by</span>
         <a href="https://coreui.io/react" target="_blank" rel="noopener noreferrer">
-          El chupagampi de Adestro &amp; GAAAAAAAA!
+          Adestro &amp; FERRETERIA
         </a>
       </div>
     </CFooter>

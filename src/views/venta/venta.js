@@ -14,10 +14,19 @@ import {
   CButton,
 } from '@coreui/react';
 import ModalProductos from './modalProducto'; // Importamos el modal
+import CompletarVenta from './completarVenta'; // Importamos el modal
 
 const DetalleVenta = () => {
   const [modalVisible, setModalVisible] = useState(false);
+  const [completarVentaModalVisible, setCompletarVentaModalVisible] = useState(false);
   const [productosVendidos, setProductosVendidos] = useState([]);
+  const [datosComplementarios, setDatosComplementarios] = useState({
+    tipoPago: '',
+    empresa: '',
+    cliente: '',
+    tipoComprobante: '',
+    fecha: new Date().toISOString().split('T')[0], // Fecha actual fija
+  });
 
   // Función para manejar cambios en la cantidad
   const handleCantidadChange = (index, value) => {
@@ -87,7 +96,7 @@ const DetalleVenta = () => {
     });
   };
 
-  // Función para abrir el modal
+  // Función para abrir el modal de productos
   const handleAñadirProducto = () => {
     setModalVisible(true);
   };
@@ -110,7 +119,12 @@ const DetalleVenta = () => {
     );
   };
 
-  // Función para guardar la venta
+  // Función para guardar los datos complementarios desde el modal
+  const handleGuardarDatosComplementarios = (datos) => {
+    setDatosComplementarios(datos);
+  };
+
+  // Función para guardar la venta completa en el backend
   const handleGuardarVenta = async () => {
     if (productosVendidos.length === 0) {
       alert('Debes agregar al menos un producto para guardar la venta.');
@@ -133,6 +147,7 @@ const DetalleVenta = () => {
         cantidad: producto.cantidad,
         descuento: producto.descuento || 0, // Enviar el descuento (0 si no se ingresó)
       })),
+      ...datosComplementarios, // Incluir los datos complementarios
     };
 
     try {
@@ -141,16 +156,22 @@ const DetalleVenta = () => {
       console.log('Venta guardada:', response.data);
       alert('Venta guardada correctamente.');
       setProductosVendidos([]); // Limpiar la lista de productos vendidos
+      setDatosComplementarios({ // Reiniciar los datos complementarios
+        tipoPago: '',
+        empresa: '',
+        cliente: '',
+        tipoComprobante: '',
+        fecha: new Date().toISOString().split('T')[0],
+      });
     } catch (error) {
       console.error('Error al guardar la venta:', error);
       alert('Error al guardar la venta. Inténtalo de nuevo.');
     }
   };
 
-  // Función para completar la venta
+  // Función para abrir el modal de completar venta
   const handleCompletarVenta = () => {
-    // Aquí puedes agregar la lógica para completar la venta
-    alert('Venta completada correctamente.');
+    setCompletarVentaModalVisible(true);
   };
 
   // Calcular el total general
@@ -167,6 +188,13 @@ const DetalleVenta = () => {
         modalVisible={modalVisible}
         setModalVisible={setModalVisible}
         handleProductosSeleccionados={handleProductosSeleccionados}
+      />
+
+      {/* Modal para completar venta */}
+      <CompletarVenta
+        visible={completarVentaModalVisible}
+        onClose={() => setCompletarVentaModalVisible(false)}
+        onSave={handleGuardarDatosComplementarios}
       />
 
       {/* Tabla de productos seleccionados */}
@@ -230,7 +258,7 @@ const DetalleVenta = () => {
                   <CTableDataCell className="text-end">
                     <CFormInput
                       type="number"
-                      placeholder="Descuento"
+                      placeholder="%"
                       size="sm"
                       value={producto.descuento || ''}
                       onChange={(e) => handleDescuentoChange(index, e.target.value)}

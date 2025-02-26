@@ -16,6 +16,10 @@ import {
   CFormInput,
   CInputGroup,
   CInputGroupText,
+  CToaster,
+  CToast,
+  CToastHeader,
+  CToastBody,
 } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilX } from '@coreui/icons';
@@ -28,6 +32,11 @@ const ModalProductos = ({ modalVisible, setModalVisible, handleProductosSeleccio
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [toast, setToast] = useState({
+    visible: false,
+    message: '',
+    color: 'danger', // Puedes usar 'success', 'warning', 'info', etc.
+  });
 
   // Cargar datos iniciales cuando el modal se abre
   useEffect(() => {
@@ -121,6 +130,14 @@ const ModalProductos = ({ modalVisible, setModalVisible, handleProductosSeleccio
     }
   };
 
+  // Función para mostrar el toast
+  const showToast = (message, color = 'danger') => {
+    setToast({ visible: true, message, color });
+    setTimeout(() => {
+      setToast({ visible: false, message: '', color: 'danger' });
+    }, 3000); // El toast se ocultará después de 3 segundos
+  };
+
   // Función para manejar el clic en "Agregar"
   const handleAgregar = () => {
     // Validar que todos los productos seleccionados tengan una cantidad válida
@@ -135,7 +152,7 @@ const ModalProductos = ({ modalVisible, setModalVisible, handleProductosSeleccio
     });
 
     if (!isValid) {
-      alert('Por favor, ingresar cantidad válida para el/los productos seleccionados.');
+      showToast('Por favor, ingresar cantidad válida para el/los productos seleccionados.');
       return;
     }
 
@@ -159,108 +176,122 @@ const ModalProductos = ({ modalVisible, setModalVisible, handleProductosSeleccio
   };
 
   return (
-    <CModal visible={modalVisible} onClose={() => setModalVisible(false)} className="custom-lg-modal">
-      <CModalHeader>
-        <CModalTitle>Lista de Productos</CModalTitle>
-        <div style={{ display: 'flex', alignItems: 'center', marginLeft: '20px' }}>
-          <CInputGroup style={{ width: '250px', marginRight: '10px' }}>
-            <CFormInput
-              type="text"
-              placeholder="Buscar productos ..."
-              value={searchTerm}
-              onChange={handleSearchChange}
-              size="sm"
-              style={{ fontSize: '16px' }}
-            />
-            <CInputGroupText>
-              <CButton color="light" onClick={clearSearch}>
-                <CIcon icon={cilX} />
-              </CButton>
-            </CInputGroupText>
-          </CInputGroup>
-        </div>
-      </CModalHeader>
+    <>
+      <CModal visible={modalVisible} onClose={() => setModalVisible(false)} className="custom-lg-modal">
+        <CModalHeader>
+          <CModalTitle>Lista de Productos</CModalTitle>
+          <div style={{ display: 'flex', alignItems: 'center', marginLeft: '20px' }}>
+            <CInputGroup style={{ width: '250px', marginRight: '10px' }}>
+              <CFormInput
+                type="text"
+                placeholder="Buscar productos ..."
+                value={searchTerm}
+                onChange={handleSearchChange}
+                size="sm"
+                style={{ fontSize: '16px' }}
+              />
+              <CInputGroupText>
+                <CButton color="light" onClick={clearSearch}>
+                  <CIcon icon={cilX} />
+                </CButton>
+              </CInputGroupText>
+            </CInputGroup>
+          </div>
+        </CModalHeader>
 
-      <CModalBody>
-        {loading ? (
-          <div>Cargando productos...</div>
-        ) : error ? (
-          <div className="alert alert-danger">{error}</div>
-        ) : (
-          <CTable striped hover responsive>
-            <CTableHead>
-              <CTableRow>
-                <CTableHeaderCell>Check</CTableHeaderCell>
-                <CTableHeaderCell>Cantidad</CTableHeaderCell>
-                <CTableHeaderCell>Nombre</CTableHeaderCell>
-                <CTableHeaderCell>Precio</CTableHeaderCell>
-                <CTableHeaderCell>Und. Medida</CTableHeaderCell>
-                <CTableHeaderCell>Stock</CTableHeaderCell>
-                <CTableHeaderCell>SKU</CTableHeaderCell>
-                <CTableHeaderCell>Marca</CTableHeaderCell>
-                <CTableHeaderCell>Material</CTableHeaderCell>
-                <CTableHeaderCell>Código de Barra</CTableHeaderCell>
-                <CTableHeaderCell>Categoría</CTableHeaderCell>
-                <CTableHeaderCell>Subcategoría</CTableHeaderCell>
-              </CTableRow>
-            </CTableHead>
-            <CTableBody>
-              {productos.map((producto, index) => (
-                <CTableRow key={index}>
-                  <CTableDataCell>
-                    <CFormCheck
-                      id={`checkbox-${producto.idProducto}`}
-                      onChange={() => handleCheckboxChange(producto)}
-                      checked={selectedProducts.some((p) => p.idProducto === producto.idProducto)}
-                    />
-                  </CTableDataCell>
-                  <CTableDataCell>
-                    {selectedProducts.some((p) => p.idProducto === producto.idProducto) && (
-                      <CFormInput
-                        type="text"
-                        value={cantidades[producto.idProducto] || ''}
-                        onChange={(e) => handleCantidadChange(producto.idProducto, e.target.value)}
-                        size="sm"
-                        style={{ width: '60px' }}
-                      />
-                    )}
-                  </CTableDataCell>
-                  <CTableDataCell>{producto.nombreProducto}</CTableDataCell>
-                  <CTableDataCell>{producto.precio}</CTableDataCell>
-                  <CTableDataCell>{producto.unidadMedida?.abreviatura}</CTableDataCell>
-                  <CTableDataCell>{producto.stock}</CTableDataCell>
-                  <CTableDataCell>{producto.codigoSKU}</CTableDataCell>
-                  <CTableDataCell>{producto.marca}</CTableDataCell>
-                  <CTableDataCell>{producto.material}</CTableDataCell>
-                  <CTableDataCell>{producto.codigoBarra}</CTableDataCell>
-                  <CTableDataCell>{producto.categoria?.nombre}</CTableDataCell>
-                  <CTableDataCell>{producto.subcategoria?.nombre}</CTableDataCell>
+        <CModalBody>
+          {loading ? (
+            <div>Cargando productos...</div>
+          ) : error ? (
+            <div className="alert alert-danger">{error}</div>
+          ) : (
+            <CTable striped hover responsive>
+              <CTableHead>
+                <CTableRow>
+                  <CTableHeaderCell>Check</CTableHeaderCell>
+                  <CTableHeaderCell>Cantidad</CTableHeaderCell>
+                  <CTableHeaderCell>Nombre</CTableHeaderCell>
+                  <CTableHeaderCell>Precio</CTableHeaderCell>
+                  <CTableHeaderCell>Und. Medida</CTableHeaderCell>
+                  <CTableHeaderCell>Stock</CTableHeaderCell>
+                  <CTableHeaderCell>SKU</CTableHeaderCell>
+                  <CTableHeaderCell>Marca</CTableHeaderCell>
+                  <CTableHeaderCell>Material</CTableHeaderCell>
+                  <CTableHeaderCell>Código de Barra</CTableHeaderCell>
+                  <CTableHeaderCell>Categoría</CTableHeaderCell>
+                  <CTableHeaderCell>Subcategoría</CTableHeaderCell>
                 </CTableRow>
-              ))}
-            </CTableBody>
-          </CTable>
+              </CTableHead>
+              <CTableBody>
+                {productos.map((producto, index) => (
+                  <CTableRow key={index}>
+                    <CTableDataCell>
+                      <CFormCheck
+                        id={`checkbox-${producto.idProducto}`}
+                        onChange={() => handleCheckboxChange(producto)}
+                        checked={selectedProducts.some((p) => p.idProducto === producto.idProducto)}
+                      />
+                    </CTableDataCell>
+                    <CTableDataCell>
+                      {selectedProducts.some((p) => p.idProducto === producto.idProducto) && (
+                        <CFormInput
+                          type="text"
+                          value={cantidades[producto.idProducto] || ''}
+                          onChange={(e) => handleCantidadChange(producto.idProducto, e.target.value)}
+                          size="sm"
+                          style={{ width: '60px' }}
+                        />
+                      )}
+                    </CTableDataCell>
+                    <CTableDataCell>{producto.nombreProducto}</CTableDataCell>
+                    <CTableDataCell>{producto.precio}</CTableDataCell>
+                    <CTableDataCell>{producto.unidadMedida?.abreviatura}</CTableDataCell>
+                    <CTableDataCell>{producto.stock}</CTableDataCell>
+                    <CTableDataCell>{producto.codigoSKU}</CTableDataCell>
+                    <CTableDataCell>{producto.marca}</CTableDataCell>
+                    <CTableDataCell>{producto.material}</CTableDataCell>
+                    <CTableDataCell>{producto.codigoBarra}</CTableDataCell>
+                    <CTableDataCell>{producto.categoria?.nombre}</CTableDataCell>
+                    <CTableDataCell>{producto.subcategoria?.nombre}</CTableDataCell>
+                  </CTableRow>
+                ))}
+              </CTableBody>
+            </CTable>
+          )}
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="info" disabled>
+            Productos seleccionados ({selectedProducts.length})
+          </CButton>
+          <div style={{ flex: 1 }}></div>
+          <CButton
+            color="primary"
+            onClick={handleAgregar}
+            disabled={
+              selectedProducts.length === 0 ||
+              !selectedProducts.every((p) => cantidades[p.idProducto] && !isNaN(cantidades[p.idProducto]) && parseFloat(cantidades[p.idProducto]) > 0)
+            }
+          >
+            Agregar
+          </CButton>
+          <CButton color="secondary" onClick={() => setModalVisible(false)}>
+            Cerrar
+          </CButton>
+        </CModalFooter>
+      </CModal>
+
+      {/* Toast en la esquina superior derecha */}
+      <CToaster placement="top-center">
+        {toast.visible && (
+          <CToast autohide={true} visible={toast.visible} color={toast.color}>
+            <CToastHeader closeButton>
+              <strong className="me-auto">Aviso</strong>
+            </CToastHeader>
+            <CToastBody>{toast.message}</CToastBody>
+          </CToast>
         )}
-      </CModalBody>
-      <CModalFooter>
-        <CButton color="info" disabled>
-          Productos seleccionados ({selectedProducts.length})
-        </CButton>
-        <div style={{ flex: 1 }}></div>
-        <CButton
-          color="primary"
-          onClick={handleAgregar}
-          disabled={
-            selectedProducts.length === 0 ||
-            !selectedProducts.every((p) => cantidades[p.idProducto] && !isNaN(cantidades[p.idProducto]) && parseFloat(cantidades[p.idProducto]) > 0)
-          }
-        >
-          Agregar
-        </CButton>
-        <CButton color="secondary" onClick={() => setModalVisible(false)}>
-          Cerrar
-        </CButton>
-      </CModalFooter>
-    </CModal>
+      </CToaster>
+    </>
   );
 };
 
