@@ -27,6 +27,25 @@ const CrearCliente = ({ visible, onClose, onGuardar }) => {
     correo: '',
   });
 
+  const resetForm = () => {
+    setNuevoCliente({
+      tipoDocumento: { idTipoDocumento: '', nombre: '' },
+      numeroDocumento: '',
+      nombres: '',
+      apellidos: '',
+      razonSocial: '',
+      direccion: '',
+      telefono: '',
+      correo: '',
+    });
+    setError(null);
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
   const [tiposDocumento, setTiposDocumento] = useState([]); // Estado para almacenar los tipos de documento
   const [loading, setLoading] = useState(false); // Estado para manejar la carga
   const [error, setError] = useState(null); // Estado para manejar errores
@@ -66,41 +85,47 @@ const CrearCliente = ({ visible, onClose, onGuardar }) => {
   const handleGuardar = async () => {
     setLoading(true); // Activar el estado de carga
     setError(null); // Limpiar errores anteriores
-
+  
     try {
       // Validar campos obligatorios
       if (!nuevoCliente.tipoDocumento.idTipoDocumento || !nuevoCliente.numeroDocumento) {
         throw new Error('Por favor, complete todos los campos obligatorios.');
       }
-
+  
+      // Validar si el cliente ya existe usando el método buscarPorNumeroDocumento
+      const response = await apiClient.get(`/fs/clientes/buscarPorNumeroDocumento?numeroDocumento=${nuevoCliente.numeroDocumento}`);
+      if (response.data) {
+        throw new Error('El cliente con este número de documento ya existe.');
+      }
+  
       // Validaciones condicionales
       if (nuevoCliente.tipoDocumento.nombre === 'RUC' && !nuevoCliente.razonSocial) {
         throw new Error('La razón social es obligatoria para el tipo de documento RUC.');
       }
-
+  
       if (
         nuevoCliente.tipoDocumento.nombre === 'DNI' &&
         (!nuevoCliente.nombres || !nuevoCliente.apellidos)
       ) {
         throw new Error('Los nombres y apellidos son obligatorios para el tipo de documento DNI.');
       }
-
+  
       // Preparar los datos para enviar al backend
       const datosCliente = {
         ...nuevoCliente, // Incluye todos los campos, incluso el objeto tipoDocumento
       };
-
+  
       console.log('Datos enviados al backend:', datosCliente); // Depuración
-
+  
       // Enviar los datos del nuevo cliente al backend
-      const response = await apiClient.post('/fs/clientes', datosCliente);
-
+      const guardarResponse = await apiClient.post('/fs/clientes', datosCliente);
+  
       // Notificar al componente padre que se guardó el cliente
-      onGuardar(response.data);
-
+      onGuardar(guardarResponse.data);
+  
       // Cerrar el modal
       onClose();
-
+  
       // Limpiar el formulario
       setNuevoCliente({
         tipoDocumento: { idTipoDocumento: '', nombre: '' }, // Reiniciamos el objeto
@@ -122,8 +147,16 @@ const CrearCliente = ({ visible, onClose, onGuardar }) => {
 
   return (
     <CModal visible={visible} onClose={onClose} size="lg" backdrop="static">
-      <CModalHeader closeButton>
+      <CModalHeader closeButton={false}>
         <CModalTitle>Crear Nuevo Cliente</CModalTitle>
+        <div style={{ marginLeft: 'auto' }}>
+          <CButton color="secondary" onClick={handleClose} disabled={loading} style={{ marginRight: '10px' }}>
+            Cancelar
+          </CButton>
+          <CButton color="primary" onClick={handleGuardar} disabled={loading}>
+            {loading ? 'Guardando...' : 'Guardar'}
+          </CButton>
+        </div>
       </CModalHeader>
       <CModalBody>
         <CForm>
@@ -288,14 +321,6 @@ const CrearCliente = ({ visible, onClose, onGuardar }) => {
         {/* Mostrar errores */}
         {error && <div className="text-danger mb-3">{error}</div>}
       </CModalBody>
-      <CModalFooter>
-        <CButton color="secondary" onClick={onClose} disabled={loading}>
-          Cancelar
-        </CButton>
-        <CButton color="primary" onClick={handleGuardar} disabled={loading}>
-          {loading ? 'Guardando...' : 'Guardar'}
-        </CButton>
-      </CModalFooter>
     </CModal>
   );
 };

@@ -123,7 +123,7 @@ const MostrarCliente = ({ visible, onClose, onSeleccionarCliente }) => {
   return (
     <>
       {/* Modal para mostrar la lista de clientes */}
-      <CModal visible={visible} onClose={onClose} size="lg">
+      <CModal visible={visible} onClose={onClose} className="custom-lg-modal" backdrop="static">
         <CModalHeader closeButton={false}>
           <CModalTitle>Seleccionar Cliente</CModalTitle>
           <div style={{ marginLeft: 'auto' }}>
@@ -155,7 +155,7 @@ const MostrarCliente = ({ visible, onClose, onSeleccionarCliente }) => {
           <CTable striped hover responsive>
             <CTableHead>
               <CTableRow>
-                <CTableHeaderCell>Tipo de Documento</CTableHeaderCell>
+                <CTableHeaderCell>DNI/RUC</CTableHeaderCell>
                 <CTableHeaderCell>Número de Documento</CTableHeaderCell>
                 <CTableHeaderCell>Nombres</CTableHeaderCell>
                 <CTableHeaderCell>Apellidos</CTableHeaderCell>
