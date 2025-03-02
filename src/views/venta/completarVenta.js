@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux'; // Importar useSelector
 import {
   CModal,
   CModalHeader,
@@ -18,17 +19,24 @@ import MostrarCliente from './mostrarCliente';
 import apiClient from '../../services/apiClient';
 
 const CompletarVenta = ({ visible, onClose, onSave }) => {
+  const trabajador = useSelector((state) => state.auth.trabajador); // Obtener el trabajador desde Redux
   const [empresa, setEmpresa] = useState(null); // Cambiar a null para almacenar el objeto completo
   const [empresas, setEmpresas] = useState([]);
   const [cliente, setCliente] = useState(null);
   const [tipoComprobante, setTipoComprobante] = useState(null); // Almacenar el objeto completo
   const [tiposComprobante, setTiposComprobante] = useState([]); // Lista de tipos de comprobante
+  const [tipoPago, setTipoPago] = useState(null); // Almacenar el objeto completo del tipo de pago
+  const [tiposPago, setTiposPago] = useState([]); // Lista de tipos de pago
   const [modalClientesVisible, setModalClientesVisible] = useState(false);
   const [filterText, setFilterText] = useState('');
   const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
-  const fecha = new Date().toISOString().split('T')[0];
+  // Obtener la fecha y hora actual en formato LocalDateTime (YYYY-MM-DDTHH:mm:ss)
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60000; // Obtener el offset en milisegundos
+  const localDateTime = new Date(now - offset).toISOString().slice(0, 19); // Formato: YYYY-MM-DDTHH:mm:ss
+  const fecha = localDateTime;
 
-  // Obtener las empresas y tipos de comprobante al montar el componente
+  // Obtener las empresas, tipos de comprobante y tipos de pago al montar el componente
   useEffect(() => {
     const fetchEmpresas = async () => {
       try {
@@ -52,18 +60,32 @@ const CompletarVenta = ({ visible, onClose, onSave }) => {
       }
     };
 
+    const fetchTiposPago = async () => {
+      try {
+        const response = await apiClient.get('/fs/tipos-pago');
+        if (response.data) {
+          setTiposPago(response.data);
+        }
+      } catch (error) {
+        console.error('Error al obtener los tipos de pago:', error);
+      }
+    };
+
     fetchEmpresas();
     fetchTiposComprobante();
+    fetchTiposPago();
   }, []);
 
   const handleGuardar = () => {
     const datosComplementarios = {
-      empresa, // Enviar el objeto completo de la empresa
-      cliente,
-      tipoComprobante, // Enviar el objeto completo del tipo de comprobante
+      empresaId: empresa ? empresa.idEmpresa : null, // Solo el ID de la empresa
+      clienteId: cliente ? cliente.idCliente : null, // Solo el ID del cliente
+      tipoComprobanteId: tipoComprobante ? tipoComprobante.idTipoComprobantePago : null, // Solo el ID del tipo de comprobante
+      tipoPagoId: tipoPago ? tipoPago.idTipoPago : null, // Solo el ID del tipo de pago
+      trabajadorId: trabajador ? trabajador.idTrabajador : null, // Solo el ID del trabajador
       fecha,
     };
-    onSave(datosComplementarios);
+    onSave(datosComplementarios); // Pasar los datos al componente padre
     onClose();
   };
 
@@ -221,13 +243,9 @@ const CompletarVenta = ({ visible, onClose, onSave }) => {
                 value={tipoComprobante ? tipoComprobante.idTipoComprobantePago : ''} // Usar idTipoComprobantePago
                 onChange={(e) => {
                   const selectedId = parseInt(e.target.value, 10); // Convertir a número
-                  console.log("ID seleccionado:", selectedId); // Depuración
-
                   const selectedTipoComprobante = tiposComprobante.find(
                     (tipo) => tipo.idTipoComprobantePago === selectedId // Usar idTipoComprobantePago
                   );
-                  console.log("Tipo de comprobante encontrado:", selectedTipoComprobante); // Depuración
-
                   setTipoComprobante(selectedTipoComprobante);
                 }}
                 required
@@ -241,12 +259,35 @@ const CompletarVenta = ({ visible, onClose, onSave }) => {
               </CFormSelect>
             </div>
 
+            {/* Campo para el tipo de pago */}
+            <div className="mb-3">
+              <CFormLabel>Tipo de Pago</CFormLabel>
+              <CFormSelect
+                value={tipoPago ? tipoPago.idTipoPago : ''} // Usar idTipoPago
+                onChange={(e) => {
+                  const selectedId = parseInt(e.target.value, 10); // Convertir a número
+                  const selectedTipoPago = tiposPago.find(
+                    (tipo) => tipo.idTipoPago === selectedId // Usar idTipoPago
+                  );
+                  setTipoPago(selectedTipoPago);
+                }}
+                required
+              >
+                <option value="">Seleccione un tipo de pago</option>
+                {tiposPago.map((tipo) => (
+                  <option key={tipo.idTipoPago} value={tipo.idTipoPago}> {/* Usar idTipoPago */}
+                    {tipo.nombre}
+                  </option>
+                ))}
+              </CFormSelect>
+            </div>
+
             {/* Campo para la fecha (fija, no editable) */}
             <div className="mb-3">
               <CFormLabel>Fecha de Venta</CFormLabel>
               <CFormInput
                 type="text"
-                value={fecha}
+                value={new Date(fecha).toLocaleString()} // Mostrar la fecha y hora en formato local
                 readOnly
               />
             </div>

@@ -8,8 +8,10 @@ const initialState = {
   auth: {
     isAuthenticated: false,
     user: null,
+    trabajador: null,
     role: null,
     permissions: {}, // Agrega los permisos aquí
+    token: null,
   },
 };
 
@@ -28,6 +30,7 @@ const changeState = (state = initialState, { type, payload }) => {
         auth: {
           isAuthenticated: true,
           user: payload.user,
+          trabajador: payload.trabajador, // Almacenar el trabajador vinculado
           role: payload.role,
           permissions: payload.permissions || {}, // Asegúrate de que siempre sea un objeto
           token: payload.token, // Almacena el token aquí
@@ -40,8 +43,10 @@ const changeState = (state = initialState, { type, payload }) => {
         auth: {
           isAuthenticated: false,
           user: null,
+          trabajador: null,
           role: null,
           permissions: {}, // Limpia los permisos al hacer logout
+          token: null,
         },
       };
 

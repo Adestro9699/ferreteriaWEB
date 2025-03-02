@@ -21,11 +21,12 @@ const DetalleVenta = () => {
   const [completarVentaModalVisible, setCompletarVentaModalVisible] = useState(false);
   const [productosVendidos, setProductosVendidos] = useState([]);
   const [datosComplementarios, setDatosComplementarios] = useState({
-    tipoPago: '',
-    empresa: '',
-    cliente: '',
-    tipoComprobante: '',
-    fecha: new Date().toISOString().split('T')[0], // Fecha actual fija
+    tipoPagoId: null, // Cambiar a tipoPagoId
+    empresaId: null, // Cambiar a empresaId
+    clienteId: null, // Cambiar a clienteId
+    tipoComprobanteId: null, // Cambiar a tipoComprobanteId
+    trabajadorId: null, // Cambiar a trabajadorId
+    fecha: new Date().toISOString().slice(0, 19), // Fecha en formato LocalDateTime
   });
 
   // Función para manejar cambios en la cantidad
@@ -130,38 +131,50 @@ const DetalleVenta = () => {
       alert('Debes agregar al menos un producto para guardar la venta.');
       return;
     }
-
+  
     const productosInvalidos = productosVendidos.some(
       (producto) => !producto.cantidad || isNaN(producto.cantidad) || producto.cantidad <= 0
     );
-
+  
     if (productosInvalidos) {
       alert('Por favor, ingresa una cantidad válida para todos los productos.');
       return;
     }
-
+  
     // Preparar los datos para enviar al backend
     const ventaData = {
-      productos: productosVendidos.map((producto) => ({
+      fechaVenta: datosComplementarios.fecha,
+      idTipoPago: datosComplementarios.tipoPagoId,
+      idEmpresa: datosComplementarios.empresaId,
+      idCliente: datosComplementarios.clienteId,
+      idTipoComprobantePago: datosComplementarios.tipoComprobanteId,
+      idTrabajador: datosComplementarios.trabajadorId,
+      detalles: productosVendidos.map((producto) => ({
         idProducto: producto.idProducto,
         cantidad: producto.cantidad,
-        descuento: producto.descuento || 0, // Enviar el descuento (0 si no se ingresó)
+        precioUnitario: producto.precio,
+        descuento: producto.descuento ?? null,
       })),
-      ...datosComplementarios, // Incluir los datos complementarios
     };
-
+  
+    // Imprimir los datos que se enviarán al backend
+    console.log('Datos enviados al backend:', JSON.stringify(ventaData, null, 2));
+  
     try {
       // Enviar la venta al backend
-      const response = await apiClient.post('/fs/ventas', ventaData);
+      const response = await apiClient.post('/ventas', ventaData);
       console.log('Venta guardada:', response.data);
       alert('Venta guardada correctamente.');
-      setProductosVendidos([]); // Limpiar la lista de productos vendidos
-      setDatosComplementarios({ // Reiniciar los datos complementarios
-        tipoPago: '',
-        empresa: '',
-        cliente: '',
-        tipoComprobante: '',
-        fecha: new Date().toISOString().split('T')[0],
+  
+      // Limpiar el estado después de guardar
+      setProductosVendidos([]);
+      setDatosComplementarios({
+        tipoPagoId: null,
+        empresaId: null,
+        clienteId: null,
+        tipoComprobanteId: null,
+        trabajadorId: null,
+        fecha: new Date().toISOString().slice(0, 19),
       });
     } catch (error) {
       console.error('Error al guardar la venta:', error);
