@@ -46,7 +46,7 @@ const _nav = () => {
     inventario: ['/producto', '/categorias', '/proveedores', '/movimientos'],
     facturacion: ['/venta', '/lis-tventas', '/compras', '/cotizaciones', '/trans'],
     clientes: ['/clientes', '/creditos'],
-    usuarios: ['/usuarios', '/roles', '/cajas'],
+    usuarios: ['/usuarios', '/rolesYpermisos', '/cajas'],
     reportes: ['/reportes-ventas', '/reportes-compras', '/reportes-inventario', '/reportes-transferencias'],
     configuracion: ['/empresa', '/impuestos', '/backup'],
     extras: ['/notificaciones', '/calendario', '/soporte'],
@@ -160,7 +160,6 @@ const _nav = () => {
     {
       component: CNavTitle,
       name: 'Usuarios y Permisos',
-      show: isAuthenticated && hasPermission('/usuarios'),
     },
     {
       component: CNavItem,
@@ -173,9 +172,10 @@ const _nav = () => {
     {
       component: CNavItem,
       name: 'Roles y Permisos',
-      to: '/roles',
+      to: '/rolesYpermisos',
       icon: <CIcon icon={cilSpeedometer} customClassName="nav-icon" />,
-      show: isAuthenticated && hasPermission('/roles'),
+      permissionsRequired: ['/rolesYpermisos'],
+      show: isAuthenticated && hasPermission('/rolesYpermisos'),
     },
     {
       component: CNavItem,
