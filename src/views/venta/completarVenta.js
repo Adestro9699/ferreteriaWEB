@@ -166,13 +166,17 @@ const CompletarVenta = ({ visible, onClose, onSave }) => {
               <CFormSelect
                 value={empresa ? empresa.idEmpresa : ''} // Mostrar el idEmpresa como valor seleccionado
                 onChange={(e) => {
-                  const selectedEmpresa = empresas.find((emp) => emp.idEmpresa === parseInt(e.target.value));
+                  const selectedId = parseInt(e.target.value, 10); // Convertir a número
+                  const selectedEmpresa = empresas.find(
+                    (emp) => emp.idEmpresa === selectedId
+                );
                   setEmpresa(selectedEmpresa); // Almacenar el objeto completo de la empresa
                 }}
                 required
               >
                 <option value="">Seleccione una empresa</option>
-                {empresas.map((empresa) => (
+                {
+                empresas.map((empresa) => (
                   <option key={empresa.idEmpresa} value={empresa.idEmpresa}>
                     {empresa.razonSocial} {/* Mostrar la razón social de la empresa */}
                   </option>

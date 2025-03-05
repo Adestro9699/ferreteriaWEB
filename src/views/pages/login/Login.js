@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { loginSuccess } from 'src/actions/authActions'; // Importa la acción de autenticación
 import apiClient from '../../../services/apiClient'; // Importa el cliente Axios personalizado
-import { jwtDecode } from 'jwt-decode'; // Decodificador de tokens JWT
 import {
   CButton,
   CCard,
@@ -36,23 +35,31 @@ const Login = () => {
         contrasena: password,
       });
 
-      // Extraer el token del backend
-      const token = response.data.token;
+      // Extraer la respuesta del backend
+      const { token, usuario, rol, permisos } = response.data;
 
-      // Decodificar el token para obtener el rol y los permisos del usuario
-      const decodedToken = jwtDecode(token);
-      const userRole = decodedToken.rol; // Extraer el campo "rol"
-      const userPermissions = decodedToken.permisos; // Extraer los permisos
+      // Extraer solo los campos necesarios del usuario y el trabajador
+      const userData = {
+        idUsuario: usuario.idUsuario,
+        nombreUsuario: usuario.nombreUsuario,
+      };
+
+      const trabajadorData = {
+        idTrabajador: usuario.trabajador.idTrabajador,
+        nombreTrabajador: usuario.trabajador.nombreTrabajador,
+      };
 
       // Almacenar el token en localStorage
       localStorage.setItem('token', token);
 
-      // Actualizar el estado de autenticación en Redux (incluyendo el rol y los permisos)
+      // Actualizar el estado de autenticación en Redux
       dispatch(
         loginSuccess({
-          username: decodedToken.sub, // Nombre de usuario
-          role: userRole, // Rol del usuario
-          permissions: userPermissions, // Permisos del usuario
+          token, // Token JWT
+          user: userData, // Solo el id y nombre del usuario
+          trabajador: trabajadorData, // Solo el id y nombre del trabajador
+          role: rol, // Rol del usuario
+          permissions: permisos || {}, // Permisos del usuario (o un objeto vacío si es null)
         })
       );
 

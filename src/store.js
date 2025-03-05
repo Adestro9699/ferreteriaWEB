@@ -25,6 +25,7 @@ const changeState = (state = initialState, { type, payload }) => {
       };
 
     case 'LOGIN_SUCCESS':
+      console.log("Payload recibido en LOGIN_SUCCESS:", payload);
       return {
         ...state,
         auth: {
