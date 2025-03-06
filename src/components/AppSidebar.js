@@ -8,17 +8,16 @@ import {
   CSidebarHeader,
   CSidebarToggler,
 } from '@coreui/react';
-import CIcon from '@coreui/icons-react';
 import { AppSidebarNav } from './AppSidebarNav';
-import { logo } from 'src/assets/brand/logo';
-import { sygnet } from 'src/assets/brand/sygnet';
 import navigation from '../_nav';
+import logoPng from '../assets/images/logo.png';
+console.log('Logo URL:', logoPng);
+
 
 const AppSidebar = () => {
   const dispatch = useDispatch();
   const unfoldable = useSelector((state) => state.sidebarUnfoldable);
   const sidebarShow = useSelector((state) => state.sidebarShow);
-
 
   return (
     <CSidebar
@@ -28,17 +27,40 @@ const AppSidebar = () => {
       unfoldable={unfoldable}
       visible={sidebarShow}
       onVisibleChange={(visible) => {
-
         dispatch({ type: 'set', payload: { sidebarShow: visible } });
       }}
     >
-      {/* Encabezado de la barra lateral */}
       <CSidebarHeader className="border-bottom">
-        <CSidebarBrand to="/">
-          <CIcon customClassName="sidebar-brand-full" icon={logo} height={32} />
-          <CIcon customClassName="sidebar-brand-narrow" icon={sygnet} height={32} />
+        <CSidebarBrand
+          to="/"
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '56px',
+            padding: '0',
+            overflow: 'hidden', // Si hay algo fuera de tamaño, lo esconde
+            width: '100%', // Ocupa todo el ancho disponible
+          }}
+        >
+          <img
+            src={logoPng}
+            alt="Logo"
+            style={{
+              maxHeight: '130px',   // Ajusta la altura máxima sin deformar
+              maxWidth: '80%',     // El logo nunca será más ancho que el 80% del contenedor
+              width: 'auto',       // Respeta la proporción original
+              height: 'auto',      // Respeta la proporción original
+              filter: 'invert(100%)',
+              display: 'block',
+              objectFit: 'contain'
+            }}
+          />
         </CSidebarBrand>
-        {/* Botón para cerrar la barra lateral (solo en dispositivos móviles) */}
+
+
+
+
         <CCloseButton
           className="d-lg-none"
           dark
@@ -48,14 +70,12 @@ const AppSidebar = () => {
         />
       </CSidebarHeader>
 
-      {/* Menú de navegación */}
       <AppSidebarNav items={navigation} />
 
-      {/* Pie de la barra lateral */}
       <CSidebarFooter className="border-top d-none d-lg-flex">
         <CSidebarToggler
           onClick={() => {
-            dispatch({ type: 'set', payload: { sidebarUnfoldable: !unfoldable } }); // Envía el payload correcto
+            dispatch({ type: 'set', payload: { sidebarUnfoldable: !unfoldable } });
           }}
         />
       </CSidebarFooter>

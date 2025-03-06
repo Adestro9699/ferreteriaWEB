@@ -3,42 +3,73 @@ import { legacy_createStore as createStore } from 'redux';
 // Estado inicial
 const initialState = {
   sidebarShow: true,
-  sidebarUnfoldable: false, // Inicializa este campo
+  sidebarUnfoldable: false,
   theme: 'light',
   auth: {
     isAuthenticated: false,
     user: null,
     trabajador: null,
     role: null,
-    permissions: {}, // Agrega los permisos aquí
+    permissions: {},
     token: null,
   },
 };
 
+// Función para cargar el estado inicial desde localStorage
+const loadInitialState = () => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    return {
+      ...initialState,
+      auth: {
+        isAuthenticated: true,
+        user: JSON.parse(localStorage.getItem('user')),
+        trabajador: JSON.parse(localStorage.getItem('trabajador')),
+        role: localStorage.getItem('role'),
+        permissions: JSON.parse(localStorage.getItem('permissions')) || {},
+        token: token,
+      },
+    };
+  }
+  return initialState;
+};
+
 // Reducer
-const changeState = (state = initialState, { type, payload }) => {
+const changeState = (state = loadInitialState(), { type, payload }) => {
   switch (type) {
     case 'set':
       return {
         ...state,
-        ...payload, // Actualiza múltiples campos
+        ...payload,
       };
 
     case 'LOGIN_SUCCESS':
       console.log("Payload recibido en LOGIN_SUCCESS:", payload);
+      // Guardar los datos en localStorage
+      localStorage.setItem('token', payload.token);
+      localStorage.setItem('user', JSON.stringify(payload.user));
+      localStorage.setItem('trabajador', JSON.stringify(payload.trabajador));
+      localStorage.setItem('role', payload.role);
+      localStorage.setItem('permissions', JSON.stringify(payload.permissions || {}));
       return {
         ...state,
         auth: {
           isAuthenticated: true,
           user: payload.user,
-          trabajador: payload.trabajador, // Almacenar el trabajador vinculado
+          trabajador: payload.trabajador,
           role: payload.role,
-          permissions: payload.permissions || {}, // Asegúrate de que siempre sea un objeto
-          token: payload.token, // Almacena el token aquí
+          permissions: payload.permissions || {},
+          token: payload.token,
         },
       };
 
     case 'LOGOUT':
+      // Limpiar localStorage al hacer logout
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('trabajador');
+      localStorage.removeItem('role');
+      localStorage.removeItem('permissions');
       return {
         ...state,
         auth: {
@@ -46,7 +77,7 @@ const changeState = (state = initialState, { type, payload }) => {
           user: null,
           trabajador: null,
           role: null,
-          permissions: {}, // Limpia los permisos al hacer logout
+          permissions: {},
           token: null,
         },
       };

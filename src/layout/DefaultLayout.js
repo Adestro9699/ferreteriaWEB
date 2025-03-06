@@ -11,7 +11,12 @@ const DefaultLayout = () => {
 
   // Función para cerrar sesión
   const handleLogout = () => {
-    localStorage.removeItem('token'); // Eliminar el token
+    // Limpiar todos los datos de localStorage
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('trabajador');
+    localStorage.removeItem('role');
+    localStorage.removeItem('permissions');
     dispatch({ type: 'LOGOUT' }); // Actualizar el estado de autenticación en Redux
     navigate('/login'); // Redirigir al login
   };
@@ -24,8 +29,8 @@ const DefaultLayout = () => {
           {/* Botón de logout */}
           {isAuthenticated && (
             <CButton onClick={handleLogout} color="danger" style={{ marginLeft: 'auto', marginRight: '1rem' }}>
-            Cerrar sesión
-          </CButton>
+              Cerrar sesión
+            </CButton>
           )}
         </AppHeader>
         <div className="body flex-grow-1">

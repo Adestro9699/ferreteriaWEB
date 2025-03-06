@@ -1,4 +1,4 @@
-import React from 'react'
+import React from 'react';
 import {
   CAvatar,
   CBadge,
@@ -8,7 +8,7 @@ import {
   CDropdownItem,
   CDropdownMenu,
   CDropdownToggle,
-} from '@coreui/react'
+} from '@coreui/react';
 import {
   cilBell,
   cilCreditCard,
@@ -19,12 +19,28 @@ import {
   cilSettings,
   cilTask,
   cilUser,
-} from '@coreui/icons'
-import CIcon from '@coreui/icons-react'
-
-import avatar8 from './../../assets/images/avatars/8.jpg'
+  cilAccountLogout, // Icono para cerrar sesión
+} from '@coreui/icons';
+import CIcon from '@coreui/icons-react';
+import avatar8 from './../../assets/images/avatars/8.jpg';
+import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
 const AppHeaderDropdown = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  // Función para manejar el cierre de sesión
+  const handleLogout = () => {
+    localStorage.removeItem('token'); // Eliminar el token
+    localStorage.removeItem('user'); // Eliminar el usuario
+    localStorage.removeItem('trabajador'); // Eliminar el trabajador
+    localStorage.removeItem('role'); // Eliminar el rol
+    localStorage.removeItem('permissions'); // Eliminar los permisos
+    dispatch({ type: 'LOGOUT' }); // Actualizar el estado de autenticación en Redux
+    navigate('/login'); // Redirigir al login
+  };
+
   return (
     <CDropdown variant="nav-item">
       <CDropdownToggle placement="bottom-end" className="py-0 pe-0" caret={false}>
@@ -84,13 +100,13 @@ const AppHeaderDropdown = () => {
           </CBadge>
         </CDropdownItem>
         <CDropdownDivider />
-        <CDropdownItem href="#">
-          <CIcon icon={cilLockLocked} className="me-2" />
-          Lock Account
+        <CDropdownItem onClick={handleLogout} style={{ cursor: 'pointer' }}>
+          <CIcon icon={cilAccountLogout} className="me-2" />
+          Cerrar sesión
         </CDropdownItem>
       </CDropdownMenu>
     </CDropdown>
-  )
-}
+  );
+};
 
-export default AppHeaderDropdown
+export default AppHeaderDropdown;
