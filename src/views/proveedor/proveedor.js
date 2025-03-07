@@ -1,120 +1,123 @@
 import React, { useState, useEffect } from 'react';
 import {
-  CButton,
   CCard,
   CCardBody,
   CCardHeader,
   CCol,
   CRow,
-  CFormInput,
-  CTable,
-  CTableBody,
-  CTableDataCell,
-  CTableHead,
-  CTableHeaderCell,
-  CTableRow,
-  CPagination,
-  CPaginationItem,
-  CFormSelect,
-  CFormCheck,
-  CNavbar,
-  CNavbarNav,
-  CNavItem,
-  CNavLink,
   CContainer,
-  CButtonGroup,
-  CBadge,
-  CModal,
-  CModalHeader,
-  CModalTitle,
-  CModalBody,
-  CModalFooter,
   CSpinner,
-  CInputGroup,
-  CInputGroupText,
+  CAlert,
+  CButton,
 } from '@coreui/react';
-import CIcon from '@coreui/icons-react';
-import { cilPencil, cilTrash, cilX } from '@coreui/icons';
+import ProveedorTable from '../../components/proveedorComp/ProveedorTable';
+import ProveedorModal from '../../components/proveedorComp/ProveedorModal';
+import ProveedorFilters from '../../components/proveedorComp/ProveedorFilters';
+import ProveedorPagination from '../../components/proveedorComp/ProveedorPagination';
+import ProveedorCreateModal from '../../components/proveedorComp/ProveedorCreateModal';
+import ProveedorEditModal from '../../components/proveedorComp/ProveedorEditModal';
+import apiClient from '../../services/apiClient'; // Ajusta la ruta según tu estructura
 
 const Proveedor = () => {
-  const [proveedores, setProveedores] = useState([
-    {
-      id: 1,
-      nombre: 'Proveedor 1',
-      direccion: 'Calle 123, Ciudad',
-      telefono: '123456789',
-      correo: 'proveedor1@example.com',
-      pais: 'México',
-      fechaRegistro: '2023-10-01',
-      estado: 'Activo',
-    },
-    {
-      id: 2,
-      nombre: 'Proveedor 2',
-      direccion: 'Avenida 456, Ciudad',
-      telefono: '987654321',
-      correo: 'proveedor2@example.com',
-      pais: 'España',
-      fechaRegistro: '2023-09-15',
-      estado: 'Inactivo',
-    },
-  ]);
-
+  // Estados para manejar los proveedores y la lógica de la vista
+  const [proveedores, setProveedores] = useState([]);
+  const [isLoading, setIsLoading] = useState(true); // Estado de carga
+  const [error, setError] = useState(null); // Estado para manejar errores
   const [selectedProveedores, setSelectedProveedores] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'active', 'inactive'
-  const [sortField, setSortField] = useState('nombre'); // Ordenar por 'nombre' por defecto
-  const [sortDirection, setSortDirection] = useState('asc'); // Orden ascendente por defecto
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sortField, setSortField] = useState('nombre');
+  const [sortDirection, setSortDirection] = useState('asc');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [proveedorToDelete, setProveedorToDelete] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false); // Modal de creación
+  const [showEditModal, setShowEditModal] = useState(false); // Modal de edición
+  const [proveedorToEdit, setProveedorToEdit] = useState(null); // Proveedor a editar
 
-  // Ordenar los proveedores al cargar el componente
+  // Obtener proveedores desde el backend
   useEffect(() => {
-    const sorted = [...proveedores].sort((a, b) => {
-      if (a.nombre < b.nombre) return sortDirection === 'asc' ? -1 : 1;
-      if (a.nombre > b.nombre) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
-    setProveedores(sorted);
-  }, []); // Solo se ejecuta una vez al cargar el componente
+    const fetchProveedores = async () => {
+      try {
+        const response = await apiClient.get('/fs/proveedores');
+        console.log('Datos recibidos del backend:', response.data);
+        setProveedores(response.data);
+      } catch (error) {
+        setError('Error al cargar los proveedores. Por favor, inténtalo de nuevo.');
+        console.error('Error fetching proveedores:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
+    fetchProveedores();
+  }, []);
+
+  // Crear un nuevo proveedor
+  const handleCreateProveedor = async (newProveedor) => {
+    try {
+      const response = await apiClient.post('/fs/proveedores', newProveedor);
+      setProveedores([...proveedores, response.data]); // Agregar el nuevo proveedor a la lista
+      setShowCreateModal(false); // Cerrar el modal
+    } catch (error) {
+      setError('Error al crear el proveedor. Por favor, inténtalo de nuevo.');
+      console.error('Error creating proveedor:', error);
+    }
+  };
+
+  // Editar un proveedor existente
+  const handleSaveEdit = async (updatedProveedor) => {
+    try {
+      await apiClient.put(`/fs/proveedores/${updatedProveedor.idProveedor}`, updatedProveedor);
+      setProveedores(
+        proveedores.map((p) =>
+          p.idProveedor === updatedProveedor.idProveedor ? updatedProveedor : p
+        )
+      ); // Actualizar el proveedor en la lista
+      setShowEditModal(false); // Cerrar el modal
+    } catch (error) {
+      setError('Error al actualizar el proveedor. Por favor, inténtalo de nuevo.');
+      console.error('Error updating proveedor:', error);
+    }
+  };
+
+  // Eliminar un proveedor
+  const confirmDelete = async () => {
+    try {
+      await apiClient.delete(`/fs/proveedores/${proveedorToDelete}`);
+      setProveedores(proveedores.filter((p) => p.idProveedor !== proveedorToDelete));
+      setProveedorToDelete(null);
+      setShowDeleteModal(false);
+    } catch (error) {
+      setError('Error al eliminar el proveedor. Por favor, inténtalo de nuevo.');
+      console.error('Error deleting proveedor:', error);
+    }
+  };
+
+  // Eliminar múltiples proveedores
+  const confirmDeleteSelected = async () => {
+    try {
+      await Promise.all(selectedProveedores.map((id) => apiClient.delete(`/fs/proveedores/${id}`)));
+      setProveedores(proveedores.filter((p) => !selectedProveedores.includes(p.idProveedor)));
+      setSelectedProveedores([]);
+      setShowDeleteModal(false);
+    } catch (error) {
+      setError('Error al eliminar los proveedores seleccionados. Por favor, inténtalo de nuevo.');
+      console.error('Error deleting selected proveedores:', error);
+    }
+  };
+
+  // Manejar la selección de proveedores
   const handleSelectProveedor = (id) => {
     if (selectedProveedores.includes(id)) {
-      setSelectedProveedores(selectedProveedores.filter(item => item !== id));
+      setSelectedProveedores(selectedProveedores.filter((item) => item !== id));
     } else {
       setSelectedProveedores([...selectedProveedores, id]);
     }
   };
 
-  const handleDeleteSelected = () => {
-    setShowDeleteModal(true);
-  };
-
-  const confirmDeleteSelected = () => {
-    setProveedores(proveedores.filter(proveedor => !selectedProveedores.includes(proveedor.id)));
-    setSelectedProveedores([]);
-    setShowDeleteModal(false);
-  };
-
-  const handleDelete = (id) => {
-    setProveedorToDelete(id);
-    setShowDeleteModal(true);
-  };
-
-  const confirmDelete = () => {
-    setProveedores(proveedores.filter(proveedor => proveedor.id !== proveedorToDelete));
-    setProveedorToDelete(null);
-    setShowDeleteModal(false);
-  };
-
-  const handleItemsPerPageChange = (e) => {
-    setItemsPerPage(Number(e.target.value));
-    setCurrentPage(1);
-  };
-
+  // Ordenar proveedores
   const handleSort = (field) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -124,6 +127,7 @@ const Proveedor = () => {
     }
   };
 
+  // Filtrar y ordenar proveedores
   const sortedProveedores = [...proveedores].sort((a, b) => {
     if (sortField) {
       if (a[sortField] < b[sortField]) return sortDirection === 'asc' ? -1 : 1;
@@ -132,233 +136,123 @@ const Proveedor = () => {
     return 0;
   });
 
-  const filteredProveedores = sortedProveedores.filter(proveedor => {
-    const matchesStatus = statusFilter === 'all' || (statusFilter === 'active' && proveedor.estado === 'Activo') || (statusFilter === 'inactive' && proveedor.estado === 'Inactivo');
-    const matchesSearch = proveedor.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      proveedor.correo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredProveedores = sortedProveedores.filter((proveedor) => {
+    const matchesStatus =
+      statusFilter === 'all' ||
+      (statusFilter === 'active' && proveedor.estado === 'Activo') ||
+      (statusFilter === 'inactive' && proveedor.estado === 'Inactivo');
+    const matchesSearch =
+      proveedor.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      proveedor.correoProveedor.toLowerCase().includes(searchTerm.toLowerCase()) ||
       proveedor.telefono.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesStatus && matchesSearch;
   });
 
+  // Paginación
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentProveedores = filteredProveedores.slice(indexOfFirstItem, indexOfLastItem);
-
   const totalPages = Math.ceil(filteredProveedores.length / itemsPerPage);
 
+  // Limpiar la búsqueda
   const clearSearch = () => {
     setSearchTerm('');
   };
 
+  // Mostrar un spinner mientras se cargan los datos
+  if (isLoading) {
+    return (
+      <CContainer>
+        <CRow className="justify-content-center">
+          <CCol md="auto">
+            <CSpinner color="primary" />
+          </CCol>
+        </CRow>
+      </CContainer>
+    );
+  }
+
+  // Mostrar un mensaje de error si ocurre un problema
+  if (error) {
+    return (
+      <CContainer>
+        <CRow className="justify-content-center">
+          <CCol md="6">
+            <CAlert color="danger">{error}</CAlert>
+          </CCol>
+        </CRow>
+      </CContainer>
+    );
+  }
+
   return (
     <CContainer>
       {/* Modal de Confirmación para Eliminar */}
-      <CModal visible={showDeleteModal} onClose={() => setShowDeleteModal(false)}>
-        <CModalHeader>
-          <CModalTitle>Confirmar Eliminación</CModalTitle>
-        </CModalHeader>
-        <CModalBody>
-          ¿Estás seguro de que deseas eliminar {proveedorToDelete ? 'este proveedor' : 'los proveedores seleccionados'}?
-        </CModalBody>
-        <CModalFooter>
-          <CButton color="secondary" onClick={() => setShowDeleteModal(false)}>Cancelar</CButton>
-          <CButton color="danger" onClick={proveedorToDelete ? confirmDelete : confirmDeleteSelected}>
-            Eliminar
-          </CButton>
-        </CModalFooter>
-      </CModal>
+      <ProveedorModal
+        showDeleteModal={showDeleteModal}
+        setShowDeleteModal={setShowDeleteModal}
+        proveedorToDelete={proveedorToDelete}
+        confirmDelete={confirmDelete}
+        confirmDeleteSelected={confirmDeleteSelected}
+      />
+
+      {/* Modal de Creación de Proveedor */}
+      <ProveedorCreateModal
+        showCreateModal={showCreateModal}
+        setShowCreateModal={setShowCreateModal}
+        handleCreateProveedor={handleCreateProveedor}
+      />
+
+      {/* Modal de Edición de Proveedor */}
+      <ProveedorEditModal
+        showEditModal={showEditModal}
+        setShowEditModal={setShowEditModal}
+        proveedorToEdit={proveedorToEdit}
+        handleSaveEdit={handleSaveEdit}
+      />
 
       <CRow>
         <CCol xs={12}>
-          <CNavbar colorScheme="light" expand="lg" className="mb-4 shadow-sm rounded">
-            <CContainer>
-              <CNavbarNav className="w-100 d-flex justify-content-between align-items-center">
-                {/* Filtro de estado */}
-                <CFormSelect
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="ms-3"
-                  style={{
-                    width: '200px',
-                    backgroundColor: document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#343a40' : '#ffffff',
-                    color: document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#ffffff' : '#000000',
-                  }}
-                >
-                  <option value="all">Todos los estados</option>
-                  <option value="active">Activo</option>
-                  <option value="inactive">Inactivo</option>
-                </CFormSelect>
-              </CNavbarNav>
-            </CContainer>
-          </CNavbar>
-          <CCard className="mb-4 shadow-sm rounded">
+          <CCard>
             <CCardHeader>
               <CRow>
-                <CCol xs={6}>
-                  <CInputGroup>
-                    <CFormInput
-                      type="text"
-                      placeholder="Buscar proveedor..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                    <CInputGroupText>
-                      <CButton color="transparent" size="sm" onClick={clearSearch}>
-                        <CIcon icon={cilX} />
-                      </CButton>
-                    </CInputGroupText>
-                  </CInputGroup>
+                <CCol xs={8}>
+                  <ProveedorFilters
+                    statusFilter={statusFilter}
+                    setStatusFilter={setStatusFilter}
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
+                    clearSearch={clearSearch}
+                  />
                 </CCol>
-                <CCol xs={6} className="text-end">
-                  <CButton color="primary" className="me-2">
+                <CCol xs={4} className="text-end">
+                  <CButton color="success" onClick={() => setShowCreateModal(true)}>
                     Crear Proveedor
-                  </CButton>
-                  <CButton color="success" onClick={() => alert('Exportar a CSV')}>
-                    Exportar a CSV
                   </CButton>
                 </CCol>
               </CRow>
             </CCardHeader>
             <CCardBody>
-              <CTable>
-                <CTableHead>
-                  <CTableRow>
-                    <CTableHeaderCell style={{ width: '50px' }}>
-                      <CFormCheck
-                        checked={selectedProveedores.length === proveedores.length}
-                        onChange={() => {
-                          if (selectedProveedores.length === proveedores.length) {
-                            setSelectedProveedores([]);
-                          } else {
-                            setSelectedProveedores(proveedores.map(proveedor => proveedor.id));
-                          }
-                        }}
-                      />
-                    </CTableHeaderCell>
-                    <CTableHeaderCell style={{ width: '200px' }} onClick={() => handleSort('nombre')}>
-                      Nombre {sortField === 'nombre' && (
-                        <span style={{ color: document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#fff' : '#000' }}>
-                          {sortDirection === 'asc' ? '↑' : '↓'}
-                        </span>
-                      )}
-                    </CTableHeaderCell>
-                    <CTableHeaderCell style={{ width: '200px' }} onClick={() => handleSort('direccion')}>
-                      Dirección {sortField === 'direccion' && (
-                        <span style={{ color: document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#fff' : '#000' }}>
-                          {sortDirection === 'asc' ? '↑' : '↓'}
-                        </span>
-                      )}
-                    </CTableHeaderCell>
-                    <CTableHeaderCell style={{ width: '150px' }} onClick={() => handleSort('telefono')}>
-                      Teléfono {sortField === 'telefono' && (
-                        <span style={{ color: document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#fff' : '#000' }}>
-                          {sortDirection === 'asc' ? '↑' : '↓'}
-                        </span>
-                      )}
-                    </CTableHeaderCell>
-                    <CTableHeaderCell style={{ width: '200px' }} onClick={() => handleSort('correo')}>
-                      Correo {sortField === 'correo' && (
-                        <span style={{ color: document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#fff' : '#000' }}>
-                          {sortDirection === 'asc' ? '↑' : '↓'}
-                        </span>
-                      )}
-                    </CTableHeaderCell>
-                    <CTableHeaderCell style={{ width: '150px' }} onClick={() => handleSort('pais')}>
-                      País {sortField === 'pais' && (
-                        <span style={{ color: document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#fff' : '#000' }}>
-                          {sortDirection === 'asc' ? '↑' : '↓'}
-                        </span>
-                      )}
-                    </CTableHeaderCell>
-                    <CTableHeaderCell style={{ width: '150px' }} onClick={() => handleSort('fechaRegistro')}>
-                      Fecha de Registro {sortField === 'fechaRegistro' && (
-                        <span style={{ color: document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#fff' : '#000' }}>
-                          {sortDirection === 'asc' ? '↑' : '↓'}
-                        </span>
-                      )}
-                    </CTableHeaderCell>
-                    <CTableHeaderCell style={{ width: '100px' }}>Estado</CTableHeaderCell>
-                    <CTableHeaderCell style={{ width: '150px' }}>Acciones</CTableHeaderCell>
-                  </CTableRow>
-                </CTableHead>
-                <CTableBody>
-                  {currentProveedores.map((proveedor) => (
-                    <CTableRow key={proveedor.id}>
-                      <CTableDataCell style={{ width: '50px' }}>
-                        <CFormCheck
-                          checked={selectedProveedores.includes(proveedor.id)}
-                          onChange={() => handleSelectProveedor(proveedor.id)}
-                        />
-                      </CTableDataCell>
-                      <CTableDataCell style={{ width: '200px' }}>{proveedor.nombre}</CTableDataCell>
-                      <CTableDataCell style={{ width: '200px' }}>{proveedor.direccion}</CTableDataCell>
-                      <CTableDataCell style={{ width: '150px' }}>{proveedor.telefono}</CTableDataCell>
-                      <CTableDataCell style={{ width: '200px' }}>{proveedor.correo}</CTableDataCell>
-                      <CTableDataCell style={{ width: '150px' }}>{proveedor.pais}</CTableDataCell>
-                      <CTableDataCell style={{ width: '150px' }}>{proveedor.fechaRegistro}</CTableDataCell>
-                      <CTableDataCell style={{ width: '100px' }}>
-                        <CBadge color={proveedor.estado === 'Activo' ? 'success' : 'danger'}>
-                          {proveedor.estado}
-                        </CBadge>
-                      </CTableDataCell>
-                      <CTableDataCell style={{ width: '150px' }}>
-                        <CButton color="warning" size="sm" className="me-2">
-                          <CIcon icon={cilPencil} />
-                        </CButton>
-                        <CButton color="danger" size="sm" onClick={() => handleDelete(proveedor.id)}>
-                          <CIcon icon={cilTrash} />
-                        </CButton>
-                      </CTableDataCell>
-                    </CTableRow>
-                  ))}
-                </CTableBody>
-              </CTable>
-
-              {/* Paginación y Selector de items por página */}
-              <CRow className="mt-3 align-items-center p-3 bg-body rounded mb-3">
-                <CCol xs="auto" className="d-flex align-items-center">
-                  {selectedProveedores.length > 0 && (
-                    <CButton color="danger" onClick={handleDeleteSelected}>
-                      Eliminar Seleccionados ({selectedProveedores.length})
-                    </CButton>
-                  )}
-                </CCol>
-                <CCol className="d-flex align-items-center justify-content-center">
-                  <CPagination className="mb-0">
-                    <CPaginationItem
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage(currentPage - 1)}
-                    >
-                      Previous
-                    </CPaginationItem>
-                    {Array.from({ length: totalPages }, (_, i) => (
-                      <CPaginationItem
-                        key={i + 1}
-                        active={i + 1 === currentPage}
-                        onClick={() => setCurrentPage(i + 1)}
-                      >
-                        {i + 1}
-                      </CPaginationItem>
-                    ))}
-                    <CPaginationItem
-                      disabled={currentPage === totalPages}
-                      onClick={() => setCurrentPage(currentPage + 1)}
-                    >
-                      Next
-                    </CPaginationItem>
-                  </CPagination>
-                  <CFormSelect
-                    value={itemsPerPage}
-                    onChange={handleItemsPerPageChange}
-                    className="ms-3"
-                    style={{ width: 'auto' }}
-                  >
-                    <option value={10}>10 por página</option>
-                    <option value={20}>20 por página</option>
-                    <option value={30}>30 por página</option>
-                  </CFormSelect>
-                </CCol>
-              </CRow>
+              <ProveedorTable
+                proveedores={currentProveedores}
+                selectedProveedores={selectedProveedores}
+                handleSelectProveedor={handleSelectProveedor}
+                handleSort={handleSort}
+                sortField={sortField}
+                sortDirection={sortDirection}
+                handleDelete={(id) => setProveedorToDelete(id)}
+                handleEdit={(proveedor) => {
+                  setProveedorToEdit(proveedor);
+                  setShowEditModal(true);
+                }}
+              />
+              <ProveedorPagination
+                currentPage={currentPage}
+                setCurrentPage={setCurrentPage}
+                totalPages={totalPages}
+                itemsPerPage={itemsPerPage}
+                handleItemsPerPageChange={(e) => setItemsPerPage(Number(e.target.value))}
+              />
             </CCardBody>
           </CCard>
         </CCol>
