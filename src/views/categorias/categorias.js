@@ -1,359 +1,447 @@
 import React, { useState, useEffect } from 'react';
 import {
-  CButton,
+  CContainer,
+  CRow,
+  CCol,
   CCard,
   CCardBody,
   CCardHeader,
-  CCol,
-  CRow,
-  CFormInput,
-  CTable,
-  CTableBody,
-  CTableDataCell,
-  CTableHead,
-  CTableHeaderCell,
-  CTableRow,
+  CButton,
   CPagination,
   CPaginationItem,
   CFormSelect,
-  CFormCheck,
-  CNavbar,
-  CNavbarNav,
-  CNavItem,
-  CNavLink,
-  CContainer,
-  CButtonGroup,
-  CBadge,
-  CModal,
-  CModalHeader,
-  CModalTitle,
-  CModalBody,
-  CModalFooter,
-  CSpinner,
   CInputGroup,
+  CFormInput,
   CInputGroupText,
+  CSpinner,
+  CAlert,
+  CToaster, // Importar el contenedor de toasts
+  CToast,   // Importar el componente de toast
+  CToastHeader, // Importar el encabezado del toast
+  CToastBody,   // Importar el cuerpo del toast 
 } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilPencil, cilTrash, cilX } from '@coreui/icons';
+import apiClient from '../../services/apiClient';
+import CategoriaList from '../../components/categoriaComp/CategoriaList';
+import SubcategoriaTable from '../../components/categoriaComp/SubcategoriaTable';
+import CategoriaCreateModal from '../../components/categoriaComp/CategoriaCreateModal';
+import SubcategoriaCreateModal from '../../components/categoriaComp/SubcategoriaCreateModal';
+import CategoriaEditModal from '../../components/categoriaComp/CategoriaEditModal';
+import SubcategoriaEditModal from '../../components/categoriaComp/SubcategoriaEditModal';
+import CategoriaPagination from '../../components/categoriaComp/CategoriaPagination';
+import DeleteConfirmationModal from '../../components/categoriaComp/DeleteConfirmationModal';
 
 const Categoria = () => {
-  const [items, setItems] = useState([
-    { id: 1, nombre: 'Categoría 1', descripcion: 'Descripción 1', estado: 'Activo', subcategoria: false },
-    { id: 2, nombre: 'Subcategoría 1.1', descripcion: 'Descripción 1.1', estado: 'Activo', subcategoria: true },
-    { id: 3, nombre: 'Categoría 2', descripcion: 'Descripción 2', estado: 'Inactivo', subcategoria: false },
-  ]);
-
-  const [selectedItems, setSelectedItems] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+  const [subcategorias, setSubcategorias] = useState([]);
+  const [selectedCategoria, setSelectedCategoria] = useState(null);
+  const [showCreateCategoriaModal, setShowCreateCategoriaModal] = useState(false);
+  const [showCreateSubcategoriaModal, setShowCreateSubcategoriaModal] = useState(false);
+  const [showEditCategoriaModal, setShowEditCategoriaModal] = useState(false);
+  const [showEditSubcategoriaModal, setShowEditSubcategoriaModal] = useState(false);
+  const [categoriaToEdit, setCategoriaToEdit] = useState(null);
+  const [subcategoriaToEdit, setSubcategoriaToEdit] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [subcategoriaSearchTerm, setSubcategoriaSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [filter, setFilter] = useState('all'); // 'all', 'category', 'subcategory'
-  const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'active', 'inactive'
-  const [sortField, setSortField] = useState('nombre'); // Ordenar por 'nombre' por defecto
-  const [sortDirection, setSortDirection] = useState('asc'); // Orden ascendente por defecto
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedSubcategorias, setSelectedSubcategorias] = useState([]);
 
-  // Ordenar los items al cargar el componente
-  useEffect(() => {
-    const sorted = [...items].sort((a, b) => {
-      if (a.nombre < b.nombre) return sortDirection === 'asc' ? -1 : 1;
-      if (a.nombre > b.nombre) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
-    setItems(sorted);
-  }, []); // Solo se ejecuta una vez al cargar el componente
+  const [categoriaToDelete, setCategoriaToDelete] = useState(null); // ID de la categoría a eliminar
+  const [subcategoriaToDelete, setSubcategoriaToDelete] = useState(null); // ID de la subcategoría a eliminar
+  const [showDeleteModal, setShowDeleteModal] = useState(false); // Controla la visibilidad del modal
 
-  const handleSelectItem = (id) => {
-    if (selectedItems.includes(id)) {
-      setSelectedItems(selectedItems.filter(item => item !== id));
-    } else {
-      setSelectedItems([...selectedItems, id]);
-    }
+  const [estadoFilter, setEstadoFilter] = useState('activo'); // Cambia 'all' a 'activo'  
+
+  const handleDeleteCategoria = (id) => {
+    setCategoriaToDelete(id); // Establecer la categoría a eliminar
+    setShowDeleteModal(true); // Mostrar el modal de confirmación
   };
-
+  const handleDeleteSubcategoria = (id) => {
+    setSubcategoriaToDelete(id); // Establecer la subcategoría a eliminar
+    setShowDeleteModal(true); // Mostrar el modal de confirmación
+  };
   const handleDeleteSelected = () => {
-    setShowDeleteModal(true);
+    setShowDeleteModal(true); // Mostrar el modal de confirmación
   };
 
-  const confirmDeleteSelected = () => {
-    setItems(items.filter(item => !selectedItems.includes(item.id)));
-    setSelectedItems([]);
-    setShowDeleteModal(false);
+  // Nuevo estado para los toasts
+  const [toasts, setToasts] = useState([]);
+
+  // Función para agregar un nuevo toast
+  const addToast = (message, type = 'success') => {
+    const newToast = {
+      id: Date.now(),
+      message,
+      type,
+    };
+    setToasts((prevToasts) => [...prevToasts, newToast]); // Usar el estado anterior
   };
 
-  const handleDelete = (id) => {
-    setItemToDelete(id);
-    setShowDeleteModal(true);
+  // Función para eliminar un toast después de mostrarlo
+  const removeToast = (id) => {
+    setToasts(toasts.filter((toast) => toast.id !== id));
   };
 
-  const confirmDelete = () => {
-    setItems(items.filter(item => item.id !== itemToDelete));
-    setItemToDelete(null);
-    setShowDeleteModal(false);
-  };
+  // Cargar categorías desde el backend
+  useEffect(() => {
+    const fetchCategorias = async () => {
+      try {
+        const response = await apiClient.get('/fs/categorias');
+        setCategorias(response.data);
+      } catch (error) {
+        setError('Error al cargar las categorías.');
+        console.error('Error fetching categorías:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchCategorias();
+  }, []);
 
-  const handleItemsPerPageChange = (e) => {
-    setItemsPerPage(Number(e.target.value));
-    setCurrentPage(1);
-  };
-
-  const handleSort = (field) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+  // Cargar subcategorías cuando se selecciona una categoría
+  useEffect(() => {
+    if (selectedCategoria) {
+      const fetchSubcategorias = async () => {
+        try {
+          const response = await apiClient.get(`/fs/subcategorias?categoria=${selectedCategoria.idCategoria}`);
+          setSubcategorias(response.data);
+        } catch (error) {
+          console.error('Error fetching subcategorías:', error);
+        }
+      };
+      fetchSubcategorias();
     } else {
-      setSortField(field);
-      setSortDirection('asc');
+      setSubcategorias([]);
+    }
+  }, [selectedCategoria]);
+
+  // Crear una nueva categoría
+  const handleCreateCategoria = async (newCategoria) => {
+    try {
+      const response = await apiClient.post('/fs/categorias', newCategoria);
+      setCategorias([...categorias, response.data]);
+      setShowCreateCategoriaModal(false);
+      addToast('Categoría creada exitosamente.', 'success'); // Mensaje de éxito
+    } catch (error) {
+      console.error('Error creating categoría:', error);
+      addToast('Error al crear la categoría.', 'error'); // Mensaje de error
     }
   };
 
-  const sortedItems = [...items].sort((a, b) => {
-    if (sortField) {
-      if (a[sortField] < b[sortField]) return sortDirection === 'asc' ? -1 : 1;
-      if (a[sortField] > b[sortField]) return sortDirection === 'asc' ? 1 : -1;
+  // Editar una categoría existente
+  const handleSaveEditCategoria = async (updatedCategoria) => {
+    try {
+      await apiClient.put(`/fs/categorias/${updatedCategoria.idCategoria}`, updatedCategoria);
+      setCategorias(
+        categorias.map((cat) =>
+          cat.idCategoria === updatedCategoria.idCategoria ? updatedCategoria : cat
+        )
+      );
+      setShowEditCategoriaModal(false);
+      addToast('Categoría actualizada exitosamente.', 'success'); // Mensaje de éxito
+    } catch (error) {
+      console.error('Error updating categoría:', error);
+      addToast('Error al actualizar la categoría.', 'error'); // Mensaje de error
     }
-    return 0;
+  };
+
+  // Crear una nueva subcategoría
+  const handleCreateSubcategoria = async (newSubcategoria) => {
+    try {
+      const response = await apiClient.post('/fs/subcategorias', newSubcategoria);
+      setSubcategorias([...subcategorias, response.data]);
+      setShowCreateSubcategoriaModal(false);
+      addToast('Subcategoría creada exitosamente.', 'success'); // Mensaje de éxito
+    } catch (error) {
+      console.error('Error creating subcategoría:', error);
+      addToast('Error al crear la subcategoría.', 'error'); // Mensaje de error
+    }
+  };
+
+  // Editar una subcategoría existente
+  const handleSaveEditSubcategoria = async (updatedSubcategoria) => {
+    try {
+      await apiClient.put(`/fs/subcategorias/${updatedSubcategoria.idSubcategoria}`, updatedSubcategoria);
+      setSubcategorias(
+        subcategorias.map((sub) =>
+          sub.idSubcategoria === updatedSubcategoria.idSubcategoria ? updatedSubcategoria : sub
+        )
+      );
+      setShowEditSubcategoriaModal(false);
+      addToast('Subcategoría actualizada exitosamente.', 'success'); // Mensaje de éxito
+    } catch (error) {
+      console.error('Error updating subcategoría:', error);
+      addToast('Error al actualizar la subcategoría.', 'error'); // Mensaje de error
+    }
+  };
+
+  // Eliminar una categoría
+  const confirmDeleteCategoria = async () => {
+    try {
+      await apiClient.delete(`/fs/categorias/${categoriaToDelete}`);
+      setCategorias(categorias.filter((cat) => cat.idCategoria !== categoriaToDelete));
+      addToast('Categoría eliminada exitosamente.', 'success'); // Mensaje de éxito
+    } catch (error) {
+      console.error('Error deleting categoría:', error);
+      addToast('Error al eliminar la categoría.', 'error'); // Mensaje de error
+    } finally {
+      setCategoriaToDelete(null); // Limpiar el estado
+      setShowDeleteModal(false); // Cerrar el modal
+    }
+  };
+
+  // Eliminar una subcategoría
+  const confirmDeleteSubcategoria = async () => {
+    try {
+      await apiClient.delete(`/fs/subcategorias/${subcategoriaToDelete}`);
+      setSubcategorias(subcategorias.filter((sub) => sub.idSubcategoria !== subcategoriaToDelete));
+      addToast('Subcategoría eliminada exitosamente.', 'success'); // Mensaje de éxito
+    } catch (error) {
+      console.error('Error deleting subcategoría:', error);
+      addToast('Error al eliminar la subcategoría.', 'error'); // Mensaje de error
+    } finally {
+      setSubcategoriaToDelete(null); // Limpiar el estado
+      setShowDeleteModal(false); // Cerrar el modal
+    }
+  };
+
+  // Filtrar subcategorías por nombre, descripción o estado
+  const filteredSubcategorias = subcategorias.filter((sub) => {
+    const matchesSearch =
+      sub.nombre.toLowerCase().includes(subcategoriaSearchTerm.toLowerCase()) ||
+      sub.descripcion.toLowerCase().includes(subcategoriaSearchTerm.toLowerCase()) ||
+      sub.estado.toLowerCase().includes(subcategoriaSearchTerm.toLowerCase());
+    return matchesSearch;
   });
 
-  const filteredItems = sortedItems.filter(item => {
-    const matchesFilter = filter === 'all' || (filter === 'category' && !item.subcategoria) || (filter === 'subcategory' && item.subcategoria);
-    const matchesStatus = statusFilter === 'all' || (statusFilter === 'active' && item.estado === 'Activo') || (statusFilter === 'inactive' && item.estado === 'Inactivo');
-    const matchesSearch = item.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.descripcion.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesFilter && matchesStatus && matchesSearch;
+  // Filtrar categorías según el estado
+  const filteredCategorias = categorias.filter((cat) => {
+    const matchesSearch =
+      cat.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || // Buscar por nombre
+      cat.descripcion.toLowerCase().includes(searchTerm.toLowerCase()); // Buscar por descripción
+    const matchesEstado =
+      estadoFilter === 'all' || // Si el filtro es 'all', mostrar todas
+      (estadoFilter === 'activo' && cat.estado === 'ACTIVO') || // Mostrar solo activas
+      (estadoFilter === 'inactivo' && cat.estado === 'INACTIVO'); // Mostrar solo inactivas
+    return matchesSearch && matchesEstado;
   });
 
+  //Eliminar en grupo subcategorías
+  const confirmDeleteSelected = async () => {
+    try {
+      await Promise.all(selectedSubcategorias.map((id) => apiClient.delete(`/fs/subcategorias/${id}`)));
+      setSubcategorias((prevSubcategorias) =>
+        prevSubcategorias.filter((sub) => !selectedSubcategorias.includes(sub.idSubcategoria))
+      );
+      setSelectedSubcategorias([]); // Limpiar la selección
+      addToast('Subcategorías seleccionadas eliminadas exitosamente.', 'success'); // Mensaje de éxito
+    } catch (error) {
+      console.error('Error al eliminar subcategorías seleccionadas:', error);
+      addToast('Error al eliminar las subcategorías seleccionadas.', 'error'); // Mensaje de error
+    } finally {
+      setShowDeleteModal(false); // Cerrar el modal
+    }
+  };
+
+  // Paginación con subcategorías filtradas
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
+  const currentSubcategorias = filteredSubcategorias.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredSubcategorias.length / itemsPerPage);
 
-  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
-
-  const createButtonText = filter === 'category' ? 'Crear Categoría' : filter === 'subcategory' ? 'Crear Subcategoría' : 'Crear Categoría/Subcategoría';
-
+  // Limpiar la búsqueda
   const clearSearch = () => {
     setSearchTerm('');
   };
 
   return (
     <CContainer>
-      {/* Modal de Confirmación para Eliminar */}
-      <CModal visible={showDeleteModal} onClose={() => setShowDeleteModal(false)}>
-        <CModalHeader>
-          <CModalTitle>Confirmar Eliminación</CModalTitle>
-        </CModalHeader>
-        <CModalBody>
-          ¿Estás seguro de que deseas eliminar {itemToDelete ? 'este ítem' : 'los ítems seleccionados'}?
-        </CModalBody>
-        <CModalFooter>
-          <CButton color="secondary" onClick={() => setShowDeleteModal(false)}>Cancelar</CButton>
-          <CButton color="danger" onClick={itemToDelete ? confirmDelete : confirmDeleteSelected}>
-            Eliminar
-          </CButton>
-        </CModalFooter>
-      </CModal>
 
-      <CRow>
-        <CCol xs={12}>
-          <CNavbar colorScheme="light" expand="lg" className="mb-4 shadow-sm rounded">
-            <CContainer>
-              <CNavbarNav className="w-100 d-flex justify-content-between align-items-center">
-                {/* Elementos a la izquierda */}
-                <div className="d-flex align-items-center">
-                  <CNavItem>
-                    <CNavLink
-                      active={filter === 'all'}
-                      onClick={() => setFilter('all')}
-                      className={`${filter === 'all' ? 'fw-bold' : ''}`}
-                      style={{
-                        backgroundColor: filter === 'all'
-                          ? (document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#ffffff' : '#f8f9fa')
-                          : (document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#343a40' : 'transparent'),
-                        color: filter === 'all'
-                          ? (document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#000000' : '#000000')
-                          : (document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#ffffff' : '#000000'),
-                        border: filter === 'all' ? '1px solid #ddd' : 'none',
-                        borderRadius: '5px',
-                        padding: '10px 20px',
-                        fontSize: '16px',
-                        fontFamily: 'Arial, sans-serif',
-                        transition: 'all 0.3s ease',
-                      }}
-                    >
-                      TODAS
-                    </CNavLink>
-                  </CNavItem>
-                  <CButtonGroup className="ms-3">
-                    <CButton
-                      color={filter === 'category' ? 'primary' : 'secondary'}
-                      onClick={() => setFilter('category')}
-                    >
-                      Categorías
-                    </CButton>
-                    <CButton
-                      color={filter === 'subcategory' ? 'primary' : 'secondary'}
-                      onClick={() => setFilter('subcategory')}
-                    >
-                      Subcategorías
-                    </CButton>
-                  </CButtonGroup>
-                </div>
+      <CToaster placement="bottom-end">
+        {toasts.map((toast) => (
+          <CToast
+            key={toast.id}
+            visible={true} // Asegura que el toast sea visible
+            autohide={true}
+            delay={3000} // Duración del toast en milisegundos
+            onClose={() => removeToast(toast.id)}
+            color={toast.type === 'success' ? 'success' : 'danger'} // Color del toast
+          >
+            <CToastHeader closeButton>
+              <strong className="me-auto">
+                {toast.type === 'success' ? 'Éxito' : 'Error'}
+              </strong>
+            </CToastHeader>
+            <CToastBody>{toast.message}</CToastBody>
+          </CToast>
+        ))}
+      </CToaster>
 
-                {/* CFormSelect alineado a la derecha */}
-                <CFormSelect
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="ms-3"
-                  style={{
-                    width: '200px',
-                    backgroundColor: document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#343a40' : '#ffffff',
-                    color: document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#ffffff' : '#000000',
+      {/* Modales */}
+      <CategoriaCreateModal
+        showCreateModal={showCreateCategoriaModal}
+        setShowCreateModal={setShowCreateCategoriaModal}
+        handleCreate={handleCreateCategoria}
+      />
+      <SubcategoriaCreateModal
+        showCreateModal={showCreateSubcategoriaModal}
+        setShowCreateModal={setShowCreateSubcategoriaModal}
+        handleCreate={handleCreateSubcategoria}
+        categorias={categorias}
+        selectedCategoriaId={selectedCategoria?.idCategoria} // Pasa el ID de la categoría seleccionada
+      />
+      <CategoriaEditModal
+        showEditModal={showEditCategoriaModal}
+        setShowEditModal={setShowEditCategoriaModal}
+        categoriaToEdit={categoriaToEdit}
+        handleSaveEdit={handleSaveEditCategoria}
+      />
+      <SubcategoriaEditModal
+        showEditModal={showEditSubcategoriaModal}
+        setShowEditModal={setShowEditSubcategoriaModal}
+        subcategoriaToEdit={subcategoriaToEdit}
+        handleSaveEdit={handleSaveEditSubcategoria}
+      />
+      <DeleteConfirmationModal
+        showDeleteModal={showDeleteModal}
+        setShowDeleteModal={setShowDeleteModal}
+        entityToDelete={categoriaToDelete || subcategoriaToDelete}
+        confirmDelete={categoriaToDelete ? confirmDeleteCategoria : confirmDeleteSubcategoria}
+        confirmDeleteSelected={confirmDeleteSelected}
+        entityType={categoriaToDelete ? 'categoría' : 'subcategoría'}
+      />
+
+      <CRow style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap' }}>
+
+        {/* Panel Izquierdo: Categorías */}
+        <CCol xs={12} md={4} style={{ flex: '1 1 auto', minWidth: '300px' }}>
+          <CCard>
+            <CCardHeader>Categorías</CCardHeader>
+            <CCardBody>
+              <CInputGroup className="mb-3">
+                <CFormInput
+                  placeholder="Buscar categoría..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <CInputGroupText>
+                  <CButton color="transparent" size="sm" onClick={clearSearch}>
+                    <CIcon icon={cilX} />
+                  </CButton>
+                </CInputGroupText>
+              </CInputGroup>
+              <CButton
+                color="primary"
+                onClick={() => setShowCreateCategoriaModal(true)}
+                className="mb-3 w-100"
+              >
+                Nueva Categoría
+              </CButton>
+
+              {/* Selector de Estado */}
+              <CRow className="mb-3">
+                <CCol xs={12}>
+                  <CFormSelect
+                    value={estadoFilter}
+                    onChange={(e) => setEstadoFilter(e.target.value)}
+                    style={{ width: '200px' }}
+                  >
+                    <option value="all">Todos los estados</option>
+                    <option value="activo">ACTIVO</option>
+                    <option value="inactivo">INACTIVO</option>
+                  </CFormSelect>
+                </CCol>
+              </CRow>
+
+              {/* Lista de Categorías */}
+              <div style={{ maxHeight: '500px', overflowY: 'auto', flexGrow: 1 }}>
+                <CategoriaList
+                  categorias={filteredCategorias} // Usar filteredCategorias en lugar de filtrar directamente
+                  selectedCategoria={selectedCategoria}
+                  setSelectedCategoria={setSelectedCategoria}
+                  handleEdit={(categoria) => {
+                    setCategoriaToEdit(categoria);
+                    setShowEditCategoriaModal(true);
                   }}
-                >
-                  <option value="all">Todos los estados</option>
-                  <option value="active">Activo</option>
-                  <option value="inactive">Inactivo</option>
-                </CFormSelect>
-              </CNavbarNav>
-            </CContainer>
-          </CNavbar>
-          <CCard className="mb-4 shadow-sm rounded">
+                  handleDelete={handleDeleteCategoria}
+                />
+              </div>
+            </CCardBody>
+          </CCard>
+        </CCol>
+
+        {/* Panel Derecho: Subcategorías */}
+        <CCol xs={12} md={8} style={{ flex: '2 1 auto', minWidth: '400px' }}>
+          <CCard>
             <CCardHeader>
-              <CRow>
-                <CCol xs={6}>
+              <CRow className="mb-3">
+                <CCol xs={12}>
                   <CInputGroup>
                     <CFormInput
-                      type="text"
-                      placeholder="Buscar categoría/subcategoría..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Buscar subcategoría..."
+                      value={subcategoriaSearchTerm}
+                      onChange={(e) => setSubcategoriaSearchTerm(e.target.value)}
                     />
                     <CInputGroupText>
-                      <CButton color="transparent" size="sm" onClick={clearSearch}>
+                      <CButton color="transparent" size="sm" onClick={() => setSubcategoriaSearchTerm('')}>
                         <CIcon icon={cilX} />
                       </CButton>
                     </CInputGroupText>
                   </CInputGroup>
                 </CCol>
-                <CCol xs={6} className="text-end">
-                  <CButton color="primary" className="me-2">
-                    {createButtonText}
-                  </CButton>
-                  <CButton color="success" onClick={() => alert('Exportar a CSV')}>
-                    Exportar a CSV
-                  </CButton>
-                </CCol>
               </CRow>
+              Subcategorías de {selectedCategoria?.nombre || 'Ninguna'}
             </CCardHeader>
             <CCardBody>
-              <CTable>
-                <CTableHead>
-                  <CTableRow>
-                    <CTableHeaderCell style={{ width: '50px' }}>
-                      <CFormCheck
-                        checked={selectedItems.length === items.length}
-                        onChange={() => {
-                          if (selectedItems.length === items.length) {
-                            setSelectedItems([]);
-                          } else {
-                            setSelectedItems(items.map(item => item.id));
-                          }
-                        }}
-                      />
-                    </CTableHeaderCell>
-                    <CTableHeaderCell style={{ width: '200px' }} onClick={() => handleSort('nombre')}>
-                      Nombre {sortField === 'nombre' && (
-                        <span style={{ color: document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#fff' : '#000' }}>
-                          {sortDirection === 'asc' ? '↑' : '↓'}
-                        </span>
-                      )}
-                    </CTableHeaderCell>
-                    <CTableHeaderCell style={{ width: '300px' }} onClick={() => handleSort('descripcion')}>
-                      Descripción {sortField === 'descripcion' && (
-                        <span style={{ color: document.documentElement.getAttribute('data-coreui-theme') === 'dark' ? '#fff' : '#000' }}>
-                          {sortDirection === 'asc' ? '↑' : '↓'}
-                        </span>
-                      )}
-                    </CTableHeaderCell>
-                    <CTableHeaderCell style={{ width: '100px' }}>Estado</CTableHeaderCell>
-                    <CTableHeaderCell style={{ width: '150px' }}>Acciones</CTableHeaderCell>
-                  </CTableRow>
-                </CTableHead>
-                <CTableBody>
-                  {currentItems.map((item) => (
-                    <CTableRow key={item.id}>
-                      <CTableDataCell style={{ width: '50px' }}>
-                        <CFormCheck
-                          checked={selectedItems.includes(item.id)}
-                          onChange={() => handleSelectItem(item.id)}
-                        />
-                      </CTableDataCell>
-                      <CTableDataCell style={{ width: '200px' }}>{item.nombre}</CTableDataCell>
-                      <CTableDataCell style={{ width: '300px' }}>{item.descripcion}</CTableDataCell>
-                      <CTableDataCell style={{ width: '100px' }}>
-                        <CBadge color={item.estado === 'Activo' ? 'success' : 'danger'}>
-                          {item.estado}
-                        </CBadge>
-                      </CTableDataCell>
-                      <CTableDataCell style={{ width: '150px' }}>
-                        <CButton color="warning" size="sm" className="me-2">
-                          <CIcon icon={cilPencil} />
-                        </CButton>
-                        <CButton color="danger" size="sm" onClick={() => handleDelete(item.id)}>
-                          <CIcon icon={cilTrash} />
-                        </CButton>
-                      </CTableDataCell>
-                    </CTableRow>
-                  ))}
-                </CTableBody>
-              </CTable>
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                {/* Botón "Nueva Subcategoría" */}
+                <CButton
+                  color="primary"
+                  disabled={!selectedCategoria}
+                  onClick={() => setShowCreateSubcategoriaModal(true)}
+                >
+                  Nueva Subcategoría
+                </CButton>
 
-              {/* Paginación y Selector de items por página */}
-              <CRow className="mt-3 align-items-center p-3 bg-body rounded mb-3">
-                <CCol xs="auto" className="d-flex align-items-center">
-                  {selectedItems.length > 0 && (
-                    <CButton color="danger" onClick={handleDeleteSelected}>
-                      Eliminar Seleccionados ({selectedItems.length})
+                {/* Botón "Eliminar Seleccionados" */}
+                <div className="d-flex justify-content-start mb-3">
+                  {selectedSubcategorias.length > 0 && (
+                    <CButton
+                      color="danger"
+                      onClick={handleDeleteSelected} // Conecta el botón con la función
+                    >
+                      Eliminar Seleccionados ({selectedSubcategorias.length})
                     </CButton>
                   )}
-                </CCol>
-                <CCol className="d-flex align-items-center justify-content-center">
-                  <CPagination className="mb-0">
-                    <CPaginationItem
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage(currentPage - 1)}
-                    >
-                      Previous
-                    </CPaginationItem>
-                    {Array.from({ length: totalPages }, (_, i) => (
-                      <CPaginationItem
-                        key={i + 1}
-                        active={i + 1 === currentPage}
-                        onClick={() => setCurrentPage(i + 1)}
-                      >
-                        {i + 1}
-                      </CPaginationItem>
-                    ))}
-                    <CPaginationItem
-                      disabled={currentPage === totalPages}
-                      onClick={() => setCurrentPage(currentPage + 1)}
-                    >
-                      Next
-                    </CPaginationItem>
-                  </CPagination>
-                  <CFormSelect
-                    value={itemsPerPage}
-                    onChange={handleItemsPerPageChange}
-                    className="ms-3"
-                    style={{ width: 'auto' }}
-                  >
-                    <option value={10}>10 por página</option>
-                    <option value={20}>20 por página</option>
-                    <option value={30}>30 por página</option>
-                  </CFormSelect>
-                </CCol>
-              </CRow>
+                </div>
+              </div>
+
+
+
+              <SubcategoriaTable
+                subcategorias={currentSubcategorias || []} // Asegúrate de que sea un array vacío si no hay datos
+                selectedSubcategorias={selectedSubcategorias}
+                setSelectedSubcategorias={setSelectedSubcategorias}
+                handleEdit={(subcategoria) => {
+                  setSubcategoriaToEdit(subcategoria);
+                  setShowEditSubcategoriaModal(true);
+                }}
+                handleDelete={handleDeleteSubcategoria}
+              />
+              <CategoriaPagination
+                currentPage={currentPage}
+                setCurrentPage={setCurrentPage}
+                totalPages={totalPages}
+                itemsPerPage={itemsPerPage}
+                handleItemsPerPageChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1); // Reinicia la página actual al cambiar la cantidad de elementos
+                }}
+              />
             </CCardBody>
           </CCard>
         </CCol>

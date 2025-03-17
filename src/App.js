@@ -5,6 +5,7 @@ import { CSpinner } from '@coreui/react';
 import './scss/style.scss';
 import apiClient from './services/apiClient'; // Importa tu apiClient
 import { loginSuccess } from './actions/authActions'; // Importa la acción de autenticación
+import ProtectedRoute from './components/ProtectedRoute'; // Importa el componente ProtectedRoute
 
 // Componentes lazy-loaded
 const DefaultLayout = React.lazy(() => import('./layout/DefaultLayout'));
@@ -12,6 +13,17 @@ const Login = React.lazy(() => import('./views/pages/login/Login'));
 const Register = React.lazy(() => import('./views/pages/register/Register'));
 const Page404 = React.lazy(() => import('./views/pages/page404/Page404'));
 const Page500 = React.lazy(() => import('./views/pages/page500/Page500'));
+const AccesoDenegado = React.lazy(() => import('./views/pages/page404/Page404')); // Importa la página de acceso denegado
+
+// Importar componentes de las vistas
+const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard'));
+const Producto = React.lazy(() => import('./views/producto/producto'));
+const Categoria = React.lazy(() => import('./views/categorias/categorias'));
+const Proveedor = React.lazy(() => import('./views/proveedor/proveedor'));
+const Venta = React.lazy(() => import('./views/venta/venta'));
+const Usuario = React.lazy(() => import('./views/usuarios/usuario'));
+const Cliente = React.lazy(() => import('./views/cliente/cliente'));
+const RolesYPermisos = React.lazy(() => import('./views/rolesYpermisos/rolesYpermisos'));
 
 const App = () => {
   const dispatch = useDispatch();
@@ -64,28 +76,114 @@ const App = () => {
           <Route path="/register" element={<Register />} />
           <Route path="/404" element={<Page404 />} />
           <Route path="/500" element={<Page500 />} />
+          <Route path="/acceso-denegado" element={<AccesoDenegado />} />
 
-          {/* Redirigir al login si no está autenticado */}
+          {/* Ruta raíz */}
           <Route
             path="/"
             element={
               isAuthenticated ? (
-                Object.keys(userPermissions).length === 0 && userRole === 'USER' ? (
-                  <Navigate to="/dashboard" />
-                ) : (
+                <ProtectedRoute requiredPermissions={[]}>
                   <DefaultLayout />
-                )
+                </ProtectedRoute>
               ) : (
                 <Navigate to="/login" />
               )
             }
-          />
+          >
+            {/* Rutas secundarias protegidas */}
+            <Route
+              path="dashboard"
+              element={
+                <ProtectedRoute requiredPermissions={[]}>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="producto"
+              element={
+                <ProtectedRoute requiredPermissions={[
+                  '/productos',
+                  '/productos/:id:GET',
+                  '/productos/:id:PUT',
+                  '/productos/:id:DELETE',
+                  '/productos/upload',
+                  '/productos/imagen/{fileName:.+}',
+                  '/categorias',
+                  '/subcategorias',
+                  '/proveedores',
+                  '/unidades-medida']}>
+                  <Producto />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="categorias"
+              element={
+                <ProtectedRoute requiredPermissions={[
+                  '/categorias', // Permiso para acceder a la vista de categorías
+                  '/categorias/:id:GET', // Permiso para obtener una categoría por ID
+                  '/categorias/:id:PUT', // Permiso para actualizar una categoría por ID
+                  '/categorias/:id:DELETE', // Permiso para eliminar una categoría por ID
+                  '/subcategorias', // Permiso para acceder a subcategorías
+                  '/subcategorias/:id:GET', // Permiso para obtener una subcategoría por ID
+                  '/subcategorias/:id:PUT', // Permiso para actualizar una subcategoría por ID
+                  '/subcategorias/:id:DELETE', // Permiso para eliminar una subcategoría por ID
+                ]}>
+                  <Categoria />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="proveedor"
+              element={
+                <ProtectedRoute requiredPermissions={[
+                  '/proveedores',
+                  '/proveedores/:id:GET',
+                  '/proveedores/:id:PUT',
+                  '/proveedores/:id:DELETE',
+                ]}>
+                  <Proveedor />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="venta"
+              element={
+                <ProtectedRoute requiredPermissions={['/ventas', '/lista-ventas']}>
+                  <Venta />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="usuario"
+              element={
+                <ProtectedRoute requiredPermissions={['/usuarios', '/rolesYpermisos']}>
+                  <Usuario />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="cliente"
+              element={
+                <ProtectedRoute requiredPermissions={['/clientes', '/creditos']}>
+                  <Cliente />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="rolesYpermisos/:usuarioId?"
+              element={
+                <ProtectedRoute requiredPermissions={['/rolesYpermisos', '/usuarios']}>
+                  <RolesYPermisos />
+                </ProtectedRoute>
+              }
+            />
+          </Route>
 
-          {/* Rutas protegidas */}
-          <Route
-            path="*"
-            element={isAuthenticated ? <DefaultLayout /> : <Navigate to="/login" />}
-          />
+          {/* Ruta para manejar rutas no encontradas */}
+          <Route path="*" element={<Page404 />} />
         </Routes>
       </Suspense>
     </HashRouter>

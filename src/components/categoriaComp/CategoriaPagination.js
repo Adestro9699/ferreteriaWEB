@@ -1,7 +1,7 @@
 import React from 'react';
 import { CPagination, CPaginationItem, CFormSelect } from '@coreui/react';
 
-const ProveedorPagination = ({
+const CategoriaPagination = ({
   currentPage,
   setCurrentPage,
   totalPages,
@@ -9,7 +9,7 @@ const ProveedorPagination = ({
   handleItemsPerPageChange,
 }) => {
   return (
-    <div className="d-flex align-items-center justify-content-center gap-3">
+    <div className="d-flex align-items-center justify-content-between gap-3">
       {/* Paginación */}
       <CPagination className="mb-0">
         <CPaginationItem
@@ -52,4 +52,4 @@ const ProveedorPagination = ({
   );
 };
 
-export default ProveedorPagination;
+export default CategoriaPagination;
