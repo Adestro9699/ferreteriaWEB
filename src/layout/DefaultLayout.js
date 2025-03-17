@@ -1,7 +1,7 @@
 import React from 'react';
 import { CButton } from '@coreui/react';
 import { useDispatch, useSelector } from 'react-redux'; // Importa los hooks de Redux
-import { useNavigate } from 'react-router-dom'; // Importa el hook de navegación
+import { useNavigate, Outlet } from 'react-router-dom'; // Importa el hook de navegación y Outlet
 import { AppContent, AppSidebar, AppFooter, AppHeader } from '../components/index';
 
 const DefaultLayout = () => {
@@ -34,7 +34,7 @@ const DefaultLayout = () => {
           )}
         </AppHeader>
         <div className="body flex-grow-1">
-          <AppContent />
+          <Outlet /> {/* Renderiza las rutas secundarias */}
         </div>
         <AppFooter />
       </div>

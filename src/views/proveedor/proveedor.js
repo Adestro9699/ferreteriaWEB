@@ -9,6 +9,10 @@ import {
   CSpinner,
   CAlert,
   CButton,
+  CToaster, // Importar el contenedor de toasts
+  CToast,   // Importar el componente de toast
+  CToastHeader, // Importar el encabezado del toast
+  CToastBody,   // Importar el cuerpo del toast
 } from '@coreui/react';
 import ProveedorTable from '../../components/proveedorComp/ProveedorTable';
 import ProveedorModal from '../../components/proveedorComp/ProveedorModal';
@@ -26,7 +30,7 @@ const Proveedor = () => {
   const [selectedProveedores, setSelectedProveedores] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('ACTIVO');
   const [sortField, setSortField] = useState('nombre');
   const [sortDirection, setSortDirection] = useState('asc');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -35,6 +39,24 @@ const Proveedor = () => {
   const [showCreateModal, setShowCreateModal] = useState(false); // Modal de creación
   const [showEditModal, setShowEditModal] = useState(false); // Modal de edición
   const [proveedorToEdit, setProveedorToEdit] = useState(null); // Proveedor a editar
+
+  // Nuevo estado para los toasts
+  const [toasts, setToasts] = useState([]);
+
+  // Función para agregar un nuevo toast
+  const addToast = (message, type = 'success') => {
+    const newToast = {
+      id: Date.now(),
+      message,
+      type,
+    };
+    setToasts((prevToasts) => [...prevToasts, newToast]); // Usar el estado anterior
+  };
+
+  // Función para eliminar un toast después de mostrarlo
+  const removeToast = (id) => {
+    setToasts(toasts.filter((toast) => toast.id !== id));
+  };
 
   // Obtener proveedores desde el backend
   useEffect(() => {
@@ -58,11 +80,14 @@ const Proveedor = () => {
   const handleCreateProveedor = async (newProveedor) => {
     try {
       const response = await apiClient.post('/fs/proveedores', newProveedor);
-      setProveedores([...proveedores, response.data]); // Agregar el nuevo proveedor a la lista
-      setShowCreateModal(false); // Cerrar el modal
+      setProveedores([...proveedores, response.data]);
+      setShowCreateModal(false);
+
+      // Mostrar toast de éxito
+      addToast('Proveedor creado exitosamente.');
     } catch (error) {
-      setError('Error al crear el proveedor. Por favor, inténtalo de nuevo.');
       console.error('Error creating proveedor:', error);
+      addToast('Error al crear el proveedor.', 'error'); // Mostrar toast de error
     }
   };
 
@@ -74,11 +99,14 @@ const Proveedor = () => {
         proveedores.map((p) =>
           p.idProveedor === updatedProveedor.idProveedor ? updatedProveedor : p
         )
-      ); // Actualizar el proveedor en la lista
-      setShowEditModal(false); // Cerrar el modal
+      );
+      setShowEditModal(false);
+
+      // Mostrar toast de éxito
+      addToast('Proveedor actualizado exitosamente.');
     } catch (error) {
-      setError('Error al actualizar el proveedor. Por favor, inténtalo de nuevo.');
       console.error('Error updating proveedor:', error);
+      addToast('Error al actualizar el proveedor.', 'error'); // Mostrar toast de error
     }
   };
 
@@ -89,9 +117,12 @@ const Proveedor = () => {
       setProveedores(proveedores.filter((p) => p.idProveedor !== proveedorToDelete));
       setProveedorToDelete(null);
       setShowDeleteModal(false);
+
+      // Mostrar toast de éxito
+      addToast('Proveedor eliminado exitosamente.');
     } catch (error) {
-      setError('Error al eliminar el proveedor. Por favor, inténtalo de nuevo.');
       console.error('Error deleting proveedor:', error);
+      addToast('Error al eliminar el proveedor.', 'error'); // Mostrar toast de error
     }
   };
 
@@ -102,18 +133,28 @@ const Proveedor = () => {
       setProveedores(proveedores.filter((p) => !selectedProveedores.includes(p.idProveedor)));
       setSelectedProveedores([]);
       setShowDeleteModal(false);
+
+      // Mostrar toast de éxito
+      addToast('Proveedores seleccionados eliminados exitosamente.');
     } catch (error) {
       setError('Error al eliminar los proveedores seleccionados. Por favor, inténtalo de nuevo.');
       console.error('Error deleting selected proveedores:', error);
+      addToast('Error al eliminar los proveedores seleccionados.', 'error'); // Mostrar toast de error
     }
   };
 
   // Manejar la selección de proveedores
-  const handleSelectProveedor = (id) => {
-    if (selectedProveedores.includes(id)) {
-      setSelectedProveedores(selectedProveedores.filter((item) => item !== id));
+  const handleSelectProveedor = (idOrAll) => {
+    if (Array.isArray(idOrAll)) {
+      // Si se pasa un array, seleccionar/deseleccionar todos los registros
+      setSelectedProveedores(idOrAll);
     } else {
-      setSelectedProveedores([...selectedProveedores, id]);
+      // Si se pasa un ID, manejar la selección/deselección individual
+      if (selectedProveedores.includes(idOrAll)) {
+        setSelectedProveedores(selectedProveedores.filter((item) => item !== idOrAll));
+      } else {
+        setSelectedProveedores([...selectedProveedores, idOrAll]);
+      }
     }
   };
 
@@ -136,15 +177,17 @@ const Proveedor = () => {
     return 0;
   });
 
+  // Filtrar y ordenar proveedores
   const filteredProveedores = sortedProveedores.filter((proveedor) => {
     const matchesStatus =
       statusFilter === 'all' ||
-      (statusFilter === 'active' && proveedor.estado === 'Activo') ||
-      (statusFilter === 'inactive' && proveedor.estado === 'Inactivo');
-    const matchesSearch =
-      proveedor.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      proveedor.correoProveedor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      proveedor.telefono.toLowerCase().includes(searchTerm.toLowerCase());
+      (statusFilter === 'ACTIVO' && proveedor.estado === 'ACTIVO') || // Coincidir con el backend
+      (statusFilter === 'INACTIVO' && proveedor.estado === 'INACTIVO'); // Coincidir con el backend
+
+    const matchesSearch = Object.values(proveedor).some((value) =>
+      String(value).toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     return matchesStatus && matchesSearch;
   });
 
@@ -187,6 +230,28 @@ const Proveedor = () => {
 
   return (
     <CContainer>
+      {/* Contenedor de toasts */}
+      <CToaster placement="bottom-end">
+        {console.log('Toaster renderizado')}
+        {toasts.map((toast) => (
+          <CToast
+            key={toast.id}
+            visible={true} // Asegura que el toast sea visible
+            autohide={true}
+            delay={3000}
+            onClose={() => removeToast(toast.id)}
+            color={toast.type === 'success' ? 'success' : 'danger'} // Opcional: define el color
+          >
+            <CToastHeader closeButton>
+              <strong className="me-auto">
+                {toast.type === 'success' ? 'Éxito' : 'Error'}
+              </strong>
+            </CToastHeader>
+            <CToastBody>{toast.message}</CToastBody>
+          </CToast>
+        ))}
+      </CToaster>
+
       {/* Modal de Confirmación para Eliminar */}
       <ProveedorModal
         showDeleteModal={showDeleteModal}
@@ -215,8 +280,8 @@ const Proveedor = () => {
         <CCol xs={12}>
           <CCard>
             <CCardHeader>
-              <CRow>
-                <CCol xs={8}>
+              <CRow className="mb-3"> {/* Margen inferior para separar los filtros */}
+                <CCol xs={12} md={8}>
                   <ProveedorFilters
                     statusFilter={statusFilter}
                     setStatusFilter={setStatusFilter}
@@ -225,14 +290,33 @@ const Proveedor = () => {
                     clearSearch={clearSearch}
                   />
                 </CCol>
-                <CCol xs={4} className="text-end">
-                  <CButton color="success" onClick={() => setShowCreateModal(true)}>
-                    Crear Proveedor
-                  </CButton>
+                <CCol xs={12} md={4} className="text-end">
+                  {/* Botones "Crear Proveedor" y "Exportar Data" */}
+                  <div className="d-flex flex-column flex-md-row justify-content-end gap-2">
+                    <CButton color="success" onClick={() => setShowCreateModal(true)}>
+                      Crear Proveedor
+                    </CButton>
+                    <CButton color="primary" disabled>
+                      Exportar Data
+                    </CButton>
+                  </div>
                 </CCol>
               </CRow>
             </CCardHeader>
             <CCardBody>
+              {/* Botón "Eliminar Seleccionados" en la parte izquierda */}
+              <div className="d-flex justify-content-start mb-3">
+                {selectedProveedores.length > 0 && (
+                  <CButton
+                    color="danger"
+                    onClick={() => setShowDeleteModal(true)}
+                  >
+                    Eliminar Seleccionados ({selectedProveedores.length})
+                  </CButton>
+                )}
+              </div>
+
+              {/* Tabla de proveedores */}
               <ProveedorTable
                 proveedores={currentProveedores}
                 selectedProveedores={selectedProveedores}
@@ -240,19 +324,26 @@ const Proveedor = () => {
                 handleSort={handleSort}
                 sortField={sortField}
                 sortDirection={sortDirection}
-                handleDelete={(id) => setProveedorToDelete(id)}
+                const handleDelete={(id) => {
+                  setProveedorToDelete(id); // Establecer el ID del proveedor a eliminar
+                  setShowDeleteModal(true); // Mostrar el modal de confirmación
+                }}
                 handleEdit={(proveedor) => {
                   setProveedorToEdit(proveedor);
                   setShowEditModal(true);
                 }}
               />
-              <ProveedorPagination
-                currentPage={currentPage}
-                setCurrentPage={setCurrentPage}
-                totalPages={totalPages}
-                itemsPerPage={itemsPerPage}
-                handleItemsPerPageChange={(e) => setItemsPerPage(Number(e.target.value))}
-              />
+
+              {/* Paginación y selector de cantidad de elementos */}
+              <div className="d-flex justify-content-center mt-3">
+                <ProveedorPagination
+                  currentPage={currentPage}
+                  setCurrentPage={setCurrentPage}
+                  totalPages={totalPages}
+                  itemsPerPage={itemsPerPage}
+                  handleItemsPerPageChange={(e) => setItemsPerPage(Number(e.target.value))}
+                />
+              </div>
             </CCardBody>
           </CCard>
         </CCol>

@@ -33,9 +33,9 @@ const ProveedorTable = ({
                 checked={selectedProveedores.length === proveedores.length}
                 onChange={() => {
                   if (selectedProveedores.length === proveedores.length) {
-                    handleSelectProveedor([]);
+                    handleSelectProveedor([]); // Deseleccionar todos
                   } else {
-                    handleSelectProveedor(proveedores.map((p) => p.idProveedor));
+                    handleSelectProveedor(proveedores.map((p) => p.idProveedor)); // Seleccionar todos
                   }
                 }}
               />
@@ -52,7 +52,7 @@ const ProveedorTable = ({
               Teléfono{' '}
               {sortField === 'telefono' && <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>}
             </CTableHeaderCell>
-            <CTableHeaderCell style={{ width: '200px' }} onClick={() => handleSort('correo')}>
+            <CTableHeaderCell style={{ width: '200px' }} onClick={() => handleSort('correoProveedor')}>
               Correo{' '}
               {sortField === 'correo' && <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>}
             </CTableHeaderCell>
