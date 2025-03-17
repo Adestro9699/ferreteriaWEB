@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux'; // Importar useSelector
+import { useSelector } from 'react-redux';
 import {
   CModal,
   CModalHeader,
@@ -12,31 +12,57 @@ import {
   CForm,
   CInputGroup,
   CInputGroupText,
+  CToaster,
+  CToast,
+  CToastHeader,
+  CToastBody,
 } from '@coreui/react';
 import { CIcon } from '@coreui/icons-react';
 import { cilX } from '@coreui/icons';
 import MostrarCliente from './mostrarCliente';
 import apiClient from '../../services/apiClient';
 
-const CompletarVenta = ({ visible, onClose, onSave }) => {
-  const trabajador = useSelector((state) => state.auth.trabajador); // Obtener el trabajador desde Redux
-  const [empresa, setEmpresa] = useState(null); // Cambiar a null para almacenar el objeto completo
+const CompletarVenta = ({ visible, onClose, onSave, registrarReinicio }) => {
+  const trabajador = useSelector((state) => state.auth.trabajador);
+  const [empresa, setEmpresa] = useState(null);
   const [empresas, setEmpresas] = useState([]);
   const [cliente, setCliente] = useState(null);
-  const [tipoComprobante, setTipoComprobante] = useState(null); // Almacenar el objeto completo
-  const [tiposComprobante, setTiposComprobante] = useState([]); // Lista de tipos de comprobante
-  const [tipoPago, setTipoPago] = useState(null); // Almacenar el objeto completo del tipo de pago
-  const [tiposPago, setTiposPago] = useState([]); // Lista de tipos de pago
+  const [tipoComprobante, setTipoComprobante] = useState(null);
+  const [tiposComprobante, setTiposComprobante] = useState([]);
+  const [tipoPago, setTipoPago] = useState(null);
+  const [tiposPago, setTiposPago] = useState([]);
   const [modalClientesVisible, setModalClientesVisible] = useState(false);
   const [filterText, setFilterText] = useState('');
   const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
-  // Obtener la fecha y hora actual en formato LocalDateTime (YYYY-MM-DDTHH:mm:ss)
+  const [toast, setToast] = useState({ visible: false, message: '', color: 'danger' });
+
   const now = new Date();
-  const offset = now.getTimezoneOffset() * 60000; // Obtener el offset en milisegundos
-  const localDateTime = new Date(now - offset).toISOString().slice(0, 19); // Formato: YYYY-MM-DDTHH:mm:ss
+  const offset = now.getTimezoneOffset() * 60000;
+  const localDateTime = new Date(now - offset).toISOString().slice(0, 19);
   const fecha = localDateTime;
 
-  // Obtener las empresas, tipos de comprobante y tipos de pago al montar el componente
+  const showToast = (message, color = 'danger') => {
+    setToast({ visible: true, message, color });
+    setTimeout(() => {
+      setToast({ visible: false, message: '', color: 'danger' });
+    }, 3000);
+  };
+
+  const reiniciarEstado = () => {
+    setEmpresa(null);
+    setCliente(null);
+    setTipoComprobante(null);
+    setTipoPago(null);
+    setFilterText('');
+    setResultadosBusqueda([]);
+  };
+
+  useEffect(() => {
+    if (registrarReinicio) {
+      registrarReinicio(reiniciarEstado);
+    }
+  }, []);
+
   useEffect(() => {
     const fetchEmpresas = async () => {
       try {
@@ -77,15 +103,21 @@ const CompletarVenta = ({ visible, onClose, onSave }) => {
   }, []);
 
   const handleGuardar = () => {
+    if (!empresa || !cliente || !tipoComprobante || !tipoPago) {
+      showToast('Por favor, complete todos los campos obligatorios.', 'danger');
+      return;
+    }
+
     const datosComplementarios = {
-      empresaId: empresa ? empresa.idEmpresa : null, // Solo el ID de la empresa
-      clienteId: cliente ? cliente.idCliente : null, // Solo el ID del cliente
-      tipoComprobanteId: tipoComprobante ? tipoComprobante.idTipoComprobantePago : null, // Solo el ID del tipo de comprobante
-      tipoPagoId: tipoPago ? tipoPago.idTipoPago : null, // Solo el ID del tipo de pago
-      trabajadorId: trabajador ? trabajador.idTrabajador : null, // Solo el ID del trabajador
+      empresaId: empresa.idEmpresa,
+      clienteId: cliente.idCliente,
+      tipoComprobanteId: tipoComprobante.idTipoComprobantePago,
+      tipoPagoId: tipoPago.idTipoPago,
+      trabajadorId: trabajador.idTrabajador,
       fecha,
     };
-    onSave(datosComplementarios); // Pasar los datos al componente padre
+
+    onSave(datosComplementarios);
     onClose();
   };
 
@@ -148,7 +180,7 @@ const CompletarVenta = ({ visible, onClose, onSave }) => {
       {/* Modal principal para completar la venta */}
       <CModal visible={visible} onClose={onClose} backdrop="static">
         <CModalHeader closeButton={false}>
-          <CModalTitle>Completar Venta</CModalTitle>
+          <CModalTitle>Datos Venta</CModalTitle>
           <div style={{ marginLeft: 'auto' }}>
             <CButton color="secondary" onClick={onClose} style={{ marginRight: '10px' }}>
               Cancelar
@@ -164,21 +196,18 @@ const CompletarVenta = ({ visible, onClose, onSave }) => {
             <div className="mb-3">
               <CFormLabel>Empresa</CFormLabel>
               <CFormSelect
-                value={empresa ? empresa.idEmpresa : ''} // Mostrar el idEmpresa como valor seleccionado
+                value={empresa ? empresa.idEmpresa : ''}
                 onChange={(e) => {
-                  const selectedId = parseInt(e.target.value, 10); // Convertir a número
-                  const selectedEmpresa = empresas.find(
-                    (emp) => emp.idEmpresa === selectedId
-                );
-                  setEmpresa(selectedEmpresa); // Almacenar el objeto completo de la empresa
+                  const selectedId = parseInt(e.target.value, 10);
+                  const selectedEmpresa = empresas.find((emp) => emp.idEmpresa === selectedId);
+                  setEmpresa(selectedEmpresa);
                 }}
                 required
               >
                 <option value="">Seleccione una empresa</option>
-                {
-                empresas.map((empresa) => (
+                {empresas.map((empresa) => (
                   <option key={empresa.idEmpresa} value={empresa.idEmpresa}>
-                    {empresa.razonSocial} {/* Mostrar la razón social de la empresa */}
+                    {empresa.razonSocial}
                   </option>
                 ))}
               </CFormSelect>
@@ -188,13 +217,11 @@ const CompletarVenta = ({ visible, onClose, onSave }) => {
             <div className="mb-3">
               <CFormLabel>Cliente</CFormLabel>
               <CInputGroup>
-                {/* Botón para borrar (a la izquierda) */}
                 <CInputGroupText>
                   <CButton color="light" onClick={clearSearch}>
                     <CIcon icon={cilX} />
                   </CButton>
                 </CInputGroupText>
-                {/* Campo de búsqueda */}
                 <CFormInput
                   type="text"
                   value={
@@ -211,12 +238,10 @@ const CompletarVenta = ({ visible, onClose, onSave }) => {
                   placeholder="DNI/RUC o NOMBRE/RAZON SOCIAL"
                   required
                 />
-                {/* Botón para añadir (a la derecha) */}
                 <CButton color="primary" onClick={handleAñadirCliente}>
                   Añadir
                 </CButton>
               </CInputGroup>
-              {/* Mostrar resultados de la búsqueda */}
               {resultadosBusqueda.length > 0 && (
                 <div className="mt-2">
                   <ul className="list-group">
@@ -244,11 +269,11 @@ const CompletarVenta = ({ visible, onClose, onSave }) => {
             <div className="mb-3">
               <CFormLabel>Tipo de Comprobante</CFormLabel>
               <CFormSelect
-                value={tipoComprobante ? tipoComprobante.idTipoComprobantePago : ''} // Usar idTipoComprobantePago
+                value={tipoComprobante ? tipoComprobante.idTipoComprobantePago : ''}
                 onChange={(e) => {
-                  const selectedId = parseInt(e.target.value, 10); // Convertir a número
+                  const selectedId = parseInt(e.target.value, 10);
                   const selectedTipoComprobante = tiposComprobante.find(
-                    (tipo) => tipo.idTipoComprobantePago === selectedId // Usar idTipoComprobantePago
+                    (tipo) => tipo.idTipoComprobantePago === selectedId
                   );
                   setTipoComprobante(selectedTipoComprobante);
                 }}
@@ -256,7 +281,7 @@ const CompletarVenta = ({ visible, onClose, onSave }) => {
               >
                 <option value="">Seleccione un tipo de comprobante</option>
                 {tiposComprobante.map((tipo) => (
-                  <option key={tipo.idTipoComprobantePago} value={tipo.idTipoComprobantePago}> {/* Usar idTipoComprobantePago */}
+                  <option key={tipo.idTipoComprobantePago} value={tipo.idTipoComprobantePago}>
                     {tipo.nombre}
                   </option>
                 ))}
@@ -267,19 +292,17 @@ const CompletarVenta = ({ visible, onClose, onSave }) => {
             <div className="mb-3">
               <CFormLabel>Tipo de Pago</CFormLabel>
               <CFormSelect
-                value={tipoPago ? tipoPago.idTipoPago : ''} // Usar idTipoPago
+                value={tipoPago ? tipoPago.idTipoPago : ''}
                 onChange={(e) => {
-                  const selectedId = parseInt(e.target.value, 10); // Convertir a número
-                  const selectedTipoPago = tiposPago.find(
-                    (tipo) => tipo.idTipoPago === selectedId // Usar idTipoPago
-                  );
+                  const selectedId = parseInt(e.target.value, 10);
+                  const selectedTipoPago = tiposPago.find((tipo) => tipo.idTipoPago === selectedId);
                   setTipoPago(selectedTipoPago);
                 }}
                 required
               >
                 <option value="">Seleccione un tipo de pago</option>
                 {tiposPago.map((tipo) => (
-                  <option key={tipo.idTipoPago} value={tipo.idTipoPago}> {/* Usar idTipoPago */}
+                  <option key={tipo.idTipoPago} value={tipo.idTipoPago}>
                     {tipo.nombre}
                   </option>
                 ))}
@@ -291,7 +314,7 @@ const CompletarVenta = ({ visible, onClose, onSave }) => {
               <CFormLabel>Fecha de Venta</CFormLabel>
               <CFormInput
                 type="text"
-                value={new Date(fecha).toLocaleString()} // Mostrar la fecha y hora en formato local
+                value={new Date(fecha).toLocaleString()}
                 readOnly
               />
             </div>
@@ -305,6 +328,18 @@ const CompletarVenta = ({ visible, onClose, onSave }) => {
         onClose={() => setModalClientesVisible(false)}
         onSeleccionarCliente={handleSeleccionarCliente}
       />
+
+      {/* Toast para mostrar mensajes de error */}
+      <CToaster placement="top-center">
+        {toast.visible && (
+          <CToast autohide={true} visible={toast.visible} color={toast.color}>
+            <CToastHeader closeButton>
+              <strong className="me-auto">Aviso</strong>
+            </CToastHeader>
+            <CToastBody>{toast.message}</CToastBody>
+          </CToast>
+        )}
+      </CToaster>
     </>
   );
 };

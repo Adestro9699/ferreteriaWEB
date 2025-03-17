@@ -12,9 +12,14 @@ import {
   CTableDataCell,
   CFormInput,
   CButton,
+  CToaster,
+  CToast,
+  CToastHeader,
+  CToastBody,
 } from '@coreui/react';
 import ModalProductos from './modalProducto'; // Importamos el modal
 import CompletarVenta from './completarVenta'; // Importamos el modal
+import apiClient from '../../services/apiClient'; // Importamos el cliente de API
 
 const DetalleVenta = () => {
   const [modalVisible, setModalVisible] = useState(false);
@@ -28,7 +33,26 @@ const DetalleVenta = () => {
     trabajadorId: null, // Cambiar a trabajadorId
     fecha: new Date().toISOString().slice(0, 19), // Fecha en formato LocalDateTime
   });
+  const [reiniciarModalProductos, setReiniciarModalProductos] = useState(null);
+  const [reiniciarModalDatosComplementarios, setReiniciarModalDatosComplementarios] = useState(null);
+  const [toast, setToast] = useState({ visible: false, message: '', color: 'danger' });
 
+  const showToast = (message, color = 'danger') => {
+    setToast({ visible: true, message, color });
+    setTimeout(() => {
+      setToast({ visible: false, message: '', color: 'danger' });
+    }, 3000);
+  };
+
+  // Esta función se pasará al componente modalProducto
+  const registrarReinicioModalProductos = (reiniciarFn) => {
+    setReiniciarModalProductos(() => reiniciarFn);
+  };
+
+  // Esta función se pasará al componente completarVenta
+  const registrarReinicioModalDatosComplementarios = (reiniciarFn) => {
+    setReiniciarModalDatosComplementarios(() => reiniciarFn);
+  };
   // Función para manejar cambios en la cantidad
   const handleCantidadChange = (index, value) => {
     if (value === '') {
@@ -43,7 +67,7 @@ const DetalleVenta = () => {
 
     const nuevaCantidad = parseFloat(value);
     if (isNaN(nuevaCantidad) || nuevaCantidad <= 0) {
-      alert('La cantidad debe ser un número positivo.');
+      showToast('La cantidad debe ser un número positivo.', 'danger');
       return;
     }
 
@@ -51,17 +75,20 @@ const DetalleVenta = () => {
     const stockDisponible = producto.stock;
 
     if (nuevaCantidad > stockDisponible) {
-      alert(`La cantidad no puede exceder el stock disponible`);
+      showToast('La cantidad no puede exceder el stock disponible', 'danger');
       return;
     }
 
     setProductosVendidos((prevProductos) => {
       const nuevosProductos = [...prevProductos];
       nuevosProductos[index].cantidad = nuevaCantidad;
+
+      // Calcular el subtotal con el descuento como porcentaje
+      const precioConDescuento = nuevosProductos[index].precio * (1 - (nuevosProductos[index].descuento || 0) / 100);
       nuevosProductos[index].subtotal = (
-        (nuevosProductos[index].precio - (nuevosProductos[index].descuento || 0)) *
-        nuevaCantidad
+        precioConDescuento * nuevaCantidad
       ).toFixed(2);
+
       return nuevosProductos;
     });
   };
@@ -81,18 +108,21 @@ const DetalleVenta = () => {
     }
 
     const nuevoDescuento = parseFloat(value);
-    if (isNaN(nuevoDescuento) || nuevoDescuento < 0) {
-      alert('El descuento debe ser un número positivo.');
+    if (isNaN(nuevoDescuento) || nuevoDescuento < 0 || nuevoDescuento > 100) {
+      showToast('El descuento debe ser un porcentaje válido entre 0 y 100.', 'danger');
       return;
     }
 
     setProductosVendidos((prevProductos) => {
       const nuevosProductos = [...prevProductos];
       nuevosProductos[index].descuento = nuevoDescuento;
+
+      // Calcular el subtotal con el descuento como porcentaje
+      const precioConDescuento = nuevosProductos[index].precio * (1 - nuevoDescuento / 100);
       nuevosProductos[index].subtotal = (
-        (nuevosProductos[index].precio - nuevoDescuento) *
-        (nuevosProductos[index].cantidad || 1)
+        precioConDescuento * (nuevosProductos[index].cantidad || 1)
       ).toFixed(2);
+
       return nuevosProductos;
     });
   };
@@ -127,20 +157,34 @@ const DetalleVenta = () => {
 
   // Función para guardar la venta completa en el backend
   const handleGuardarVenta = async () => {
+    // Validar que se hayan agregado productos
     if (productosVendidos.length === 0) {
-      alert('Debes agregar al menos un producto para guardar la venta.');
+      showToast('Debes agregar al menos un producto para guardar la venta.', 'danger');
       return;
     }
-  
+
+    // Validar que las cantidades de los productos sean válidas
     const productosInvalidos = productosVendidos.some(
       (producto) => !producto.cantidad || isNaN(producto.cantidad) || producto.cantidad <= 0
     );
-  
+
     if (productosInvalidos) {
-      alert('Por favor, ingresa una cantidad válida para todos los productos.');
+      showToast('Por favor, ingresa una cantidad válida para todos los productos.', 'danger');
       return;
     }
-  
+
+    // Validar que los datos complementarios estén completos
+    const datosComplementariosIncompletos = !datosComplementarios.tipoPagoId || 
+                                            !datosComplementarios.empresaId || 
+                                            !datosComplementarios.clienteId || 
+                                            !datosComplementarios.tipoComprobanteId || 
+                                            !datosComplementarios.trabajadorId;
+
+    if (datosComplementariosIncompletos) {
+      showToast('Falta agregar Datos Venta. Por favor, completa todos los campos requeridos.', 'danger');
+      return;
+    }
+
     // Preparar los datos para enviar al backend
     const ventaData = {
       fechaVenta: datosComplementarios.fecha,
@@ -153,19 +197,19 @@ const DetalleVenta = () => {
         idProducto: producto.idProducto,
         cantidad: producto.cantidad,
         precioUnitario: producto.precio,
-        descuento: producto.descuento ?? null,
+        descuento: producto.descuento || 0,
       })),
     };
-  
+
     // Imprimir los datos que se enviarán al backend
     console.log('Datos enviados al backend:', JSON.stringify(ventaData, null, 2));
-  
+
     try {
       // Enviar la venta al backend
-      const response = await apiClient.post('/ventas', ventaData);
+      const response = await apiClient.post('/fs/ventas', ventaData);
       console.log('Venta guardada:', response.data);
-      alert('Venta guardada correctamente.');
-  
+      showToast('Venta guardada correctamente.', 'success');
+
       // Limpiar el estado después de guardar
       setProductosVendidos([]);
       setDatosComplementarios({
@@ -176,9 +220,13 @@ const DetalleVenta = () => {
         trabajadorId: null,
         fecha: new Date().toISOString().slice(0, 19),
       });
+
+      // Reiniciar los estados de los modales
+      reiniciarModalProductos();
+      reiniciarModalDatosComplementarios();
     } catch (error) {
       console.error('Error al guardar la venta:', error);
-      alert('Error al guardar la venta. Inténtalo de nuevo.');
+      showToast('Error al guardar la venta. Inténtalo de nuevo.', 'danger');
     }
   };
 
@@ -187,12 +235,46 @@ const DetalleVenta = () => {
     setCompletarVentaModalVisible(true);
   };
 
+  // Calcular el subtotal total de todos los productos
+  const subtotalTotal = productosVendidos.reduce((total, producto) => {
+    // Calcular el subtotal de cada producto
+    const subtotalProducto = producto.precio * (1 - (producto.descuento || 0) / 100) * (producto.cantidad || 1);
+
+    // Sumar al total
+    return total + subtotalProducto;
+  }, 0).toFixed(2); // Formatear con 2 decimales
+
   // Calcular el total general
-  const totalGeneral = productosVendidos.reduce(
-    (total, producto) =>
-      total + ((producto.precio - (producto.descuento || 0)) * (producto.cantidad || 1)),
+const totalGeneral = productosVendidos.reduce((total, producto) => {
+  // Aplicar el descuento como porcentaje al precio
+  const precioConDescuento = producto.precio * (1 - (producto.descuento || 0) / 100);
+
+  // Calcular el subtotal del producto (precio con descuento * cantidad)
+  const subtotalProducto = precioConDescuento * (producto.cantidad || 1);
+
+  // Sumar al total general
+  return total + subtotalProducto;
+}, 0).toFixed(2); // Formatear con 2 decimales
+
+  const tasaIGV = 0.18;
+  // Calcular el subtotal sin IGV
+  const subtotalSinIGV = productosVendidos.reduce(
+    (total, producto) => {
+      // Aplicar el descuento al precio
+      const precioConDescuento = producto.precio * (1 - (producto.descuento || 0) / 100);
+      // Calcular el subtotal para este producto
+      const subtotalProducto = precioConDescuento * (producto.cantidad || 1);
+      // Sumar al total
+      return total + subtotalProducto;
+    },
     0
-  ).toFixed(2);
+  );
+
+  // Calcular el subtotal sin IGV dividiendo por (1 + tasaIGV)
+  const subtotalSinIGVFinal = (subtotalTotal / (1 + tasaIGV)).toFixed(2);
+
+  // Calcular el IGV aplicado (18% del subtotal sin IGV)
+  const igvAplicado = (subtotalTotal - subtotalSinIGVFinal).toFixed(2);
 
   return (
     <>
@@ -201,6 +283,7 @@ const DetalleVenta = () => {
         modalVisible={modalVisible}
         setModalVisible={setModalVisible}
         handleProductosSeleccionados={handleProductosSeleccionados}
+        registrarReinicio={registrarReinicioModalProductos} // Pasar la función de reinicio
       />
 
       {/* Modal para completar venta */}
@@ -208,6 +291,7 @@ const DetalleVenta = () => {
         visible={completarVentaModalVisible}
         onClose={() => setCompletarVentaModalVisible(false)}
         onSave={handleGuardarDatosComplementarios}
+        registrarReinicio={registrarReinicioModalDatosComplementarios} // Pasar la función de reinicio
       />
 
       {/* Tabla de productos seleccionados */}
@@ -220,7 +304,7 @@ const DetalleVenta = () => {
                 Añadir Producto
               </CButton>
               <CButton color="warning" onClick={handleCompletarVenta}>
-                Completar Venta
+                Datos Venta
               </CButton>
             </div>
             <CButton color="success" onClick={handleGuardarVenta}>
@@ -237,7 +321,7 @@ const DetalleVenta = () => {
                 <CTableHeaderCell>Unidad de Medida</CTableHeaderCell>
                 <CTableHeaderCell className="text-end">Precio S/</CTableHeaderCell>
                 <CTableHeaderCell className="text-end">Cantidad</CTableHeaderCell>
-                <CTableHeaderCell className="text-end">Descuento</CTableHeaderCell>
+                <CTableHeaderCell className="text-end">Descuento %</CTableHeaderCell>
                 <CTableHeaderCell className="text-end">Subtotal</CTableHeaderCell>
                 <CTableHeaderCell className="text-end">Acciones</CTableHeaderCell>
               </CTableRow>
@@ -284,7 +368,7 @@ const DetalleVenta = () => {
                       placeholder="Subtotal"
                       size="sm"
                       value={(
-                        (producto.precio - (producto.descuento || 0)) *
+                        (producto.precio * (1 - (producto.descuento || 0) / 100)) *
                         (producto.cantidad || 1)
                       ).toFixed(2)}
                       readOnly
@@ -297,6 +381,38 @@ const DetalleVenta = () => {
                   </CTableDataCell>
                 </CTableRow>
               ))}
+              {/* Fila para el subtotal sin IGV */}
+              <CTableRow>
+                <CTableDataCell colSpan="7" className="text-end">
+                  <strong>Subtotal sin IGV:</strong>
+                </CTableDataCell>
+                <CTableDataCell className="text-end d-flex align-items-center">
+                  <span style={{ marginRight: '5px' }}>S/</span>
+                  <CFormInput
+                    type="text"
+                    size="sm"
+                    value={subtotalSinIGVFinal}
+                    readOnly
+                    style={{ width: '100px', textAlign: 'right' }}
+                  />
+                </CTableDataCell>
+                {/* Fila para el IGV aplicado */}
+              </CTableRow>
+              <CTableRow>
+                <CTableDataCell colSpan="7" className="text-end">
+                  <strong>IGV aplicado:</strong>
+                </CTableDataCell>
+                <CTableDataCell className="text-end d-flex align-items-center">
+                  <span style={{ marginRight: '5px' }}>S/</span>
+                  <CFormInput
+                    type="text"
+                    size="sm"
+                    value={igvAplicado}
+                    readOnly
+                    style={{ width: '100px', textAlign: 'right' }}
+                  />
+                </CTableDataCell>
+              </CTableRow>
               {/* Fila para el total general */}
               <CTableRow>
                 <CTableDataCell colSpan="7" className="text-end">
@@ -317,6 +433,15 @@ const DetalleVenta = () => {
           </CTable>
         </CCardBody>
       </CCard>
+      <CToaster placement="top-center">
+        {toast.visible && (
+          <CToast autohide={true} visible={toast.visible} color={toast.color}>            <CToastHeader closeButton>
+            <strong className="me-auto">Aviso</strong>
+          </CToastHeader>
+            <CToastBody>{toast.message}</CToastBody>
+          </CToast>
+        )}
+      </CToaster>
     </>
   );
 };

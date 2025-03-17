@@ -4,7 +4,6 @@ import {
   CModalHeader,
   CModalTitle,
   CModalBody,
-  CModalFooter,
   CTable,
   CTableHead,
   CTableRow,
@@ -20,12 +19,17 @@ import {
   CToast,
   CToastHeader,
   CToastBody,
+  CPagination,
+  CPaginationItem,
+  CFormSelect,
+  CRow,
+  CCol,
 } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { cilX } from '@coreui/icons';
 import apiClient from '../../services/apiClient';
 
-const ModalProductos = ({ modalVisible, setModalVisible, handleProductosSeleccionados }) => {
+const ModalProductos = ({ modalVisible, setModalVisible, handleProductosSeleccionados, registrarReinicio }) => {
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [cantidades, setCantidades] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
@@ -35,31 +39,65 @@ const ModalProductos = ({ modalVisible, setModalVisible, handleProductosSeleccio
   const [toast, setToast] = useState({
     visible: false,
     message: '',
-    color: 'danger', // Puedes usar 'success', 'warning', 'info', etc.
+    color: 'danger',
+  });
+
+  const reiniciarEstado = () => {
+    setSelectedProducts([]); // Reiniciar la lista de productos seleccionados
+    setCantidades({}); // Reiniciar las cantidades
+    setSearchTerm(''); // Reiniciar el término de búsqueda
+    setProductos([]); // Reiniciar la lista de productos
+    setPagination({ // Reiniciar la paginación
+      page: 1,
+      pageSize: 10,
+      total: 0,
+      totalPages: 1,
+    });
+  };
+
+  // Añade este useEffect después de la declaración de reiniciarEstado o junto a los otros useEffects
+  useEffect(() => {
+    if (registrarReinicio) {
+      registrarReinicio(reiniciarEstado);
+    }
+  }, []); // Dependencia para que se ejecute cuando cambie registrarReinicio
+
+  // Estado de paginación
+  const [pagination, setPagination] = useState({
+    page: 1,          // Página actual
+    pageSize: 10,     // Tamaño de la página
+    total: 0,         // Total de productos
+    totalPages: 1,    // Total de páginas
   });
 
   // Cargar datos iniciales cuando el modal se abre
   useEffect(() => {
     if (modalVisible) {
-      setLoading(true);
-      setError(null);
-
-      const fetchData = async () => {
-        try {
-          // Obtener productos
-          const productosResponse = await apiClient.get('/fs/productos');
-          setProductos(productosResponse.data);
-          setLoading(false);
-        } catch (error) {
-          console.error('Error al cargar los productos:', error);
-          setError('Error al cargar los productos. Inténtalo de nuevo.');
-          setLoading(false);
-        }
-      };
-
-      fetchData();
+      fetchProductosPaginados(pagination.page, pagination.pageSize);
     }
-  }, [modalVisible]);
+  }, [modalVisible, pagination.page, pagination.pageSize]);
+
+  // Función para cargar productos paginados
+  const fetchProductosPaginados = async (page, pageSize) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await apiClient.get(`/fs/productos/paginados?page=${page}&pageSize=${pageSize}`);
+      setProductos(response.data.data); // Datos de la página actual
+      setPagination({
+        page: response.data.page,
+        pageSize: response.data.pageSize,
+        total: response.data.total,
+        totalPages: response.data.totalPages,
+      });
+    } catch (error) {
+      console.error('Error al cargar los productos:', error);
+      setError('Error al cargar los productos. Inténtalo de nuevo.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Búsqueda avanzada
   const handleSearchChange = async (e) => {
@@ -103,10 +141,12 @@ const ModalProductos = ({ modalVisible, setModalVisible, handleProductosSeleccio
       }
 
       const response = await apiClient.get(url);
-      setProductos(response.data);
+      const data = Array.isArray(response.data) ? response.data : [response.data];
+      setProductos(data);
     } catch (error) {
       console.error('Error al buscar los datos:', error);
       setError('Error al buscar los productos. Inténtalo de nuevo.');
+      setProductos([]);
     }
   };
 
@@ -135,12 +175,11 @@ const ModalProductos = ({ modalVisible, setModalVisible, handleProductosSeleccio
     setToast({ visible: true, message, color });
     setTimeout(() => {
       setToast({ visible: false, message: '', color: 'danger' });
-    }, 3000); // El toast se ocultará después de 3 segundos
+    }, 3000);
   };
 
   // Función para manejar el clic en "Agregar"
   const handleAgregar = () => {
-    // Validar que todos los productos seleccionados tengan una cantidad válida
     const isValid = selectedProducts.every((producto) => {
       const cantidad = parseFloat(cantidades[producto.idProducto]);
       return (
@@ -156,7 +195,6 @@ const ModalProductos = ({ modalVisible, setModalVisible, handleProductosSeleccio
       return;
     }
 
-    // Continuar con el proceso normal
     const productosConCantidad = selectedProducts.map((producto) => ({
       idProducto: producto.idProducto,
       nombre: producto.nombreProducto,
@@ -166,36 +204,60 @@ const ModalProductos = ({ modalVisible, setModalVisible, handleProductosSeleccio
       stock: producto.stock,
     }));
 
-    handleProductosSeleccionados(productosConCantidad);
-    setModalVisible(false);
+    handleProductosSeleccionados(productosConCantidad); // Pasar los productos seleccionados al padre
+    setModalVisible(false); // Cerrar el modal
   };
 
   // Función para limpiar el término de búsqueda
   const clearSearch = () => {
     setSearchTerm('');
+    fetchProductosPaginados(pagination.page, pagination.pageSize); // Recargar productos paginados
   };
 
   return (
     <>
-      <CModal visible={modalVisible} onClose={() => setModalVisible(false)} className="custom-lg-modal">
-        <CModalHeader>
-          <CModalTitle>Lista de Productos</CModalTitle>
-          <div style={{ display: 'flex', alignItems: 'center', marginLeft: '20px' }}>
-            <CInputGroup style={{ width: '250px', marginRight: '10px' }}>
-              <CFormInput
-                type="text"
-                placeholder="Buscar productos ..."
-                value={searchTerm}
-                onChange={handleSearchChange}
-                size="sm"
-                style={{ fontSize: '16px' }}
-              />
-              <CInputGroupText>
-                <CButton color="light" onClick={clearSearch}>
-                  <CIcon icon={cilX} />
-                </CButton>
-              </CInputGroupText>
-            </CInputGroup>
+      <CModal visible={modalVisible} onClose={() => setModalVisible(false)} className="custom-lg-modal" backdrop="static">
+        <CModalHeader closeButton={false}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+            {/* Título y campo de búsqueda */}
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <CModalTitle>Lista de Productos</CModalTitle>
+              <div style={{ marginLeft: '20px' }}>
+                <CInputGroup style={{ width: '250px', marginRight: '10px' }}>
+                  <CFormInput
+                    type="text"
+                    placeholder="Buscar productos ..."
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                    size="sm"
+                    style={{ fontSize: '16px' }}
+                  />
+                  <CInputGroupText>
+                    <CButton color="light" onClick={clearSearch}>
+                      <CIcon icon={cilX} />
+                    </CButton>
+                  </CInputGroupText>
+                </CInputGroup>
+              </div>
+            </div>
+
+            {/* Botones "Agregar" y "Cerrar" */}
+            <div>
+              <CButton
+                color="primary"
+                onClick={handleAgregar}
+                disabled={
+                  selectedProducts.length === 0 ||
+                  !selectedProducts.every((p) => cantidades[p.idProducto] && !isNaN(cantidades[p.idProducto]) && parseFloat(cantidades[p.idProducto]) > 0)
+                }
+                style={{ marginRight: '10px' }}
+              >
+                Agregar
+              </CButton>
+              <CButton color="secondary" onClick={() => setModalVisible(false)}>
+                Cerrar
+              </CButton>
+            </div>
           </div>
         </CModalHeader>
 
@@ -205,79 +267,117 @@ const ModalProductos = ({ modalVisible, setModalVisible, handleProductosSeleccio
           ) : error ? (
             <div className="alert alert-danger">{error}</div>
           ) : (
-            <CTable striped hover responsive>
-              <CTableHead>
-                <CTableRow>
-                  <CTableHeaderCell>Check</CTableHeaderCell>
-                  <CTableHeaderCell>Cantidad</CTableHeaderCell>
-                  <CTableHeaderCell>Nombre</CTableHeaderCell>
-                  <CTableHeaderCell>Precio</CTableHeaderCell>
-                  <CTableHeaderCell>Und. Medida</CTableHeaderCell>
-                  <CTableHeaderCell>Stock</CTableHeaderCell>
-                  <CTableHeaderCell>SKU</CTableHeaderCell>
-                  <CTableHeaderCell>Marca</CTableHeaderCell>
-                  <CTableHeaderCell>Material</CTableHeaderCell>
-                  <CTableHeaderCell>Código de Barra</CTableHeaderCell>
-                  <CTableHeaderCell>Categoría</CTableHeaderCell>
-                  <CTableHeaderCell>Subcategoría</CTableHeaderCell>
-                </CTableRow>
-              </CTableHead>
-              <CTableBody>
-                {productos.map((producto, index) => (
-                  <CTableRow key={index}>
-                    <CTableDataCell>
-                      <CFormCheck
-                        id={`checkbox-${producto.idProducto}`}
-                        onChange={() => handleCheckboxChange(producto)}
-                        checked={selectedProducts.some((p) => p.idProducto === producto.idProducto)}
-                      />
-                    </CTableDataCell>
-                    <CTableDataCell>
-                      {selectedProducts.some((p) => p.idProducto === producto.idProducto) && (
-                        <CFormInput
-                          type="text"
-                          value={cantidades[producto.idProducto] || ''}
-                          onChange={(e) => handleCantidadChange(producto.idProducto, e.target.value)}
-                          size="sm"
-                          style={{ width: '60px' }}
-                        />
-                      )}
-                    </CTableDataCell>
-                    <CTableDataCell>{producto.nombreProducto}</CTableDataCell>
-                    <CTableDataCell>{producto.precio}</CTableDataCell>
-                    <CTableDataCell>{producto.unidadMedida?.abreviatura}</CTableDataCell>
-                    <CTableDataCell>{producto.stock}</CTableDataCell>
-                    <CTableDataCell>{producto.codigoSKU}</CTableDataCell>
-                    <CTableDataCell>{producto.marca}</CTableDataCell>
-                    <CTableDataCell>{producto.material}</CTableDataCell>
-                    <CTableDataCell>{producto.codigoBarra}</CTableDataCell>
-                    <CTableDataCell>{producto.categoria?.nombre}</CTableDataCell>
-                    <CTableDataCell>{producto.subcategoria?.nombre}</CTableDataCell>
+            <>
+              {/* Tabla de productos */}
+              <CTable striped hover responsive>
+                <CTableHead>
+                  <CTableRow>
+                    <CTableHeaderCell>Check</CTableHeaderCell>
+                    <CTableHeaderCell>Cantidad</CTableHeaderCell>
+                    <CTableHeaderCell>Nombre</CTableHeaderCell>
+                    <CTableHeaderCell>Precio</CTableHeaderCell>
+                    <CTableHeaderCell>Und. Medida</CTableHeaderCell>
+                    <CTableHeaderCell>Stock</CTableHeaderCell>
+                    <CTableHeaderCell>SKU</CTableHeaderCell>
+                    <CTableHeaderCell>Marca</CTableHeaderCell>
+                    <CTableHeaderCell>Material</CTableHeaderCell>
+                    <CTableHeaderCell>Código de Barra</CTableHeaderCell>
+                    <CTableHeaderCell>Categoría</CTableHeaderCell>
+                    <CTableHeaderCell>Subcategoría</CTableHeaderCell>
                   </CTableRow>
-                ))}
-              </CTableBody>
-            </CTable>
+                </CTableHead>
+                <CTableBody>
+                  {Array.isArray(productos) && productos.length > 0 ? (
+                    productos.map((producto, index) => (
+                      <CTableRow key={index}>
+                        <CTableDataCell>
+                          <CFormCheck
+                            id={`checkbox-${producto.idProducto}`}
+                            onChange={() => handleCheckboxChange(producto)}
+                            checked={selectedProducts.some((p) => p.idProducto === producto.idProducto)}
+                          />
+                        </CTableDataCell>
+                        <CTableDataCell>
+                          {selectedProducts.some((p) => p.idProducto === producto.idProducto) && (
+                            <CFormInput
+                              type="text"
+                              value={cantidades[producto.idProducto] || ''}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                if (/^\d*$/.test(value)) {
+                                  handleCantidadChange(producto.idProducto, value);
+                                }
+                              }}
+                              size="sm"
+                              style={{ width: '60px' }}
+                              min={1}
+                              max={producto.stock}
+                            />
+                          )}
+                        </CTableDataCell>
+                        <CTableDataCell>{producto.nombreProducto}</CTableDataCell>
+                        <CTableDataCell>{producto.precio}</CTableDataCell>
+                        <CTableDataCell>{producto.unidadMedida?.abreviatura}</CTableDataCell>
+                        <CTableDataCell>{producto.stock}</CTableDataCell>
+                        <CTableDataCell>{producto.codigoSKU}</CTableDataCell>
+                        <CTableDataCell>{producto.marca}</CTableDataCell>
+                        <CTableDataCell>{producto.material}</CTableDataCell>
+                        <CTableDataCell>{producto.codigoBarra}</CTableDataCell>
+                        <CTableDataCell>{producto.subcategoria?.nombre}</CTableDataCell>
+                        <CTableDataCell>{producto.subcategoria?.categoria?.nombre}</CTableDataCell>
+                      </CTableRow>
+                    ))
+                  ) : (
+                    <CTableRow>
+                      <CTableDataCell colSpan={12} className="text-center">
+                        No se encontraron productos.
+                      </CTableDataCell>
+                    </CTableRow>
+                  )}
+                </CTableBody>
+              </CTable>
+
+              {/* Paginación y selector de registros por página */}
+              <CRow className="mt-3 align-items-center p-3 bg-body rounded mb-3">
+                <CCol className="d-flex align-items-center justify-content-center">
+                  <CPagination className="mb-0">
+                    <CPaginationItem
+                      disabled={pagination.page === 1}
+                      onClick={() => setPagination((prev) => ({ ...prev, page: prev.page - 1 }))}
+                    >
+                      Anterior
+                    </CPaginationItem>
+                    {Array.from({ length: pagination.totalPages }, (_, i) => (
+                      <CPaginationItem
+                        key={i + 1}
+                        active={i + 1 === pagination.page}
+                        onClick={() => setPagination((prev) => ({ ...prev, page: i + 1 }))}
+                      >
+                        {i + 1}
+                      </CPaginationItem>
+                    ))}
+                    <CPaginationItem
+                      disabled={pagination.page === pagination.totalPages}
+                      onClick={() => setPagination((prev) => ({ ...prev, page: prev.page + 1 }))}
+                    >
+                      Siguiente
+                    </CPaginationItem>
+                  </CPagination>
+                  <CFormSelect
+                    value={pagination.pageSize}
+                    onChange={(e) => setPagination((prev) => ({ ...prev, pageSize: Number(e.target.value), page: 1 }))}
+                    className="ms-3"
+                    style={{ width: 'auto' }}
+                  >
+                    <option value={10}>10 por página</option>
+                    <option value={20}>20 por página</option>
+                    <option value={30}>30 por página</option>
+                  </CFormSelect>
+                </CCol>
+              </CRow>
+            </>
           )}
         </CModalBody>
-        <CModalFooter>
-          <CButton color="info" disabled>
-            Productos seleccionados ({selectedProducts.length})
-          </CButton>
-          <div style={{ flex: 1 }}></div>
-          <CButton
-            color="primary"
-            onClick={handleAgregar}
-            disabled={
-              selectedProducts.length === 0 ||
-              !selectedProducts.every((p) => cantidades[p.idProducto] && !isNaN(cantidades[p.idProducto]) && parseFloat(cantidades[p.idProducto]) > 0)
-            }
-          >
-            Agregar
-          </CButton>
-          <CButton color="secondary" onClick={() => setModalVisible(false)}>
-            Cerrar
-          </CButton>
-        </CModalFooter>
       </CModal>
 
       {/* Toast en la esquina superior derecha */}

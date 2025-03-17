@@ -1,0 +1,331 @@
+import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { CContainer, CButton, CCard, CCardBody, CCardText, CCardTitle, CModal, CModalHeader, CModalBody, CModalFooter, CToast, CToastBody, CToastHeader } from '@coreui/react';
+import apiClient from '../../services/apiClient';
+
+const Caja = () => {
+  // Estado para almacenar las cajas creadas
+  const [cajas, setCajas] = useState([]);
+  // Estado para controlar el modal de confirmación
+  const [modalCerrarVisible, setModalCerrarVisible] = useState(false);
+  // Estado para guardar el índice de la caja que se va a cerrar
+  const [cajaACerrarIndex, setCajaACerrarIndex] = useState(null);
+  // Estado para controlar la visibilidad del toast
+  const [toastVisible, setToastVisible] = useState(false);
+
+  // Obtenemos el usuario actual desde el estado de Redux
+  const usuarioActual = useSelector(state => state.auth.user);
+  console.log("Usuario actual desde Redux:", usuarioActual);
+
+  const obtenerCajas = async () => {
+    try {
+      const response = await apiClient.get('/fs/cajas');
+      if (response.data) {
+        console.log("Estructura completa de las cajas:", response.data);
+        response.data.forEach((caja, index) => {
+          console.log(`Caja ${index} - ID:`, caja.idCaja, "Tipo:", typeof caja.idCaja);
+        });
+        setCajas(response.data);
+      }
+    } catch (error) {
+      console.error('Error al obtener las cajas:', error);
+    }
+  };
+
+  useEffect(() => {
+    obtenerCajas();
+    console.log("Estructura completa de usuarioActual:", usuarioActual);
+  }, []);
+
+  // Efecto para ocultar el toast después de 3 segundos
+  useEffect(() => {
+    let timer;
+    if (toastVisible) {
+      timer = setTimeout(() => {
+        setToastVisible(false);
+      }, 3000);
+    }
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [toastVisible]);
+
+  const handleCrearCaja = async () => {
+    const nombreCaja = prompt('Ingrese el nombre de la caja:');
+    if (!nombreCaja) return;
+
+    const nuevaCaja = {
+      nombreCaja,
+      fechaApertura: null,
+      fechaClausura: null,
+      saldoInicial: null,
+      entradas: null,
+      salidas: null,
+      saldoFinal: null,
+      observaciones: null,
+      estado: 'CERRADA',
+    };
+
+    try {
+      const response = await apiClient.post('/fs/cajas', nuevaCaja);
+      if (response.data) {
+        setCajas([...cajas, response.data]);
+      }
+    } catch (error) {
+      console.error('Error al crear la caja:', error);
+    }
+  };
+
+  const handleEliminarCaja = async (index) => {
+    const cajaId = cajas[index].idCaja;
+    console.log("ID de la caja a eliminar:", cajaId);
+    try {
+      await apiClient.delete(`/fs/cajas/${cajaId}`);
+      const nuevasCajas = cajas.filter((_, i) => i !== index);
+      setCajas(nuevasCajas);
+    } catch (error) {
+      console.error('Error al eliminar la caja:', error);
+    }
+  };
+
+  const handleEditarCaja = async (index) => {
+    const nuevoNombre = prompt('Ingrese el nuevo nombre de la caja:', cajas[index].nombreCaja);
+    if (nuevoNombre) {
+      const cajaId = cajas[index].idCaja;
+      console.log("ID de la caja a editar:", cajaId);
+      try {
+        await apiClient.put(`/fs/cajas/${cajaId}`, { nombreCaja: nuevoNombre });
+        const nuevasCajas = [...cajas];
+        nuevasCajas[index].nombreCaja = nuevoNombre;
+        setCajas(nuevasCajas);
+      } catch (error) {
+        console.error('Error al editar la caja:', error);
+      }
+    }
+  };
+
+  const handleAbrirCaja = async (index) => {
+    if (!cajas[index] || !cajas[index].idCaja) {
+      console.error("Error: Caja no encontrada o ID no válido", cajas[index]);
+      return;
+    }
+
+    const cajaId = cajas[index].idCaja;
+    console.log("ID de la caja a abrir:", cajaId);
+
+    if (!usuarioActual || !usuarioActual.idUsuario) {
+      console.error("Error: Usuario no encontrado o ID no válido", usuarioActual);
+      return;
+    }
+
+    const usuarioId = usuarioActual.idUsuario;
+    console.log("ID del usuario que abre la caja:", usuarioId);
+
+    const saldoInicialStr = prompt('Ingrese el saldo inicial de la caja:');
+
+    if (saldoInicialStr === null || saldoInicialStr.trim() === '') {
+      return;
+    }
+
+    const saldoInicial = parseFloat(saldoInicialStr);
+
+    if (isNaN(saldoInicial)) {
+      alert('Por favor ingrese un valor numérico válido');
+      return;
+    }
+
+    const datosApertura = {
+      idCaja: Number(cajaId),
+      idUsuario: Number(usuarioId),
+      saldoInicial: saldoInicial,
+    };
+
+    console.log("Datos enviados para abrir la caja:", datosApertura);
+
+    try {
+      const response = await apiClient.post('/fs/cajas/abrir', datosApertura);
+      console.log("Respuesta del backend al abrir la caja:", response.data);
+
+      const nuevasCajas = [...cajas];
+      nuevasCajas[index].estado = 'ABIERTA';
+      setCajas(nuevasCajas);
+
+      obtenerCajas();
+    } catch (error) {
+      console.error('Error al abrir la caja:', error);
+    }
+  };
+
+  // Función para mostrar el modal de confirmación
+  const mostrarConfirmacionCierre = (index) => {
+    setCajaACerrarIndex(index);
+    setModalCerrarVisible(true);
+  };
+
+  // Función para confirmar el cierre de la caja
+  const confirmarCerrarCaja = async () => {
+    const index = cajaACerrarIndex;
+
+    if (!cajas[index] || !cajas[index].idCaja) {
+      console.error("Error: Caja no encontrada o ID no válido", cajas[index]);
+      setModalCerrarVisible(false);
+      return;
+    }
+
+    const cajaId = cajas[index].idCaja;
+    console.log("ID de la caja a cerrar:", cajaId);
+
+    if (!usuarioActual || !usuarioActual.idUsuario) {
+      console.error("Error: Usuario no encontrado o ID no válido", usuarioActual);
+      setModalCerrarVisible(false);
+      return;
+    }
+
+    const usuarioId = usuarioActual.idUsuario;
+    console.log("ID del usuario que cierra la caja:", usuarioId);
+
+    const datosCierre = {
+      idCaja: Number(cajaId),
+      idUsuario: Number(usuarioId),
+    };
+
+    console.log("Datos enviados para cerrar la caja:", datosCierre);
+
+    try {
+      const response = await apiClient.post('/fs/cajas/cerrar', datosCierre);
+      console.log("Respuesta del backend al cerrar la caja:", response.data);
+
+      const nuevasCajas = [...cajas];
+      nuevasCajas[index].estado = 'CERRADA';
+      setCajas(nuevasCajas);
+
+      // Cerrar el modal
+      setModalCerrarVisible(false);
+
+      // Mostrar el toast de éxito
+      setToastVisible(true);
+
+      // Refrescar la lista de cajas
+      obtenerCajas();
+    } catch (error) {
+      console.error('Error al cerrar la caja:', error);
+      setModalCerrarVisible(false);
+    }
+  };
+
+  return (
+    <>
+      <CContainer>
+        {/* Botón para crear una nueva caja */}
+        <CButton color="primary" onClick={handleCrearCaja} className="mb-4">
+          Crear Caja
+        </CButton>
+
+        {/* Mensaje si no hay cajas creadas */}
+        {cajas.length === 0 && (
+          <p className="text-center">No hay cajas físicas creadas.</p>
+        )}
+
+        {/* Mostrar las cajas creadas */}
+        {cajas.length > 0 && (
+          <div>
+            {cajas.map((caja, index) => (
+              <CCard
+                key={index}
+                className={`mb-3 ${caja.estado === 'ABIERTA' ? 'bg-success-light' : 'bg-danger-light'}`}
+              >
+                <CCardBody className="d-flex justify-content-between align-items-center">
+                  {/* Información de la caja */}
+                  <div>
+                    <CCardTitle>{caja.nombreCaja}</CCardTitle>
+                    <CCardText>
+                      <strong>Estado:</strong> {caja.estado}
+                    </CCardText>
+                  </div>
+                  {/* Botones de abrir, cerrar, editar y eliminar */}
+                  <div>
+                    {/* Botón Abrir (solo si la caja está CERRADA) */}
+                    {caja.estado === 'CERRADA' && (
+                      <CButton
+                        color="success"
+                        onClick={() => handleAbrirCaja(index)}
+                        className="me-2"
+                      >
+                        Abrir Caja
+                      </CButton>
+                    )}
+                    {/* Botón Cerrar (solo si la caja está ABIERTA) */}
+                    {caja.estado === 'ABIERTA' && (
+                      <CButton
+                        color="danger"
+                        onClick={() => mostrarConfirmacionCierre(index)}
+                        className="me-2"
+                      >
+                        Cerrar Caja
+                      </CButton>
+                    )}
+                    {/* Botón Editar */}
+                    <CButton
+                      color="warning"
+                      onClick={() => handleEditarCaja(index)}
+                      className="me-2"
+                    >
+                      Editar
+                    </CButton>
+                    {/* Botón Eliminar */}
+                    <CButton
+                      color="danger"
+                      onClick={() => handleEliminarCaja(index)}
+                    >
+                      Eliminar
+                    </CButton>
+                  </div>
+                </CCardBody>
+              </CCard>
+            ))}
+          </div>
+        )}
+
+        {/* Modal de confirmación para cerrar caja */}
+        <CModal
+          visible={modalCerrarVisible}
+          onClose={() => setModalCerrarVisible(false)}
+          alignment="center"
+        >
+          <CModalHeader closeButton>
+            <h5>Confirmación</h5>
+          </CModalHeader>
+          <CModalBody>
+            ¿Está seguro que desea cerrar esta caja?
+          </CModalBody>
+          <CModalFooter>
+            <CButton
+              color="secondary"
+              onClick={() => setModalCerrarVisible(false)}
+            >
+              Cancelar
+            </CButton>
+            <CButton
+              color="danger"
+              onClick={confirmarCerrarCaja}
+            >
+              Confirmar
+            </CButton>
+          </CModalFooter>
+        </CModal>
+      </CContainer>
+
+      {/* Toast de éxito */}
+      <div className="position-fixed bottom-0 end-0 p-3" style={{ zIndex: 5 }}>
+        <CToast visible={toastVisible} autohide={true} delay={3000} className="bg-success text-white">
+          <CToastHeader closeButton className="bg-success text-white">
+            <strong className="me-auto">Éxito</strong>
+          </CToastHeader>
+          <CToastBody>Cierre de caja realizado con éxito.</CToastBody>
+        </CToast>
+      </div>
+    </>
+  );
+};
+
+export default Caja;

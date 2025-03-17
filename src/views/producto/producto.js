@@ -280,7 +280,7 @@ const AdvancedTableExample = () => {
     const matchesSearchText =
       item.nombreProducto.toLowerCase().includes(filterText.toLowerCase()) ||
       (item.marca && item.marca.toLowerCase().includes(filterText.toLowerCase())) ||
-      (item.categoria?.nombre && item.categoria.nombre.toLowerCase().includes(filterText.toLowerCase())) ||
+      (item.subcategoria?.categoria?.nombre && item.subcategoria.categoria.nombre.toLowerCase().includes(filterText.toLowerCase())) ||
       (item.material && item.material.toLowerCase().includes(filterText.toLowerCase())) ||
       (item.proveedor?.nombre && item.proveedor.nombre.toLowerCase().includes(filterText.toLowerCase())) ||
       (item.subcategoria?.nombre && item.subcategoria.nombre.toLowerCase().includes(filterText.toLowerCase())) ||

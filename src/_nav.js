@@ -180,7 +180,7 @@ const _nav = () => {
     {
       component: CNavItem,
       name: 'Cajas',
-      to: '/cajas',
+      to: '/caja',
       icon: <CIcon icon={cilSpeedometer} customClassName="nav-icon" />,
       show: isAuthenticated && hasPermission('/cajas'),
     },
