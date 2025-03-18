@@ -24,6 +24,8 @@ const Venta = React.lazy(() => import('./views/venta/venta'));
 const Usuario = React.lazy(() => import('./views/usuarios/usuario'));
 const Cliente = React.lazy(() => import('./views/cliente/cliente'));
 const RolesYPermisos = React.lazy(() => import('./views/rolesYpermisos/rolesYpermisos'));
+const Caja = React.lazy(() => import('./views/caja/caja'));
+
 
 const App = () => {
   const dispatch = useDispatch();
@@ -180,6 +182,23 @@ const App = () => {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="caja"
+              element={
+                <ProtectedRoute requiredPermissions={[
+                  '/cajas',                  
+                  '/cajas/:id:GET',          
+                  '/cajas/:id:PUT',         
+                  '/cajas/abrir:POST',       
+                  '/cajas/cerrar:POST',      
+                  '/cajas/:idCaja/entrada-manual:POST', 
+                  '/cajas/:idCaja/salida-manual:POST',  
+                ]}>
+                  <Caja />
+                </ProtectedRoute>
+              }
+            />
+
           </Route>
 
           {/* Ruta para manejar rutas no encontradas */}

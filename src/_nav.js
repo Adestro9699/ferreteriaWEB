@@ -101,7 +101,7 @@ const _nav = () => {
         '/productos/:id:DELETE',
         '/productos/upload',
         '/productos/imagen/{fileName:.+}',
-        '/categorias',       
+        '/categorias',
         '/subcategorias',
         '/proveedores',
         '/unidades-medida'
@@ -115,7 +115,7 @@ const _nav = () => {
         '/productos/:id:DELETE',
         '/productos/upload',
         '/productos/imagen/{fileName:.+}',
-        '/categorias',       
+        '/categorias',
         '/subcategorias',
         '/proveedores',
         '/unidades-medida'
@@ -226,9 +226,28 @@ const _nav = () => {
     {
       component: CNavItem,
       name: 'Cajas',
-      to: '/cajas',
+      to: '/caja',
       icon: <CIcon icon={cilInbox} customClassName="nav-icon" />,
-      show: isAuthenticated && hasPermission('/cajas'),
+      permissionsRequired: [
+        '/cajas',
+        '/cajas/:id:GET',
+        '/cajas:POST',
+        '/cajas/:id:PUT',
+        '/cajas/:id:DELETE',
+        '/cajas/abrir:POST',
+        '/cajas/cerrar:POST',
+        '/cajas/:idCaja/entrada-manual:POST',
+        '/cajas/:idCaja/salida-manual:POST',],
+      show: isAuthenticated && hasPermission(
+        '/cajas',
+        '/cajas/:id:GET',
+        '/cajas:POST',
+        '/cajas/:id:PUT',
+        '/cajas/:id:DELETE',
+        '/cajas/abrir:POST',
+        '/cajas/cerrar:POST',
+        '/cajas/:idCaja/entrada-manual:POST',
+        '/cajas/:idCaja/salida-manual:POST',),
     },
     {
       component: CNavTitle,

@@ -61,6 +61,9 @@ const RolesYPermisos = () => {
     "/usuarios": false,
     "/roles-permisos": false,
     "/cajas": false,
+    "/cajas/:id:GET": false,
+    "/cajas/:id:PUT": false,
+    "/cajas/:id:DELETE": false,
 
     // REPORTES
     "/reportes/ventas": false,
@@ -105,6 +108,10 @@ const RolesYPermisos = () => {
     "/productos/upload": ["productos"], // Asociado al grupo "Productos"
     "/productos/imagen/{fileName:.+}": ["productos"], // Asociado al grupo "Productos"  
     // ... (agrega más endpoints y sus dependencias)
+    "/cajas": ["cajas", "ventas"],
+    "/cajas/:id:GET": ["cajas"],
+    "/cajas/:id:PUT": ["cajas"],
+    "/cajas/:id:DELETE": ["cajas"],
   };
 
   useEffect(() => {
@@ -161,6 +168,18 @@ const RolesYPermisos = () => {
           "/subcategorias/:id:GET",
           "/subcategorias/:id:PUT",
           "/subcategorias/:id:DELETE"
+        ];
+      case 'cajas':
+        return [
+          "/cajas",
+          "/cajas/:id:GET",
+          "/cajas:POST",
+          "/cajas/:id:PUT",
+          "/cajas/:id:DELETE",
+          "/cajas/abrir:POST",
+          "/cajas/cerrar:POST",
+          "/cajas/:idCaja/entrada-manual:POST",
+          "/cajas/:idCaja/salida-manual:POST"
         ];
       // ... (otros grupos)
       default:
@@ -374,6 +393,17 @@ const RolesYPermisos = () => {
                   permisos['/cajas']
                 }
                 onChange={() => handleGroupCheckboxChange('usuarios')}
+                className="mb-3"
+              />
+              <CFormCheck
+                label="Cajas"
+                checked={
+                  permisos['/cajas'] &&
+                  permisos['/cajas/:id:GET'] &&
+                  permisos['/cajas/:id:PUT'] &&
+                  permisos['/cajas/:id:DELETE']
+                }
+                onChange={() => handleGroupCheckboxChange('cajas')}
                 className="mb-3"
               />
             </CAccordionBody>

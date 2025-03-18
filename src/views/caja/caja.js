@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { CContainer, CButton, CCard, CCardBody, CCardText, CCardTitle, CModal, CModalHeader, CModalBody, CModalFooter, CToast, CToastBody, CToastHeader } from '@coreui/react';
 import apiClient from '../../services/apiClient';
@@ -6,12 +6,22 @@ import apiClient from '../../services/apiClient';
 const Caja = () => {
   // Estado para almacenar las cajas creadas
   const [cajas, setCajas] = useState([]);
-  // Estado para controlar el modal de confirmación
+  // Estado para controlar el modal de confirmación de cierre
   const [modalCerrarVisible, setModalCerrarVisible] = useState(false);
-  // Estado para guardar el índice de la caja que se va a cerrar
+  // Estado para controlar el modal de confirmación de eliminación
+  const [modalEliminarVisible, setModalEliminarVisible] = useState(false);
+  // Estado para guardar el índice de la caja que se va a cerrar o eliminar
   const [cajaACerrarIndex, setCajaACerrarIndex] = useState(null);
-  // Estado para controlar la visibilidad del toast
+  const [cajaAEliminarIndex, setCajaAEliminarIndex] = useState(null);
+  // Estado para controlar la visibilidad y contenido de los toasts
   const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState('success'); // 'success' o 'danger'
+
+  // Referencias para manejar el foco
+  const mainContainerRef = useRef(null);
+  const eliminarButtonRef = useRef(null);
+  const cerrarButtonRef = useRef(null);
 
   // Obtenemos el usuario actual desde el estado de Redux
   const usuarioActual = useSelector(state => state.auth.user);
@@ -76,15 +86,50 @@ const Caja = () => {
     }
   };
 
-  const handleEliminarCaja = async (index) => {
+  // Función para mostrar el modal de confirmación de eliminación
+  const mostrarConfirmacionEliminar = (index) => {
+    setCajaAEliminarIndex(index);
+    setModalEliminarVisible(true);
+  };
+
+  // Función para confirmar la eliminación de la caja
+  const confirmarEliminarCaja = async () => {
+    const index = cajaAEliminarIndex;
     const cajaId = cajas[index].idCaja;
     console.log("ID de la caja a eliminar:", cajaId);
+
     try {
       await apiClient.delete(`/fs/cajas/${cajaId}`);
+
+      // Actualizar la lista de cajas
       const nuevasCajas = cajas.filter((_, i) => i !== index);
       setCajas(nuevasCajas);
+
+      // Mostrar toast de éxito
+      setToastMessage('Eliminación exitosa');
+      setToastType('success');
+      setToastVisible(true);
+
     } catch (error) {
       console.error('Error al eliminar la caja:', error);
+
+      // Verificar si el error es debido a registros relacionados
+      if (error.response && error.response.status === 400) {
+        setToastMessage('No se puede eliminar esta caja porque tiene registros relacionados');
+      } else {
+        setToastMessage('Error al eliminar la caja');
+      }
+
+      setToastType('danger');
+      setToastVisible(true);
+    } finally {
+      // Cerrar el modal de confirmación y devolver el foco al contenedor principal
+      setModalEliminarVisible(false);
+      setTimeout(() => {
+        if (mainContainerRef.current) {
+          mainContainerRef.current.focus();
+        }
+      }, 50);
     }
   };
 
@@ -156,7 +201,7 @@ const Caja = () => {
     }
   };
 
-  // Función para mostrar el modal de confirmación
+  // Función para mostrar el modal de confirmación de cierre
   const mostrarConfirmacionCierre = (index) => {
     setCajaACerrarIndex(index);
     setModalCerrarVisible(true);
@@ -201,8 +246,17 @@ const Caja = () => {
 
       // Cerrar el modal
       setModalCerrarVisible(false);
+      
+      // Devolver el foco al contenedor principal
+      setTimeout(() => {
+        if (mainContainerRef.current) {
+          mainContainerRef.current.focus();
+        }
+      }, 50);
 
       // Mostrar el toast de éxito
+      setToastMessage('Cierre de caja realizado con éxito');
+      setToastType('success');
       setToastVisible(true);
 
       // Refrescar la lista de cajas
@@ -210,12 +264,43 @@ const Caja = () => {
     } catch (error) {
       console.error('Error al cerrar la caja:', error);
       setModalCerrarVisible(false);
+      
+      // Devolver el foco al contenedor principal
+      setTimeout(() => {
+        if (mainContainerRef.current) {
+          mainContainerRef.current.focus();
+        }
+      }, 50);
     }
+  };
+
+  // Función para cerrar modal y restaurar foco
+  const handleCloseEliminarModal = () => {
+    setModalEliminarVisible(false);
+    setTimeout(() => {
+      if (mainContainerRef.current) {
+        mainContainerRef.current.focus();
+      }
+    }, 50);
+  };
+
+  // Función para cerrar modal y restaurar foco
+  const handleCloseCerrarModal = () => {
+    setModalCerrarVisible(false);
+    setTimeout(() => {
+      if (mainContainerRef.current) {
+        mainContainerRef.current.focus();
+      }
+    }, 50);
   };
 
   return (
     <>
-      <CContainer>
+      <CContainer 
+        ref={mainContainerRef} 
+        tabIndex="-1" 
+        style={{ outline: 'none' }}
+      >
         {/* Botón para crear una nueva caja */}
         <CButton color="primary" onClick={handleCrearCaja} className="mb-4">
           Crear Caja
@@ -260,6 +345,7 @@ const Caja = () => {
                         color="danger"
                         onClick={() => mostrarConfirmacionCierre(index)}
                         className="me-2"
+                        ref={index === cajaACerrarIndex ? cerrarButtonRef : null}
                       >
                         Cerrar Caja
                       </CButton>
@@ -275,7 +361,8 @@ const Caja = () => {
                     {/* Botón Eliminar */}
                     <CButton
                       color="danger"
-                      onClick={() => handleEliminarCaja(index)}
+                      onClick={() => mostrarConfirmacionEliminar(index)}
+                      ref={index === cajaAEliminarIndex ? eliminarButtonRef : null}
                     >
                       Eliminar
                     </CButton>
@@ -289,7 +376,7 @@ const Caja = () => {
         {/* Modal de confirmación para cerrar caja */}
         <CModal
           visible={modalCerrarVisible}
-          onClose={() => setModalCerrarVisible(false)}
+          onClose={handleCloseCerrarModal}
           alignment="center"
         >
           <CModalHeader closeButton>
@@ -301,7 +388,7 @@ const Caja = () => {
           <CModalFooter>
             <CButton
               color="secondary"
-              onClick={() => setModalCerrarVisible(false)}
+              onClick={handleCloseCerrarModal}
             >
               Cancelar
             </CButton>
@@ -313,15 +400,48 @@ const Caja = () => {
             </CButton>
           </CModalFooter>
         </CModal>
+
+        {/* Modal de confirmación para eliminar caja */}
+        <CModal
+          visible={modalEliminarVisible}
+          onClose={handleCloseEliminarModal}
+          alignment="center"
+        >
+          <CModalHeader closeButton>
+            <h5>Confirmación</h5>
+          </CModalHeader>
+          <CModalBody>
+            ¿Está seguro que desea eliminar esta caja?
+          </CModalBody>
+          <CModalFooter>
+            <CButton
+              color="secondary"
+              onClick={handleCloseEliminarModal}
+            >
+              Cancelar
+            </CButton>
+            <CButton
+              color="danger"
+              onClick={confirmarEliminarCaja}
+            >
+              Confirmar
+            </CButton>
+          </CModalFooter>
+        </CModal>
       </CContainer>
 
-      {/* Toast de éxito */}
+      {/* Toast para mensajes */}
       <div className="position-fixed bottom-0 end-0 p-3" style={{ zIndex: 5 }}>
-        <CToast visible={toastVisible} autohide={true} delay={3000} className="bg-success text-white">
-          <CToastHeader closeButton className="bg-success text-white">
-            <strong className="me-auto">Éxito</strong>
+        <CToast
+          visible={toastVisible}
+          autohide={true}
+          delay={3000}
+          className={`bg-${toastType} text-white`}
+        >
+          <CToastHeader closeButton className={`bg-${toastType} text-white`}>
+            <strong className="me-auto">{toastType === 'success' ? 'Éxito' : 'Error'}</strong>
           </CToastHeader>
-          <CToastBody>Cierre de caja realizado con éxito.</CToastBody>
+          <CToastBody>{toastMessage}</CToastBody>
         </CToast>
       </div>
     </>
