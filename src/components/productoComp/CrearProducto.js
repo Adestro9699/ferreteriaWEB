@@ -15,6 +15,8 @@ import {
 } from '@coreui/react';
 import apiClient from '../../services/apiClient'; // Importa tu apiClient
 
+//COMPONENTE PARA CREAR UN PRODUCTO
+
 const CrearProducto = ({ show, onClose, onSave, categorias, proveedores, subcategorias, unidadesMedida }) => {
   const [newProduct, setNewProduct] = useState({
     nombreProducto: '',

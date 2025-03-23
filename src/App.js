@@ -7,6 +7,8 @@ import apiClient from './services/apiClient'; // Importa tu apiClient
 import { loginSuccess } from './actions/authActions'; // Importa la acción de autenticación
 import ProtectedRoute from './components/ProtectedRoute'; // Importa el componente ProtectedRoute
 
+//COMPONENTE QUE PERMITE UNA VISTA SE RENDERICE SI TIENE LOS PERMISOS
+
 // Componentes lazy-loaded
 const DefaultLayout = React.lazy(() => import('./layout/DefaultLayout'));
 const Login = React.lazy(() => import('./views/pages/login/Login'));

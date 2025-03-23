@@ -15,6 +15,7 @@ import {
 } from '@coreui/react';
 import apiClient from '../../services/apiClient';
 
+// COMPONENTE PARA GUARDAR PERMISOS EN LA BASE DE DATOS (vista de roles y permisos)
 const RolesYPermisos = () => {
   const { usuarioId } = useParams(); // idAcceso
   const navigate = useNavigate();
@@ -43,20 +44,16 @@ const RolesYPermisos = () => {
     "/unidades-medida/:id:DELETE": false,
     "/productos/upload": false, // Permiso para subir imágenes
     "/productos/imagen/{fileName:.+}": false, // Permiso para obtener imágenes
-
     "/movimientos": false,
-
     // FACTURACIÓN
     "/ventas": false,
     "/lista-ventas": false,
     "/cotizaciones": false,
     "/compras": false,
     "/transferencias": false,
-
     // CLIENTES
     "/clientes": false,
     "/creditos": false,
-
     // USUARIOS Y PERMISOS
     "/usuarios": false,
     "/roles-permisos": false,
@@ -64,18 +61,15 @@ const RolesYPermisos = () => {
     "/cajas/:id:GET": false,
     "/cajas/:id:PUT": false,
     "/cajas/:id:DELETE": false,
-
     // REPORTES
     "/reportes/ventas": false,
     "/reportes/compras": false,
     "/reportes/inventario": false,
     "/reportes/transferencias": false,
-
     // CONFIGURACIÓN
     "/configuracion/empresa": false,
     "/configuracion/parametria": false,
     "/configuracion/backup": false,
-
     // EXTRAS
     "/notificaciones": false,
     "/calendario": false,
@@ -120,10 +114,8 @@ const RolesYPermisos = () => {
         try {
           const response = await apiClient.get('/fs/usuarios/completo');
           const usuarioCompleto = response.data.find(u => u.idAcceso === parseInt(usuarioId));
-
           // Manejar permisos vacíos
           const permisosIniciales = usuarioCompleto?.permisos || permisos;
-
           setUsuario(usuarioCompleto);
           setRol(usuarioCompleto?.rol || 'USER');
           setPermisos(permisosIniciales);
@@ -197,10 +189,8 @@ const RolesYPermisos = () => {
   const handleGroupCheckboxChange = (groupName) => {
     const endpoints = getGroupEndpoints(groupName);
     const newPermisos = { ...permisos };
-
     // Verificar si todos los endpoints del grupo están actualmente en true
     const todosMarcados = endpoints.every(endpoint => permisos[endpoint]);
-
     if (todosMarcados) {
       // Desmarcar solo los endpoints que no son utilizados por otros grupos
       endpoints.forEach(endpoint => {
@@ -216,7 +206,6 @@ const RolesYPermisos = () => {
         }
       });
     }
-
     setPermisos(newPermisos);
   };
 
@@ -224,14 +213,12 @@ const RolesYPermisos = () => {
    * Guardar cambios en el backend (AHORA INCLUYE EL ROL)
    */
   const [mensajeGuardado, setMensajeGuardado] = useState(null);
-
   const handleGuardar = async () => {
     try {
       const requestBody = {
         rol: rol,
         permisos: permisos,
       };
-
       const response = await apiClient.put(`/fs/accesos/${usuarioId}/permisos`, requestBody);
       if (response.status === 200) {
         setMensajeGuardado("Permisos actualizados correctamente.");
@@ -256,247 +243,251 @@ const RolesYPermisos = () => {
   }
 
   return (
-    <CCard>
-      <CCardHeader>
-        <h3>Editar Permisos - {usuario?.nombreTrabajador}</h3>
-      </CCardHeader>
-      <CCardBody>
-        {/* Selector de Rol */}
-        <div className="mb-4">
-          <label className="form-label">Rol:</label>
-          <CFormSelect
-            value={rol}
-            onChange={(e) => setRol(e.target.value)}
-          >
-            <option value="USER">Usuario Normal (USER)</option>
-            <option value="ADMIN">Administrador (ADMIN)</option>
-          </CFormSelect>
-        </div>
+    <div className="container mt-4"> 
+      <CCard className="shadow-sm w-100 mx-auto" style={{ maxWidth: '1200px' }}> 
+        <CCardHeader className="bg-primary text-white d-flex align-items-center justify-content-between">
+          <h3 className="m-0">Editar Permisos - {usuario?.nombreTrabajador}</h3>
+        </CCardHeader>
+        <CCardBody>
+          {/* Selector de Rol */}
+          <div className="mb-4">
+            <label className="form-label fw-bold">Rol:</label>
+            <CFormSelect
+              value={rol}
+              onChange={(e) => setRol(e.target.value)}
+              className="w-50"
+            >
+              <option value="USER">Usuario Normal (USER)</option>
+              <option value="ADMIN">Administrador (ADMIN)</option>
+            </CFormSelect>
+          </div>
 
-        {/* PERMISOS POR CATEGORÍA */}
-        <CAccordion alwaysOpen>
-          {/* INVENTARIO */}
-          <CAccordionItem>
-            <CAccordionHeader>📦 INVENTARIO</CAccordionHeader>
-            <CAccordionBody>
-              <CFormCheck
-                label="Productos"
-                checked={
-                  permisos['/productos'] &&
-                  permisos['/productos/:id:GET'] &&
-                  permisos['/productos/:id:PUT'] &&
-                  permisos['/productos/:id:DELETE'] &&
-                  permisos['/categorias'] &&
-                  permisos['/subcategorias'] &&
-                  permisos['/proveedores'] &&
-                  permisos['/unidades-medida'] &&
-                  permisos['/productos/upload'] && // Nuevo endpoint
-                  permisos['/productos/imagen/{fileName:.+}'] // Nuevo endpoint
-                }
-                onChange={() => handleGroupCheckboxChange('productos')}
-                className="mb-3"
-              />
-              <CFormCheck
-                label="Proveedores"
-                checked={
-                  permisos['/proveedores'] &&
-                  permisos['/proveedores/:id:GET'] &&
-                  permisos['/proveedores/:id:PUT'] &&
-                  permisos['/proveedores/:id:DELETE']
-                }
-                onChange={() => handleGroupCheckboxChange('proveedores')}
-                className="mb-3"
-              />
-              <CFormCheck
-                label="Categorias"
-                checked={
-                  permisos['/categorias'] &&
-                  permisos['/categorias/:id:GET'] &&
-                  permisos['/categorias/:id:PUT'] &&
-                  permisos['/categorias/:id:DELETE'] &&
-                  permisos['/subcategorias'] &&
-                  permisos['/subcategorias/:id:GET'] &&
-                  permisos['/subcategorias/:id:PUT'] &&
-                  permisos['/subcategorias/:id:DELETE']
-                }
-                onChange={() => handleGroupCheckboxChange('categorias')}
-                className="mb-3"
-              />
-              <CFormCheck
-                label="Movimientos"
-                checked={permisos['/movimientos']}
-                onChange={() => handleGroupCheckboxChange('movimientos')}
-                className="mb-3"
-              />
-            </CAccordionBody>
-          </CAccordionItem>
+          {/* PERMISOS POR CATEGORÍA */}
+          <CAccordion alwaysOpen className="border rounded">
+            {/* INVENTARIO */}
+            <CAccordionItem className="border-bottom">
+              <CAccordionHeader className="bg-light fw-bold">📦 INVENTARIO</CAccordionHeader>
+              <CAccordionBody>
+                <CFormCheck
+                  label="Productos"
+                  checked={
+                    permisos['/productos'] &&
+                    permisos['/productos/:id:GET'] &&
+                    permisos['/productos/:id:PUT'] &&
+                    permisos['/productos/:id:DELETE'] &&
+                    permisos['/categorias'] &&
+                    permisos['/subcategorias'] &&
+                    permisos['/proveedores'] &&
+                    permisos['/unidades-medida'] &&
+                    permisos['/productos/upload'] && // Nuevo endpoint
+                    permisos['/productos/imagen/{fileName:.+}'] // Nuevo endpoint
+                  }
+                  onChange={() => handleGroupCheckboxChange('productos')}
+                  className="mb-3"
+                />
+                <CFormCheck
+                  label="Proveedores"
+                  checked={
+                    permisos['/proveedores'] &&
+                    permisos['/proveedores/:id:GET'] &&
+                    permisos['/proveedores/:id:PUT'] &&
+                    permisos['/proveedores/:id:DELETE']
+                  }
+                  onChange={() => handleGroupCheckboxChange('proveedores')}
+                  className="mb-3"
+                />
+                <CFormCheck
+                  label="Categorias"
+                  checked={
+                    permisos['/categorias'] &&
+                    permisos['/categorias/:id:GET'] &&
+                    permisos['/categorias/:id:PUT'] &&
+                    permisos['/categorias/:id:DELETE'] &&
+                    permisos['/subcategorias'] &&
+                    permisos['/subcategorias/:id:GET'] &&
+                    permisos['/subcategorias/:id:PUT'] &&
+                    permisos['/subcategorias/:id:DELETE']
+                  }
+                  onChange={() => handleGroupCheckboxChange('categorias')}
+                  className="mb-3"
+                />
+                <CFormCheck
+                  label="Movimientos"
+                  checked={permisos['/movimientos']}
+                  onChange={() => handleGroupCheckboxChange('movimientos')}
+                  className="mb-3"
+                />
+              </CAccordionBody>
+            </CAccordionItem>
 
-          {/* FACTURACIÓN */}
-          <CAccordionItem>
-            <CAccordionHeader>💳 FACTURACIÓN</CAccordionHeader>
-            <CAccordionBody>
-              <CFormCheck
-                label="Ventas"
-                checked={
-                  permisos['/ventas'] &&
-                  permisos['/lista-ventas']
-                }
-                onChange={() => handleGroupCheckboxChange('ventas')}
-                className="mb-3"
-              />
-              <CFormCheck
-                label="Cotizaciones"
-                checked={permisos['/cotizaciones']}
-                onChange={() => handleGroupCheckboxChange('cotizaciones')}
-                className="mb-3"
-              />
-              <CFormCheck
-                label="Compras"
-                checked={permisos['/compras']}
-                onChange={() => handleGroupCheckboxChange('compras')}
-                className="mb-3"
-              />
-              <CFormCheck
-                label="Transferencias"
-                checked={permisos['/transferencias']}
-                onChange={() => handleGroupCheckboxChange('transferencias')}
-                className="mb-3"
-              />
-            </CAccordionBody>
-          </CAccordionItem>
+            {/* FACTURACIÓN */}
+            <CAccordionItem className="border-bottom">
+              <CAccordionHeader className="bg-light fw-bold">💳 FACTURACIÓN</CAccordionHeader>
+              <CAccordionBody>
+                <CFormCheck
+                  label="Ventas"
+                  checked={
+                    permisos['/ventas'] &&
+                    permisos['/lista-ventas']
+                  }
+                  onChange={() => handleGroupCheckboxChange('ventas')}
+                  className="mb-3"
+                />
+                <CFormCheck
+                  label="Cotizaciones"
+                  checked={permisos['/cotizaciones']}
+                  onChange={() => handleGroupCheckboxChange('cotizaciones')}
+                  className="mb-3"
+                />
+                <CFormCheck
+                  label="Compras"
+                  checked={permisos['/compras']}
+                  onChange={() => handleGroupCheckboxChange('compras')}
+                  className="mb-3"
+                />
+                <CFormCheck
+                  label="Transferencias"
+                  checked={permisos['/transferencias']}
+                  onChange={() => handleGroupCheckboxChange('transferencias')}
+                  className="mb-3"
+                />
+              </CAccordionBody>
+            </CAccordionItem>
 
-          {/* CLIENTES */}
-          <CAccordionItem>
-            <CAccordionHeader>👥 CLIENTES</CAccordionHeader>
-            <CAccordionBody>
-              <CFormCheck
-                label="Lista de Clientes"
-                checked={
-                  permisos['/clientes'] &&
-                  permisos['/creditos']
-                }
-                onChange={() => handleGroupCheckboxChange('clientes')}
-                className="mb-3"
-              />
-            </CAccordionBody>
-          </CAccordionItem>
+            {/* CLIENTES */}
+            <CAccordionItem className="border-bottom">
+              <CAccordionHeader className="bg-light fw-bold">👥 CLIENTES</CAccordionHeader>
+              <CAccordionBody>
+                <CFormCheck
+                  label="Lista de Clientes"
+                  checked={
+                    permisos['/clientes'] &&
+                    permisos['/creditos']
+                  }
+                  onChange={() => handleGroupCheckboxChange('clientes')}
+                  className="mb-3"
+                />
+              </CAccordionBody>
+            </CAccordionItem>
 
-          {/* USUARIOS Y PERMISOS */}
-          <CAccordionItem>
-            <CAccordionHeader>👤 USUARIOS Y PERMISOS</CAccordionHeader>
-            <CAccordionBody>
-              <CFormCheck
-                label="Usuarios"
-                checked={
-                  permisos['/usuarios'] &&
-                  permisos['/roles-permisos'] &&
-                  permisos['/cajas']
-                }
-                onChange={() => handleGroupCheckboxChange('usuarios')}
-                className="mb-3"
-              />
-              <CFormCheck
-                label="Cajas"
-                checked={
-                  permisos['/cajas'] &&
-                  permisos['/cajas/:id:GET'] &&
-                  permisos['/cajas/:id:PUT'] &&
-                  permisos['/cajas/:id:DELETE']
-                }
-                onChange={() => handleGroupCheckboxChange('cajas')}
-                className="mb-3"
-              />
-            </CAccordionBody>
-          </CAccordionItem>
+            {/* USUARIOS Y PERMISOS */}
+            <CAccordionItem className="border-bottom">
+              <CAccordionHeader className="bg-light fw-bold">👤 USUARIOS Y PERMISOS</CAccordionHeader>
+              <CAccordionBody>
+                <CFormCheck
+                  label="Usuarios"
+                  checked={
+                    permisos['/usuarios'] &&
+                    permisos['/roles-permisos'] &&
+                    permisos['/cajas']
+                  }
+                  onChange={() => handleGroupCheckboxChange('usuarios')}
+                  className="mb-3"
+                />
+                <CFormCheck
+                  label="Cajas"
+                  checked={
+                    permisos['/cajas'] &&
+                    permisos['/cajas/:id:GET'] &&
+                    permisos['/cajas/:id:PUT'] &&
+                    permisos['/cajas/:id:DELETE']
+                  }
+                  onChange={() => handleGroupCheckboxChange('cajas')}
+                  className="mb-3"
+                />
+              </CAccordionBody>
+            </CAccordionItem>
 
-          {/* REPORTES */}
-          <CAccordionItem>
-            <CAccordionHeader>📊 REPORTES</CAccordionHeader>
-            <CAccordionBody>
-              <CFormCheck
-                label="Reportes de Ventas"
-                checked={permisos['/reportes/ventas']}
-                onChange={() => handleGroupCheckboxChange('reportes-ventas')}
-                className="mb-3"
-              />
-              <CFormCheck
-                label="Reportes de Compras"
-                checked={permisos['/reportes/compras']}
-                onChange={() => handleGroupCheckboxChange('reportes-compras')}
-                className="mb-3"
-              />
-              <CFormCheck
-                label="Reportes de Inventario"
-                checked={permisos['/reportes/inventario']}
-                onChange={() => handleGroupCheckboxChange('reportes-inventario')}
-                className="mb-3"
-              />
-              <CFormCheck
-                label="Reportes de Transferencias"
-                checked={permisos['/reportes/transferencias']}
-                onChange={() => handleGroupCheckboxChange('reportes-transferencias')}
-                className="mb-3"
-              />
-            </CAccordionBody>
-          </CAccordionItem>
+            {/* REPORTES */}
+            <CAccordionItem className="border-bottom">
+              <CAccordionHeader className="bg-light fw-bold">📊 REPORTES</CAccordionHeader>
+              <CAccordionBody>
+                <CFormCheck
+                  label="Reportes de Ventas"
+                  checked={permisos['/reportes/ventas']}
+                  onChange={() => handleGroupCheckboxChange('reportes-ventas')}
+                  className="mb-3"
+                />
+                <CFormCheck
+                  label="Reportes de Compras"
+                  checked={permisos['/reportes/compras']}
+                  onChange={() => handleGroupCheckboxChange('reportes-compras')}
+                  className="mb-3"
+                />
+                <CFormCheck
+                  label="Reportes de Inventario"
+                  checked={permisos['/reportes/inventario']}
+                  onChange={() => handleGroupCheckboxChange('reportes-inventario')}
+                  className="mb-3"
+                />
+                <CFormCheck
+                  label="Reportes de Transferencias"
+                  checked={permisos['/reportes/transferencias']}
+                  onChange={() => handleGroupCheckboxChange('reportes-transferencias')}
+                  className="mb-3"
+                />
+              </CAccordionBody>
+            </CAccordionItem>
 
-          {/* CONFIGURACIÓN */}
-          <CAccordionItem>
-            <CAccordionHeader>⚙️ CONFIGURACIÓN</CAccordionHeader>
-            <CAccordionBody>
-              <CFormCheck
-                label="Empresa y Parametría"
-                checked={
-                  permisos['/configuracion/empresa'] &&
-                  permisos['/configuracion/parametria'] &&
-                  permisos['/configuracion/backup']
-                }
-                onChange={() => handleGroupCheckboxChange('empresa')}
-                className="mb-3"
-              />
-            </CAccordionBody>
-          </CAccordionItem>
+            {/* CONFIGURACIÓN */}
+            <CAccordionItem className="border-bottom">
+              <CAccordionHeader className="bg-light fw-bold">⚙️ CONFIGURACIÓN</CAccordionHeader>
+              <CAccordionBody>
+                <CFormCheck
+                  label="Empresa y Parametría"
+                  checked={
+                    permisos['/configuracion/empresa'] &&
+                    permisos['/configuracion/parametria'] &&
+                    permisos['/configuracion/backup']
+                  }
+                  onChange={() => handleGroupCheckboxChange('empresa')}
+                  className="mb-3"
+                />
+              </CAccordionBody>
+            </CAccordionItem>
 
-          {/* EXTRAS */}
-          <CAccordionItem>
-            <CAccordionHeader>🔔 EXTRAS</CAccordionHeader>
-            <CAccordionBody>
-              <CFormCheck
-                label="Notificaciones"
-                checked={permisos['/notificaciones']}
-                onChange={() => handleGroupCheckboxChange('notificaciones')}
-                className="mb-3"
-              />
-              <CFormCheck
-                label="Calendario"
-                checked={permisos['/calendario']}
-                onChange={() => handleGroupCheckboxChange('calendario')}
-                className="mb-3"
-              />
-              <CFormCheck
-                label="Soporte"
-                checked={permisos['/soporte']}
-                onChange={() => handleGroupCheckboxChange('soporte')}
-                className="mb-3"
-              />
-            </CAccordionBody>
-          </CAccordionItem>
-        </CAccordion>
+            {/* EXTRAS */}
+            <CAccordionItem className="border-bottom">
+              <CAccordionHeader className="bg-light fw-bold">🔔 EXTRAS</CAccordionHeader>
+              <CAccordionBody>
+                <CFormCheck
+                  label="Notificaciones"
+                  checked={permisos['/notificaciones']}
+                  onChange={() => handleGroupCheckboxChange('notificaciones')}
+                  className="mb-3"
+                />
+                <CFormCheck
+                  label="Calendario"
+                  checked={permisos['/calendario']}
+                  onChange={() => handleGroupCheckboxChange('calendario')}
+                  className="mb-3"
+                />
+                <CFormCheck
+                  label="Soporte"
+                  checked={permisos['/soporte']}
+                  onChange={() => handleGroupCheckboxChange('soporte')}
+                  className="mb-3"
+                />
+              </CAccordionBody>
+            </CAccordionItem>
+          </CAccordion>
 
-        {mensajeGuardado && (
-          <CAlert color={mensajeGuardado.includes("Error") ? "danger" : "success"} className="mb-4">
-            {mensajeGuardado}
-          </CAlert>
-        )}
+          {/* Mensaje de confirmación o error */}
+          {mensajeGuardado && (
+            <CAlert color={mensajeGuardado.includes("Error") ? "danger" : "success"} className="mt-4">
+              {mensajeGuardado}
+            </CAlert>
+          )}
 
-        {/* Botón de Guardar */}
-        <div className="mt-4">
-          <CButton color="primary" onClick={handleGuardar}>
-            Guardar Cambios
-          </CButton>
-        </div>
-      </CCardBody>
-    </CCard>
+          {/* Botón de Guardar */}
+          <div className="d-flex justify-content-end mt-4">
+            <CButton color="primary" onClick={handleGuardar}>
+              Guardar Cambios
+            </CButton>
+          </div>
+        </CCardBody>
+      </CCard>
+    </div>
   );
 };
 

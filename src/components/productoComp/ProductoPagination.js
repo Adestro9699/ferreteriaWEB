@@ -15,8 +15,9 @@ const ProductoPagination = ({
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
   return (
-    <div className="d-flex justify-content-center align-items-center">
-      <CPagination>
+    <div className="d-flex align-items-center justify-content-between">
+      {/* Paginación */}
+      <CPagination className="m-0">
         <CPaginationItem
           disabled={currentPage === 1}
           onClick={() => setCurrentPage(currentPage - 1)}
@@ -39,11 +40,13 @@ const ProductoPagination = ({
           Next
         </CPaginationItem>
       </CPagination>
+
+      {/* Selector de elementos por página */}
       <CFormSelect
         value={itemsPerPage}
         onChange={handleItemsPerPageChange}
         className="ms-3"
-        style={{ width: 'auto' }}
+        style={{ width: 'auto', height: 'fit-content' }}
       >
         <option value={10}>10 por página</option>
         <option value={20}>20 por página</option>
