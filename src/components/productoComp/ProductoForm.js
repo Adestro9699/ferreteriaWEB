@@ -21,6 +21,8 @@ import {
 } from '@coreui/icons';
 import apiClient from '../../services/apiClient'; // Importa tu apiClient
 
+//FORMULARIO QUUE APARECE AL AR CLICK EN MOSTRAR
+
 const ProductoForm = ({ producto }) => {
   // Calcular el porcentaje de stock
   const maxStock = 1000; // Stock máximo de referencia

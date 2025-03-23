@@ -15,6 +15,8 @@ import { CIcon } from '@coreui/icons-react';
 import { cilPencil, cilTrash, cilSortAlphaDown, cilSortAlphaUp } from '@coreui/icons';
 import ProductoForm from './ProductoForm'; // Importar el nuevo componente
 
+//LA TABLA QUE MUESTRA EL PRODUCTO EN GENERAL
+
 // Definir la función getBadge
 const getBadge = (status) => {
   switch (status) {

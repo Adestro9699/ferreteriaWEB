@@ -25,6 +25,7 @@ import ProductoModal from '../../components/productoComp/ProductoModal';
 import ProductoToasts from '../../components/productoComp/ProductoToasts';
 import ProductoExport from '../../components/productoComp/ProductoExport';
 
+//CLASE PADRE
 const Producto = () => {
   const [details, setDetails] = useState([]);
   const [filterText, setFilterText] = useState('');
@@ -49,6 +50,7 @@ const Producto = () => {
   const [showDeleteMultipleConfirmation, setShowDeleteMultipleConfirmation] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [marcas, setMarcas] = useState([]);
 
   // Estados para categorías, proveedores y subcategorías y unidades de medida
   const [categorias, setCategorias] = useState([]);
@@ -64,6 +66,12 @@ const Producto = () => {
         // Obtener productos
         const productosResponse = await apiClient.get('/fs/productos');
         setItems(productosResponse.data);
+
+        // Extraer marcas únicas de los productos
+        const marcasUnicas = Array.from(
+          new Set(productosResponse.data.map((producto) => producto.marca))
+        ).filter((marca) => marca); // Filtrar valores no nulos
+        setMarcas(marcasUnicas);
 
         // Obtener categorías
         const categoriasResponse = await apiClient.get('/fs/categorias');
@@ -148,19 +156,28 @@ const Producto = () => {
   };
 
   // Función para guardar cambios en la edición
-  const handleSaveChanges = async () => {
-    if (!currentProduct) return;
+  const handleSaveChanges = async (updatedProduct) => {
+    if (!updatedProduct) return;
 
     try {
-      const response = await apiClient.put(`/fs/productos/${currentProduct.idProducto}`, currentProduct);
+      // Enviar el producto actualizado al backend
+      const response = await apiClient.put(`/fs/productos/${updatedProduct.idProducto}`, updatedProduct);
+
+      // Actualizar el estado local con los datos actualizados
       const updatedItems = items.map((item) =>
-        item.idProducto === currentProduct.idProducto ? currentProduct : item
+        item.idProducto === updatedProduct.idProducto ? updatedProduct : item
       );
       setItems(updatedItems);
+
+      // Mostrar notificación de éxito
       addToast('Producto actualizado correctamente', 'success');
+
+      // Cerrar el modal
       setShowEditModal(false);
     } catch (error) {
       console.error('Error al actualizar el producto:', error);
+
+      // Mostrar notificación de error
       addToast('Error al actualizar el producto', 'danger');
     }
   };
@@ -347,9 +364,10 @@ const Producto = () => {
             filters={filters}
             handleFilterChange={handleFilterChange}
             resetFilters={resetFilters}
+            marcas={marcas} // Pasa las marcas como prop
           />
           <div className="mt-3">
-            <ProductoExport exportData={() => { }} />
+            <ProductoExport data={items} />
           </div>
         </CCol>
 
@@ -397,11 +415,11 @@ const Producto = () => {
         onClose={() => setShowEditModal(false)}
         currentProduct={currentProduct}
         setCurrentProduct={setCurrentProduct}
-        handleSaveChanges={handleSaveChanges}
-        categorias={categorias} // Pasa las categorías
-        proveedores={proveedores} // Pasa los proveedores
-        subcategorias={subcategorias} // Pasa las subcategorías
-        unidadesMedida={unidadesMedida} // Pasa las unidades de medida
+        handleSaveChanges={handleSaveChanges} // Pasar la función del padre
+        categorias={categorias}
+        proveedores={proveedores}
+        subcategorias={subcategorias}
+        unidadesMedida={unidadesMedida}
       />
 
       {/* Modal de Confirmación para Eliminar */}

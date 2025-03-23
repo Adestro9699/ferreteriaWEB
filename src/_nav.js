@@ -39,6 +39,8 @@ import {
 } from '@coreui/icons';
 import { CNavGroup, CNavItem, CNavTitle } from '@coreui/react';
 
+//COMPONENTE PARA QUE LA BARRA LATERAL MUESTRE LOS TÍTULOS DEPENNDNIENDO LOS PERMISOS
+
 const _nav = () => {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated); // Obtener el estado de autenticación
   const userRole = useSelector((state) => state.auth.role); // Obtener el rol del usuario

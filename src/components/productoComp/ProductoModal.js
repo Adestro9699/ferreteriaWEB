@@ -13,6 +13,9 @@ import {
   CRow,
   CCol,
 } from '@coreui/react';
+import apiClient from '../../services/apiClient'; // Importa tu apiClient
+
+//COMPONENTE PARA ACTUALIZAR UN PRODUCTO
 
 const ProductoModal = ({
   show,
@@ -25,8 +28,9 @@ const ProductoModal = ({
   subcategorias = [], // Valor por defecto
   unidadesMedida = [], // Valor por defecto
 }) => {
-  // Estado para almacenar las subcategorías filtradas
   const [filteredSubcategorias, setFilteredSubcategorias] = useState([]);
+  const [newImage, setNewImage] = useState(null); // Estado para la nueva imagen
+  
 
   // Efecto para filtrar las subcategorías cuando cambia la categoría seleccionada
   useEffect(() => {
@@ -54,6 +58,70 @@ const ProductoModal = ({
         idSubcategoria: '', // Reiniciar la subcategoría al cambiar la categoría
       },
     });
+  };
+
+  // Función para manejar la selección de archivos
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        console.log('Subiendo nueva imagen...');
+        const response = await apiClient.post('/fs/productos/upload', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+
+        if (response.status === 200) {
+          console.log('Imagen subida correctamente:', response.data);
+          setNewImage(response.data); // Guardar la URL de la nueva imagen
+        } else {
+          console.error('Error al subir la imagen:', response.statusText);
+          alert('Error al subir la imagen');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error al subir la imagen');
+      }
+    }
+  };
+
+  // Función para manejar la eliminación de la imagen anterior
+  const handleDeleteOldImage = async () => {
+    if (currentProduct.imagenURL) {
+      try {
+        const fileName = currentProduct.imagenURL.split(/[\\/]/).pop();
+        console.log('Eliminando imagen anterior:', fileName);
+        const response = await apiClient.delete(`/fs/productos/imagen/${fileName}`);
+        console.log('Respuesta del servidor:', response.data);
+        setCurrentProduct({ ...currentProduct, imagenURL: '' }); // Limpiar la URL de la imagen anterior
+      } catch (error) {
+        console.error('Error al eliminar la imagen anterior:', error);
+      }
+    }
+  };
+
+  // Función para guardar los cambios, incluyendo la nueva imagen
+  const handleSave = async () => {
+    console.log('Iniciando proceso de guardado...');
+    
+    // Si hay una nueva imagen, eliminar la anterior y actualizar la URL
+    if (newImage) {
+      console.log('Nueva imagen detectada:', newImage);
+      await handleDeleteOldImage(); // Eliminar la imagen anterior si existe
+      
+      // Crear un nuevo objeto con la URL de la nueva imagen
+      const updatedProduct = { ...currentProduct, imagenURL: newImage };
+      setCurrentProduct(updatedProduct); // Actualizar el estado local
+      console.log('Imagen anterior eliminada. Actualizando estado con nueva imagen...');
+      
+      // Llamar a handleSaveChanges con el objeto actualizado
+      handleSaveChanges(updatedProduct);
+    } else {
+      // Si no hay una nueva imagen, simplemente guardar los cambios actuales
+      handleSaveChanges(currentProduct);
+    }
   };
 
   return (
@@ -261,6 +329,17 @@ const ProductoModal = ({
                 </CFormSelect>
               </CCol>
             </CRow>
+
+            {/* Séptima fila: Imagen */}
+            <CRow className="mt-3">
+              <CCol md={6}>
+                <CFormLabel>Imagen</CFormLabel>
+                <CFormInput
+                  type="file"
+                  onChange={(e) => handleFileChange(e)}
+                />
+              </CCol>
+            </CRow>
           </CForm>
         )}
       </CModalBody>
@@ -268,7 +347,7 @@ const ProductoModal = ({
         <CButton color="secondary" onClick={onClose}>
           Cancelar
         </CButton>
-        <CButton color="primary" onClick={handleSaveChanges}>
+        <CButton color="primary" onClick={handleSave}>
           Guardar Cambios
         </CButton>
       </CModalFooter>
