@@ -158,10 +158,10 @@ const _nav = () => {
     },
     {
       component: CNavItem,
-      name: 'Lista Ventas',
-      to: '/listventas',
+      name: 'Lista Ventitas',
+      to: '/listarVenta',
       icon: <CIcon icon={cilListRich} customClassName="nav-icon" />,
-      show: isAuthenticated && hasPermission('/list-ventas'),
+      show: isAuthenticated && hasPermission('/listarVenta'),
     },
     {
       component: CNavItem,

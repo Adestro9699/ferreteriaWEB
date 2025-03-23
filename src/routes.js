@@ -10,6 +10,10 @@ const Usuario = React.lazy (() => import ('./views/usuarios/usuario'));
 const Cliente = React.lazy (() => import ('./views/cliente/cliente'));
 const RolesYPermisos = React.lazy (() => import ('./views/rolesYpermisos/rolesYpermisos'));
 const Caja = React.lazy (() => import ('./views/caja/caja'));
+const Empresa = React.lazy (() => import ('./views/empresa/empresa'));
+const ListarVenta = React.lazy (() => import('./views/listarVenta/listarVenta'));
+
+
 
 
 const routes = [
@@ -23,6 +27,8 @@ const routes = [
   { path: '/cliente', name: 'Cliente', element: Cliente },
   { path: '/rolesYpermisos/:usuarioId?', name: 'Roles y Permisos', element: RolesYPermisos },
   { path: '/caja', name: 'Caja', element: Caja },
+  { path: '/empresa', name: 'Empresa', element: Empresa },
+  { path: '/listarVenta', name: 'ListarVenta', element: ListarVenta},
 ];
 
 export default routes;

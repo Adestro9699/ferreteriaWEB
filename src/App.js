@@ -25,6 +25,9 @@ const Usuario = React.lazy(() => import('./views/usuarios/usuario'));
 const Cliente = React.lazy(() => import('./views/cliente/cliente'));
 const RolesYPermisos = React.lazy(() => import('./views/rolesYpermisos/rolesYpermisos'));
 const Caja = React.lazy(() => import('./views/caja/caja'));
+const Empresa = React.lazy(() => import('./views/empresa/empresa'));
+const ListarVenta = React.lazy (() => import('./views/listarVenta/listarVenta'));
+
 
 
 const App = () => {
@@ -195,6 +198,22 @@ const App = () => {
                   '/cajas/:idCaja/salida-manual:POST',  
                 ]}>
                   <Caja />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="empresa"
+              element={
+                <ProtectedRoute requiredPermissions={['/empresa']}>
+                  <Empresa />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="listarVenta"
+              element={
+                <ProtectedRoute requiredPermissions={['/listarVenta']}>
+                  <ListarVenta />
                 </ProtectedRoute>
               }
             />

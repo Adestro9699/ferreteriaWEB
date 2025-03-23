@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { CContainer, CButton, CCard, CCardBody, CCardText, CCardTitle, CModal, CModalHeader, CModalBody, CModalFooter, CToast, CToastBody, CToastHeader } from '@coreui/react';
 import apiClient from '../../services/apiClient';
+import { cilPencil } from '@coreui/icons';
+import { CIcon } from '@coreui/icons-react';
 
 const Caja = () => {
+  const dispatch = useDispatch();
   // Estado para almacenar las cajas creadas
   const [cajas, setCajas] = useState([]);
   // Estado para controlar el modal de confirmación de cierre
@@ -138,13 +141,33 @@ const Caja = () => {
     if (nuevoNombre) {
       const cajaId = cajas[index].idCaja;
       console.log("ID de la caja a editar:", cajaId);
+
+      // Crear un objeto con todos los campos de la caja, actualizando solo el nombre
+      const cajaActualizada = {
+        ...cajas[index], // Copia todos los campos de la caja actual
+        nombreCaja: nuevoNombre, // Actualiza solo el nombre
+      };
+
       try {
-        await apiClient.put(`/fs/cajas/${cajaId}`, { nombreCaja: nuevoNombre });
+        // Enviar la caja actualizada al backend
+        await apiClient.put(`/fs/cajas/${cajaId}`, cajaActualizada);
+
+        // Actualizar el estado local de las cajas
         const nuevasCajas = [...cajas];
         nuevasCajas[index].nombreCaja = nuevoNombre;
         setCajas(nuevasCajas);
+
+        // Mostrar toast de éxito
+        setToastMessage('Nombre de la caja actualizado exitosamente');
+        setToastType('success');
+        setToastVisible(true);
       } catch (error) {
         console.error('Error al editar la caja:', error);
+
+        // Mostrar toast de error
+        setToastMessage('Error al actualizar el nombre de la caja');
+        setToastType('danger');
+        setToastVisible(true);
       }
     }
   };
@@ -191,13 +214,43 @@ const Caja = () => {
       const response = await apiClient.post('/fs/cajas/abrir', datosApertura);
       console.log("Respuesta del backend al abrir la caja:", response.data);
 
+      // Despachar la acción para guardar el idCaja en el estado global
+      dispatch({
+        type: 'ABRIR_CAJA',
+        payload: {
+          idCaja: Number(cajaId),
+        },
+      });
+
+      // Imprimir el idCaja desde el estado global
+      console.log("idCaja capturado en el estado global:", cajaId);
+      const idCaja = localStorage.getItem('idCaja');
+      console.log(idCaja);
+
+      // Actualizar el estado local
       const nuevasCajas = [...cajas];
       nuevasCajas[index].estado = 'ABIERTA';
       setCajas(nuevasCajas);
 
+      // Mostrar toast de éxito
+      setToastMessage('Caja abierta exitosamente');
+      setToastType('success');
+      setToastVisible(true);
+
+      // Refrescar la lista de cajas
       obtenerCajas();
     } catch (error) {
       console.error('Error al abrir la caja:', error);
+
+      // Verificar si el error es debido a que el usuario ya tiene una caja abierta
+      if (error.response && error.response.status === 409) {
+        setToastMessage(error.response.data.message || 'No puedes abrir otra caja porque ya tienes una abierta.');
+      } else {
+        setToastMessage('Error al abrir la caja.');
+      }
+
+      setToastType('danger');
+      setToastVisible(true);
     }
   };
 
@@ -240,21 +293,16 @@ const Caja = () => {
       const response = await apiClient.post('/fs/cajas/cerrar', datosCierre);
       console.log("Respuesta del backend al cerrar la caja:", response.data);
 
+      // Despachar la acción para eliminar el idCaja del estado global
+      dispatch({ type: 'CERRAR_CAJA' });
+
+      // Actualizar el estado local
       const nuevasCajas = [...cajas];
       nuevasCajas[index].estado = 'CERRADA';
       setCajas(nuevasCajas);
 
       // Cerrar el modal
       setModalCerrarVisible(false);
-      
-      // Devolver el foco al contenedor principal
-      setTimeout(() => {
-        if (mainContainerRef.current) {
-          mainContainerRef.current.focus();
-        }
-      }, 50);
-
-      // Mostrar el toast de éxito
       setToastMessage('Cierre de caja realizado con éxito');
       setToastType('success');
       setToastVisible(true);
@@ -263,14 +311,6 @@ const Caja = () => {
       obtenerCajas();
     } catch (error) {
       console.error('Error al cerrar la caja:', error);
-      setModalCerrarVisible(false);
-      
-      // Devolver el foco al contenedor principal
-      setTimeout(() => {
-        if (mainContainerRef.current) {
-          mainContainerRef.current.focus();
-        }
-      }, 50);
     }
   };
 
@@ -296,15 +336,28 @@ const Caja = () => {
 
   return (
     <>
-      <CContainer 
-        ref={mainContainerRef} 
-        tabIndex="-1" 
+      <CContainer
+        ref={mainContainerRef}
+        tabIndex="-1"
         style={{ outline: 'none' }}
       >
-        {/* Botón para crear una nueva caja */}
-        <CButton color="primary" onClick={handleCrearCaja} className="mb-4">
-          Crear Caja
-        </CButton>
+        {/* Contenedor flexible para los botones superiores */}
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          {/* Botón para crear una nueva caja */}
+          <CButton color="primary" onClick={handleCrearCaja}>
+            Crear Caja
+          </CButton>
+
+          {/* Contenedor para los botones de registrar entrada y salida */}
+          <div>
+            <CButton color="success" className="me-2" onClick={() => alert('Registrar Entrada')}>
+              Registrar Entrada
+            </CButton>
+            <CButton color="danger" onClick={() => alert('Registrar Salida')}>
+              Registrar Salida
+            </CButton>
+          </div>
+        </div>
 
         {/* Mensaje si no hay cajas creadas */}
         {cajas.length === 0 && (
@@ -317,7 +370,11 @@ const Caja = () => {
             {cajas.map((caja, index) => (
               <CCard
                 key={index}
-                className={`mb-3 ${caja.estado === 'ABIERTA' ? 'bg-success-light' : 'bg-danger-light'}`}
+                style={{
+                  backgroundColor: caja.estado === 'ABIERTA' ? '#54733a' : '', // Verde de Bootstrap
+                  color: caja.estado === 'ABIERTA' ? '#fff' : '', // Texto blanco
+                }}
+                className="mb-3"
               >
                 <CCardBody className="d-flex justify-content-between align-items-center">
                   {/* Información de la caja */}
