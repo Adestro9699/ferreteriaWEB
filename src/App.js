@@ -27,6 +27,7 @@ const Usuario = React.lazy(() => import('./views/usuarios/usuario'));
 const Cliente = React.lazy(() => import('./views/cliente/cliente'));
 const RolesYPermisos = React.lazy(() => import('./views/rolesYpermisos/rolesYpermisos'));
 const Caja = React.lazy(() => import('./views/caja/caja'));
+const Utilidad = React.lazy(() => import('./views/utilidad/utilidad'));
 
 
 const App = () => {
@@ -188,15 +189,26 @@ const App = () => {
               path="caja"
               element={
                 <ProtectedRoute requiredPermissions={[
-                  '/cajas',                  
-                  '/cajas/:id:GET',          
-                  '/cajas/:id:PUT',         
-                  '/cajas/abrir:POST',       
-                  '/cajas/cerrar:POST',      
-                  '/cajas/:idCaja/entrada-manual:POST', 
-                  '/cajas/:idCaja/salida-manual:POST',  
+                  '/cajas',
+                  '/cajas/:id:GET',
+                  '/cajas/:id:PUT',
+                  '/cajas/abrir:POST',
+                  '/cajas/cerrar:POST',
+                  '/cajas/:idCaja/entrada-manual:POST',
+                  '/cajas/:idCaja/salida-manual:POST',
                 ]}>
                   <Caja />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="utilidad"
+              element={
+                <ProtectedRoute requiredPermissions={[
+
+                ]}>
+                  <Utilidad />
                 </ProtectedRoute>
               }
             />
