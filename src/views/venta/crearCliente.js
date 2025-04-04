@@ -17,7 +17,7 @@ import apiClient from '../../services/apiClient'; // Importar el cliente API
 
 const CrearCliente = ({ visible, onClose, onGuardar }) => {
   const [nuevoCliente, setNuevoCliente] = useState({
-    tipoDocumento: { idTipoDocumento: '', nombre: '' }, // Objeto completo
+    tipoDocumento: { idTipoDocumento: '', nombre: '', abreviatura: '' }, // Objeto completo
     numeroDocumento: '',
     nombres: '',
     apellidos: '',
@@ -25,11 +25,12 @@ const CrearCliente = ({ visible, onClose, onGuardar }) => {
     direccion: '',
     telefono: '',
     correo: '',
+    consultado: false
   });
 
   const resetForm = () => {
     setNuevoCliente({
-      tipoDocumento: { idTipoDocumento: '', nombre: '' },
+      tipoDocumento: { idTipoDocumento: '', nombre: '', abreviatura: '' },
       numeroDocumento: '',
       nombres: '',
       apellidos: '',
@@ -37,6 +38,7 @@ const CrearCliente = ({ visible, onClose, onGuardar }) => {
       direccion: '',
       telefono: '',
       correo: '',
+      consultado: false
     });
     setError(null);
   };
@@ -54,8 +56,15 @@ const CrearCliente = ({ visible, onClose, onGuardar }) => {
   useEffect(() => {
     const fetchTiposDocumento = async () => {
       try {
-        const response = await apiClient.get('/fs/tipos-documento'); // Endpoint para obtener los tipos de documento
-        setTiposDocumento(response.data); // Guardar los tipos de documento en el estado
+        const response = await apiClient.get('/fs/tipos-documento');
+        // Mapeamos para asegurarnos que tenga abreviatura
+        const tiposConAbreviatura = response.data.map(tipo => ({
+          ...tipo,
+          abreviatura: tipo.nombre.includes('DNI') ? 'DNI' :
+            tipo.nombre.includes('RUC') ? 'RUC' :
+              tipo.abreviatura || ''
+        }));
+        setTiposDocumento(tiposConAbreviatura);
       } catch (error) {
         console.error('Error al obtener los tipos de documento:', error);
         setError('Error al cargar los tipos de documento');
@@ -67,65 +76,80 @@ const CrearCliente = ({ visible, onClose, onGuardar }) => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setNuevoCliente({ ...nuevoCliente, [name]: value });
+
+    // Si está cambiando el número de documento, resetear el estado de consultado
+    if (name === 'numeroDocumento') {
+      setNuevoCliente(prev => ({
+        ...prev,
+        [name]: value,
+        consultado: false // Resetear el estado de consultado
+      }));
+    } else {
+      setNuevoCliente({ ...nuevoCliente, [name]: value });
+    }
   };
 
   const handleTipoDocumentoChange = (e) => {
-    const selectedId = e.target.value; // Obtenemos el id del tipo de documento
+    const selectedId = e.target.value;
     const selectedTipoDocumento = tiposDocumento.find(
       (tipo) => tipo.idTipoDocumento === parseInt(selectedId)
     );
 
     setNuevoCliente({
       ...nuevoCliente,
-      tipoDocumento: selectedTipoDocumento || { idTipoDocumento: '', nombre: '' }, // Guardamos el objeto completo
+      tipoDocumento: {
+        ...(selectedTipoDocumento || { idTipoDocumento: '', nombre: '', abreviatura: '' }),
+        abreviatura: selectedTipoDocumento?.abreviatura.includes('DNI') ? 'DNI' :
+          selectedTipoDocumento?.abreviatura.includes('RUC') ? 'RUC' : ''
+      },
+      consultado: false // Resetear el estado de consultado al cambiar el tipo de documento
     });
   };
 
   const handleGuardar = async () => {
     setLoading(true); // Activar el estado de carga
     setError(null); // Limpiar errores anteriores
-  
+
     try {
       // Validar campos obligatorios
       if (!nuevoCliente.tipoDocumento.idTipoDocumento || !nuevoCliente.numeroDocumento) {
         throw new Error('Por favor, complete todos los campos obligatorios.');
       }
-  
+
       // Validar si el cliente ya existe usando el método buscarPorNumeroDocumento
       const response = await apiClient.get(`/fs/clientes/buscarPorNumeroDocumento?numeroDocumento=${nuevoCliente.numeroDocumento}`);
       if (response.data) {
         throw new Error('El cliente con este número de documento ya existe.');
       }
-  
+
       // Validaciones condicionales
       if (nuevoCliente.tipoDocumento.nombre === 'RUC' && !nuevoCliente.razonSocial) {
         throw new Error('La razón social es obligatoria para el tipo de documento RUC.');
       }
-  
+
       if (
         nuevoCliente.tipoDocumento.nombre === 'DNI' &&
         (!nuevoCliente.nombres || !nuevoCliente.apellidos)
       ) {
         throw new Error('Los nombres y apellidos son obligatorios para el tipo de documento DNI.');
       }
-  
+
       // Preparar los datos para enviar al backend
       const datosCliente = {
         ...nuevoCliente, // Incluye todos los campos, incluso el objeto tipoDocumento
       };
-  
+
       console.log('Datos enviados al backend:', datosCliente); // Depuración
-  
+
       // Enviar los datos del nuevo cliente al backend
       const guardarResponse = await apiClient.post('/fs/clientes', datosCliente);
-  
+
       // Notificar al componente padre que se guardó el cliente
       onGuardar(guardarResponse.data);
-  
+
       // Cerrar el modal
       onClose();
-  
+
       // Limpiar el formulario
       setNuevoCliente({
         tipoDocumento: { idTipoDocumento: '', nombre: '' }, // Reiniciamos el objeto
@@ -142,6 +166,64 @@ const CrearCliente = ({ visible, onClose, onGuardar }) => {
       setError(error.message || 'Error al guardar el cliente');
     } finally {
       setLoading(false); // Desactivar el estado de carga
+    }
+  };
+
+  const handleConsultarDocumento = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Validar que se haya seleccionado un tipo de documento y se haya ingresado un número
+      if (!nuevoCliente.tipoDocumento.idTipoDocumento || !nuevoCliente.numeroDocumento) {
+        throw new Error('Seleccione un tipo de documento e ingrese un número para consultar');
+      }
+
+      // Verificar que tenemos la abreviatura
+      if (!nuevoCliente.tipoDocumento.abreviatura) {
+        throw new Error('Tipo de documento no tiene abreviatura configurada');
+      }
+
+      // Limpiar los campos que podrían venir de una consulta anterior
+      setNuevoCliente(prev => ({
+        tipoDocumento: prev.tipoDocumento,
+        numeroDocumento: prev.numeroDocumento,
+        nombres: '',
+        apellidos: '',
+        razonSocial: '',
+        direccion: '',
+        telefono: '',
+        correo: '',
+        consultado: false // Resetear el estado de consultado
+      }));
+
+      const requestBody = {
+        numeroDocumento: nuevoCliente.numeroDocumento,
+        tipoDocumento: nuevoCliente.tipoDocumento.abreviatura
+      };
+
+      console.log('Enviando consulta con:', requestBody);
+
+      const response = await apiClient.post('/fs/consulta', requestBody);
+
+      if (response.data) {
+        setNuevoCliente({
+          ...response.data,
+          tipoDocumento: {
+            ...(response.data.tipoDocumento || nuevoCliente.tipoDocumento),
+            abreviatura: nuevoCliente.tipoDocumento.abreviatura
+          },
+          consultado: true // Marcar como ya consultado
+        });
+        setError('Cliente encontrado. Puede editar los datos si es necesario.');
+      } else {
+        setError('No se encontró un cliente con este documento. Complete los datos para registrarlo.');
+      }
+    } catch (error) {
+      console.error('Error al consultar el documento:', error);
+      setError(error.message || 'Error al consultar el documento');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -177,7 +259,7 @@ const CrearCliente = ({ visible, onClose, onGuardar }) => {
                 <option value="">Seleccione un tipo de documento</option>
                 {tiposDocumento.map((tipo) => (
                   <option key={tipo.idTipoDocumento} value={tipo.idTipoDocumento}> {/* Usamos tipo.idTipoDocumento */}
-                    {tipo.nombre}
+                    {tipo.abreviatura}
                   </option>
                 ))}
               </CFormSelect>
@@ -192,17 +274,31 @@ const CrearCliente = ({ visible, onClose, onGuardar }) => {
               </CFormLabel>
             </CCol>
             <CCol xs={8}>
-              <CFormInput
-                type="text"
-                name="numeroDocumento"
-                value={nuevoCliente.numeroDocumento}
-                onChange={handleInputChange}
-                placeholder="Ingrese el número de documento"
-                required
-              />
+              <div className="d-flex">
+                <CFormInput
+                  type="text"
+                  name="numeroDocumento"
+                  value={nuevoCliente.numeroDocumento}
+                  onChange={handleInputChange}
+                  placeholder="Ingrese el número de documento"
+                  required
+                  className="me-2"
+                />
+                <CButton
+                  color="info"
+                  onClick={handleConsultarDocumento}
+                  disabled={
+                    !nuevoCliente.numeroDocumento ||
+                    !nuevoCliente.tipoDocumento.idTipoDocumento ||
+                    nuevoCliente.consultado ||
+                    loading
+                  }
+                >
+                  Consultar
+                </CButton>
+              </div>
             </CCol>
           </CRow>
-
           {/* Nombres */}
           <CRow className="mb-3 align-items-center">
             <CCol xs={4}>

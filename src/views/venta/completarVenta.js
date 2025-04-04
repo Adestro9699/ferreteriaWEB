@@ -136,36 +136,40 @@ const CompletarVenta = ({ visible, onClose, onSave, registrarReinicio }) => {
     try {
       let resultados = [];
 
-      if (/^\d+$/.test(value)) {
-        const response = await apiClient.get(`/fs/clientes/buscarPorNumeroDocumento?numeroDocumento=${value}`);
-        if (response.data) {
-          resultados = Array.isArray(response.data) ? response.data : [response.data];
+      if (value.length > 0) {
+        // Búsqueda por número de documento (DNI o RUC)
+        if (/^\d+$/.test(value)) {
+          const response = await apiClient.get(`/fs/clientes/buscarPorNumeroDocumento?numeroDocumento=${value}`);
+          if (response.data) {
+            resultados = Array.isArray(response.data) ? response.data : [response.data];
+          }
         }
-      } else {
-        const endpoints = [
-          `/fs/clientes/buscarPorNombre?nombres=${encodeURIComponent(value)}`,
-          `/fs/clientes/buscarPorApellido?apellidos=${encodeURIComponent(value)}`,
-          `/fs/clientes/buscarPorRazonSocial?razonSocial=${encodeURIComponent(value)}`,
-        ];
+        // Búsqueda por texto (nombres, apellidos o razón social)
+        else {
+          const endpoints = [
+            `/fs/clientes/buscarPorNombre?nombres=${encodeURIComponent(value)}`,
+            `/fs/clientes/buscarPorApellido?apellidos=${encodeURIComponent(value)}`,
+            `/fs/clientes/buscarPorRazonSocial?razonSocial=${encodeURIComponent(value)}`,
+          ];
 
-        const responses = await Promise.all(
-          endpoints.map((endpoint) => apiClient.get(endpoint).catch(() => null))
-        );
+          const responses = await Promise.all(
+            endpoints.map((endpoint) => apiClient.get(endpoint).catch(() => null))
+          );
 
-        resultados = responses
-          .filter((response) => response && response.data)
-          .flatMap((response) => (Array.isArray(response.data) ? response.data : [response.data]));
+          resultados = responses
+            .filter((response) => response && response.data)
+            .flatMap((response) => (Array.isArray(response.data) ? response.data : [response.data]));
 
-        const uniqueResults = Array.from(new Set(resultados.map((c) => c.idCliente))).map(
-          (id) => resultados.find((c) => c.idCliente === id)
-        );
-
-        resultados = uniqueResults;
+          // Eliminar duplicados
+          resultados = Array.from(new Set(resultados.map(c => c.idCliente)))
+            .map(id => resultados.find(c => c.idCliente === id));
+        }
       }
 
       setResultadosBusqueda(resultados);
     } catch (error) {
       console.error('Error al buscar los datos:', error);
+      setResultadosBusqueda([]);
     }
   };
 
@@ -226,9 +230,9 @@ const CompletarVenta = ({ visible, onClose, onSave, registrarReinicio }) => {
                   type="text"
                   value={
                     cliente
-                      ? cliente.tipoDocumento.nombre === 'DNI'
-                        ? `${cliente.nombres} ${cliente.apellidos}`
-                        : cliente.razonSocial
+                      ? cliente.tipoDocumento.abreviatura === 'DNI'
+                        ? `${cliente.nombres || ''} ${cliente.apellidos || ''}`.trim()
+                        : cliente.razonSocial || ''
                       : filterText
                   }
                   onChange={(e) => {
@@ -255,9 +259,9 @@ const CompletarVenta = ({ visible, onClose, onSave, registrarReinicio }) => {
                         }}
                         style={{ cursor: 'pointer' }}
                       >
-                        {cliente.tipoDocumento.nombre === 'DNI'
-                          ? `${cliente.nombres} ${cliente.apellidos}`
-                          : cliente.razonSocial}
+                        {cliente.tipoDocumento.abreviatura === 'DNI'
+                          ? `${cliente.nombres || ''} ${cliente.apellidos || ''}`.trim()
+                          : cliente.razonSocial || ''}
                       </li>
                     ))}
                   </ul>

@@ -124,7 +124,11 @@ function ListarVenta() {
                         <tr key={venta.idVenta}>
                             <td>{venta.serieComprobante}-{venta.numeroComprobante}</td>
                             <td>
-                                {venta.cliente ? `${venta.cliente.nombres} ${venta.cliente.apellidos}` : 'N/A'}
+                                {venta.cliente ?
+                                    (venta.cliente.tipoDocumento?.abreviatura === 'RUC' || venta.cliente.tipoDocumento?.nombre === 'ruc' ?
+                                        venta.cliente.razonSocial :
+                                        `${venta.cliente.nombres} ${venta.cliente.apellidos}`
+                                    ) : 'N/A'}
                             </td>
                             <td>{venta.tipoComprobantePago?.nombre || 'N/A'}</td>
                             <td>{venta.tipoPago?.nombre || 'N/A'}</td>

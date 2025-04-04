@@ -166,7 +166,7 @@ const MostrarCliente = ({ visible, onClose, onSeleccionarCliente }) => {
             <CTableBody>
               {clientes.map((cliente) => (
                 <CTableRow key={cliente.idCliente}>
-                  <CTableDataCell>{cliente.tipoDocumento.nombre}</CTableDataCell>
+                  <CTableDataCell>{cliente.tipoDocumento.abreviatura}</CTableDataCell>
                   <CTableDataCell>{cliente.numeroDocumento}</CTableDataCell>
                   <CTableDataCell>{cliente.nombres}</CTableDataCell>
                   <CTableDataCell>{cliente.apellidos}</CTableDataCell>
