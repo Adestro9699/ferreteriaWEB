@@ -28,8 +28,8 @@ const Cliente = React.lazy(() => import('./views/cliente/cliente'));
 const RolesYPermisos = React.lazy(() => import('./views/rolesYpermisos/rolesYpermisos'));
 const Caja = React.lazy(() => import('./views/caja/caja'));
 const Empresa = React.lazy(() => import('./views/empresa/empresa'));
-const ListarVenta = React.lazy (() => import('./views/listarVenta/listarVenta'));
-
+const ListarVenta = React.lazy(() => import('./views/listarVenta/listarVenta'));
+const DetalleVentaPage = React.lazy(() => import('./components/listarVentaComp/DetalleVentaPage'));
 
 
 const App = () => {
@@ -191,13 +191,13 @@ const App = () => {
               path="caja"
               element={
                 <ProtectedRoute requiredPermissions={[
-                  '/cajas',                  
-                  '/cajas/:id:GET',          
-                  '/cajas/:id:PUT',         
-                  '/cajas/abrir:POST',       
-                  '/cajas/cerrar:POST',      
-                  '/cajas/:idCaja/entrada-manual:POST', 
-                  '/cajas/:idCaja/salida-manual:POST',  
+                  '/cajas',
+                  '/cajas/:id:GET',
+                  '/cajas/:id:PUT',
+                  '/cajas/abrir:POST',
+                  '/cajas/cerrar:POST',
+                  '/cajas/:idCaja/entrada-manual:POST',
+                  '/cajas/:idCaja/salida-manual:POST',
                 ]}>
                   <Caja />
                 </ProtectedRoute>
@@ -219,9 +219,15 @@ const App = () => {
                 </ProtectedRoute>
               }
             />
-
+            <Route
+              path="venta/detalle/:id"
+              element={
+                <ProtectedRoute requiredPermissions={['/ventas/detalle']}>
+                  <DetalleVentaPage />
+                </ProtectedRoute>
+              }
+            />
           </Route>
-
           {/* Ruta para manejar rutas no encontradas */}
           <Route path="*" element={<Page404 />} />
         </Routes>

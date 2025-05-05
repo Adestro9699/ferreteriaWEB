@@ -5,24 +5,29 @@ import {
   CModalHeader,
   CModalTitle,
   CModalBody,
+  CModalFooter,
   CButton,
-  CFormInput,
-  CFormSelect,
-  CFormLabel,
   CForm,
+  CFormInput,
+  CFormLabel,
+  CFormSelect,
+  CFormTextarea,
+  CFormCheck,
   CInputGroup,
   CInputGroupText,
   CToaster,
   CToast,
   CToastHeader,
   CToastBody,
+  CTooltip,
 } from '@coreui/react';
 import { CIcon } from '@coreui/icons-react';
-import { cilX } from '@coreui/icons';
+import { cilX, cilPlus } from '@coreui/icons';
 import MostrarCliente from './mostrarCliente';
 import apiClient from '../../services/apiClient';
+import { useNavigate } from 'react-router-dom';
 
-const CompletarVenta = ({ visible, onClose, onSave, registrarReinicio }) => {
+const CompletarVenta = ({ visible, onClose, onSave, registrarReinicio, initialData = null }) => {
   const trabajador = useSelector((state) => state.auth.trabajador);
   const [empresa, setEmpresa] = useState(null);
   const [empresas, setEmpresas] = useState([]);
@@ -35,11 +40,28 @@ const CompletarVenta = ({ visible, onClose, onSave, registrarReinicio }) => {
   const [filterText, setFilterText] = useState('');
   const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
   const [toast, setToast] = useState({ visible: false, message: '', color: 'danger' });
+  const [formData, setFormData] = useState({
+    idTipoComprobantePago: '',
+    idTipoPago: '',
+    idEmpresa: '',
+    serieComprobante: '',
+    numeroComprobante: '',
+    fechaVenta: '',
+    estadoVenta: 'PENDIENTE',
+    observaciones: '',
+    moneda: 'SOLES',
+  });
+  const navigate = useNavigate();
 
   const now = new Date();
   const offset = now.getTimezoneOffset() * 60000;
   const localDateTime = new Date(now - offset).toISOString().slice(0, 19);
   const fecha = localDateTime;
+
+  const monedas = {
+    SOLES: { nombre: 'Soles', simbolo: 'S/' },
+    DOLARES: { nombre: 'Dólares', simbolo: '$' }
+  };
 
   const showToast = (message, color = 'danger') => {
     setToast({ visible: true, message, color });
@@ -102,6 +124,42 @@ const CompletarVenta = ({ visible, onClose, onSave, registrarReinicio }) => {
     fetchTiposPago();
   }, []);
 
+  useEffect(() => {
+    if (initialData && empresas.length > 0 && tiposComprobante.length > 0 && tiposPago.length > 0) {
+      const empresaSeleccionada = empresas.find(e => e.idEmpresa === initialData.empresaId);
+      if (empresaSeleccionada) {
+        setEmpresa(empresaSeleccionada);
+      }
+
+      const tipoComprobanteSeleccionado = tiposComprobante.find(t => t.idTipoComprobantePago === initialData.tipoComprobanteId);
+      if (tipoComprobanteSeleccionado) {
+        setTipoComprobante(tipoComprobanteSeleccionado);
+      }
+
+      const tipoPagoSeleccionado = tiposPago.find(t => t.idTipoPago === initialData.tipoPagoId);
+      if (tipoPagoSeleccionado) {
+        setTipoPago(tipoPagoSeleccionado);
+      }
+
+      if (initialData.clienteId) {
+        apiClient.get(`/fs/clientes/${initialData.clienteId}`)
+          .then(response => {
+            const cliente = response.data;
+            setCliente(cliente);
+            setFilterText(
+              cliente.tipoDocumento.abreviatura === 'DNI'
+                ? `${cliente.nombres || ''} ${cliente.apellidos || ''}`.trim()
+                : cliente.razonSocial || ''
+            );
+          })
+          .catch(error => {
+            console.error("Error al cargar cliente:", error);
+            showToast("Error al cargar los datos del cliente", "danger");
+          });
+      }
+    }
+  }, [initialData, empresas, tiposComprobante, tiposPago]);
+
   const handleGuardar = () => {
     if (!empresa || !cliente || !tipoComprobante || !tipoPago) {
       showToast('Por favor, complete todos los campos obligatorios.', 'danger');
@@ -110,14 +168,23 @@ const CompletarVenta = ({ visible, onClose, onSave, registrarReinicio }) => {
 
     const datosComplementarios = {
       empresaId: empresa.idEmpresa,
+      empresa,
       clienteId: cliente.idCliente,
+      cliente,
       tipoComprobanteId: tipoComprobante.idTipoComprobantePago,
+      tipoComprobante,
       tipoPagoId: tipoPago.idTipoPago,
+      tipoPago,
       trabajadorId: trabajador.idTrabajador,
+      trabajador,
       fecha,
+      moneda: formData.moneda
     };
 
-    onSave(datosComplementarios);
+    if (typeof onSave === 'function') {
+      onSave(datosComplementarios);
+    }
+
     onClose();
   };
 
@@ -137,34 +204,55 @@ const CompletarVenta = ({ visible, onClose, onSave, registrarReinicio }) => {
       let resultados = [];
 
       if (value.length > 0) {
-        // Búsqueda por número de documento (DNI o RUC)
         if (/^\d+$/.test(value)) {
-          const response = await apiClient.get(`/fs/clientes/buscarPorNumeroDocumento?numeroDocumento=${value}`);
-          if (response.data) {
-            resultados = Array.isArray(response.data) ? response.data : [response.data];
+          try {
+            const response = await apiClient.get(`/fs/clientes/buscarPorNumeroDocumento?numeroDocumento=${value}`);
+            if (response.data) {
+              resultados = Array.isArray(response.data) ? response.data : [response.data];
+            }
+          } catch (error) {
+            console.error('Error al buscar por número de documento:', error);
+          }
+        } else {
+          try {
+            // Primero intentar buscar por nombre
+            const response = await apiClient.get(`/fs/clientes/buscarPorNombre?nombres=${encodeURIComponent(value)}`);
+            if (response.data) {
+              resultados = Array.isArray(response.data) ? response.data : [response.data];
+            }
+          } catch (error) {
+            console.error('Error al buscar por nombre:', error);
+          }
+
+          // Si no hay resultados, intentar por apellido
+          if (resultados.length === 0) {
+            try {
+              const response = await apiClient.get(`/fs/clientes/buscarPorApellido?apellidos=${encodeURIComponent(value)}`);
+              if (response.data) {
+                resultados = Array.isArray(response.data) ? response.data : [response.data];
+              }
+            } catch (error) {
+              console.error('Error al buscar por apellido:', error);
+            }
+          }
+
+          // Si aún no hay resultados, intentar por razón social
+          if (resultados.length === 0) {
+            try {
+              const response = await apiClient.get(`/fs/clientes/buscarPorRazonSocial?razonSocial=${encodeURIComponent(value)}`);
+              if (response.data) {
+                resultados = Array.isArray(response.data) ? response.data : [response.data];
+              }
+            } catch (error) {
+              console.error('Error al buscar por razón social:', error);
+            }
           }
         }
-        // Búsqueda por texto (nombres, apellidos o razón social)
-        else {
-          const endpoints = [
-            `/fs/clientes/buscarPorNombre?nombres=${encodeURIComponent(value)}`,
-            `/fs/clientes/buscarPorApellido?apellidos=${encodeURIComponent(value)}`,
-            `/fs/clientes/buscarPorRazonSocial?razonSocial=${encodeURIComponent(value)}`,
-          ];
-
-          const responses = await Promise.all(
-            endpoints.map((endpoint) => apiClient.get(endpoint).catch(() => null))
-          );
-
-          resultados = responses
-            .filter((response) => response && response.data)
-            .flatMap((response) => (Array.isArray(response.data) ? response.data : [response.data]));
-
-          // Eliminar duplicados
-          resultados = Array.from(new Set(resultados.map(c => c.idCliente)))
-            .map(id => resultados.find(c => c.idCliente === id));
-        }
       }
+
+      // Eliminar duplicados
+      resultados = Array.from(new Set(resultados.map(c => c.idCliente)))
+        .map(id => resultados.find(c => c.idCliente === id));
 
       setResultadosBusqueda(resultados);
     } catch (error) {
@@ -179,26 +267,49 @@ const CompletarVenta = ({ visible, onClose, onSave, registrarReinicio }) => {
     setResultadosBusqueda([]);
   };
 
+  const handleSubmit = () => {
+    if (!empresa || !cliente || !tipoComprobante || !tipoPago) {
+      showToast('Por favor, complete todos los campos obligatorios.', 'danger');
+      return;
+    }
+
+    const datosComplementarios = {
+      empresaId: empresa.idEmpresa,
+      empresa,
+      clienteId: cliente.idCliente,
+      cliente,
+      tipoComprobanteId: tipoComprobante.idTipoComprobantePago,
+      tipoComprobante,
+      tipoPagoId: tipoPago.idTipoPago,
+      tipoPago,
+      trabajadorId: trabajador.idTrabajador,
+      trabajador,
+      fecha,
+      moneda: formData.moneda
+    };
+
+    if (typeof onSave === 'function') {
+      onSave(datosComplementarios);
+    }
+
+    onClose();
+  };
+
   return (
     <>
-      {/* Modal principal para completar la venta */}
-      <CModal visible={visible} onClose={onClose} backdrop="static">
-        <CModalHeader closeButton={false}>
-          <CModalTitle>Datos Venta</CModalTitle>
-          <div style={{ marginLeft: 'auto' }}>
-            <CButton color="secondary" onClick={onClose} style={{ marginRight: '10px' }}>
-              Cancelar
-            </CButton>
-            <CButton color="primary" onClick={handleGuardar}>
-              Listo
-            </CButton>
-          </div>
+      <CModal 
+        visible={visible} 
+        onClose={onClose} 
+        size="lg"
+        className="modal-dialog-centered"
+      >
+        <CModalHeader onClose={onClose} className="bg-body-tertiary">
+          <CModalTitle className="h5 mb-0">Datos Complementarios de Venta</CModalTitle>
         </CModalHeader>
-        <CModalBody>
-          <CForm>
-            {/* Campo para la empresa */}
-            <div className="mb-3">
-              <CFormLabel>Empresa</CFormLabel>
+        <CModalBody className="p-4">
+          <CForm className="row g-4">
+            <div className="col-md-6">
+              <CFormLabel className="fw-semibold">Empresa</CFormLabel>
               <CFormSelect
                 value={empresa ? empresa.idEmpresa : ''}
                 onChange={(e) => {
@@ -206,6 +317,7 @@ const CompletarVenta = ({ visible, onClose, onSave, registrarReinicio }) => {
                   const selectedEmpresa = empresas.find((emp) => emp.idEmpresa === selectedId);
                   setEmpresa(selectedEmpresa);
                 }}
+                className="form-select"
                 required
               >
                 <option value="">Seleccione una empresa</option>
@@ -217,15 +329,18 @@ const CompletarVenta = ({ visible, onClose, onSave, registrarReinicio }) => {
               </CFormSelect>
             </div>
 
-            {/* Campo para el cliente con botón "Añadir" */}
-            <div className="mb-3">
-              <CFormLabel>Cliente</CFormLabel>
+            <div className="col-md-6">
+              <CFormLabel className="fw-semibold">Cliente</CFormLabel>
               <CInputGroup>
-                <CInputGroupText>
-                  <CButton color="light" onClick={clearSearch}>
+                <CTooltip content="Limpiar campo" placement="top">
+                  <CButton 
+                    color="danger" 
+                    onClick={clearSearch} 
+                    className="px-3"
+                  >
                     <CIcon icon={cilX} />
                   </CButton>
-                </CInputGroupText>
+                </CTooltip>
                 <CFormInput
                   type="text"
                   value={
@@ -240,11 +355,18 @@ const CompletarVenta = ({ visible, onClose, onSave, registrarReinicio }) => {
                     handleBuscarCliente(e.target.value);
                   }}
                   placeholder="DNI/RUC o NOMBRE/RAZON SOCIAL"
+                  className="form-control"
                   required
                 />
-                <CButton color="primary" onClick={handleAñadirCliente}>
-                  Añadir
-                </CButton>
+                <CTooltip content="Añadir cliente" placement="top">
+                  <CButton 
+                    color="primary" 
+                    onClick={handleAñadirCliente} 
+                    className="px-3"
+                  >
+                    <CIcon icon={cilPlus} />
+                  </CButton>
+                </CTooltip>
               </CInputGroup>
               {resultadosBusqueda.length > 0 && (
                 <div className="mt-2">
@@ -269,9 +391,8 @@ const CompletarVenta = ({ visible, onClose, onSave, registrarReinicio }) => {
               )}
             </div>
 
-            {/* Campo para el tipo de comprobante */}
-            <div className="mb-3">
-              <CFormLabel>Tipo de Comprobante</CFormLabel>
+            <div className="col-md-6">
+              <CFormLabel className="fw-semibold">Tipo de Comprobante</CFormLabel>
               <CFormSelect
                 value={tipoComprobante ? tipoComprobante.idTipoComprobantePago : ''}
                 onChange={(e) => {
@@ -281,6 +402,7 @@ const CompletarVenta = ({ visible, onClose, onSave, registrarReinicio }) => {
                   );
                   setTipoComprobante(selectedTipoComprobante);
                 }}
+                className="form-select"
                 required
               >
                 <option value="">Seleccione un tipo de comprobante</option>
@@ -292,9 +414,8 @@ const CompletarVenta = ({ visible, onClose, onSave, registrarReinicio }) => {
               </CFormSelect>
             </div>
 
-            {/* Campo para el tipo de pago */}
-            <div className="mb-3">
-              <CFormLabel>Tipo de Pago</CFormLabel>
+            <div className="col-md-6">
+              <CFormLabel className="fw-semibold">Tipo de Pago</CFormLabel>
               <CFormSelect
                 value={tipoPago ? tipoPago.idTipoPago : ''}
                 onChange={(e) => {
@@ -302,6 +423,7 @@ const CompletarVenta = ({ visible, onClose, onSave, registrarReinicio }) => {
                   const selectedTipoPago = tiposPago.find((tipo) => tipo.idTipoPago === selectedId);
                   setTipoPago(selectedTipoPago);
                 }}
+                className="form-select"
                 required
               >
                 <option value="">Seleccione un tipo de pago</option>
@@ -313,27 +435,65 @@ const CompletarVenta = ({ visible, onClose, onSave, registrarReinicio }) => {
               </CFormSelect>
             </div>
 
-            {/* Campo para la fecha (fija, no editable) */}
-            <div className="mb-3">
-              <CFormLabel>Fecha de Venta</CFormLabel>
+            <div className="col-md-6">
+              <CFormLabel className="fw-semibold">Moneda</CFormLabel>
+              <div className="d-flex align-items-center">
+                <div className="btn-group" role="group">
+                  <input
+                    type="radio"
+                    className="btn-check"
+                    name="moneda"
+                    id="monedaSoles"
+                    value="SOLES"
+                    checked={formData.moneda === 'SOLES'}
+                    onChange={(e) => setFormData({...formData, moneda: e.target.value})}
+                  />
+                  <label className="btn btn-outline-primary" htmlFor="monedaSoles">
+                    Soles (S/)
+                  </label>
+                  <input
+                    type="radio"
+                    className="btn-check"
+                    name="moneda"
+                    id="monedaDolares"
+                    value="DOLARES"
+                    checked={formData.moneda === 'DOLARES'}
+                    onChange={(e) => setFormData({...formData, moneda: e.target.value})}
+                  />
+                  <label className="btn btn-outline-primary" htmlFor="monedaDolares">
+                    Dólares ($)
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="col-md-6">
+              <CFormLabel className="fw-semibold">Fecha de Venta</CFormLabel>
               <CFormInput
                 type="text"
                 value={new Date(fecha).toLocaleString()}
                 readOnly
+                className="form-control bg-body-secondary"
               />
             </div>
           </CForm>
         </CModalBody>
+        <CModalFooter className="bg-body-tertiary p-3">
+          <CButton color="secondary" onClick={onClose} className="px-3">
+            Cancelar
+          </CButton>
+          <CButton color="primary" onClick={handleSubmit} className="px-3">
+            Completar Venta
+          </CButton>
+        </CModalFooter>
       </CModal>
 
-      {/* Modal para mostrar la lista de clientes */}
       <MostrarCliente
         visible={modalClientesVisible}
         onClose={() => setModalClientesVisible(false)}
         onSeleccionarCliente={handleSeleccionarCliente}
       />
 
-      {/* Toast para mostrar mensajes de error */}
       <CToaster placement="top-center">
         {toast.visible && (
           <CToast autohide={true} visible={toast.visible} color={toast.color}>
