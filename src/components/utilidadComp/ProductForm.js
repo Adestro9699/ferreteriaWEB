@@ -70,53 +70,39 @@ const ProductForm = ({ utilidad, onCancel, onSaved }) => {
       {success && <div className="alert alert-success mb-3">{success}</div>}
 
       {/* Fila principal */}
-      <CRow className="g-3 align-items-center"> {/* Alinea verticalmente */}
-        {/* Cuadro de selección */}
-        <CCol md={6}>
+      <CRow className="mb-3 align-items-center">
+        <CCol md={4}>
           <CFormSelect
-            name="productoId"
-            label="Seleccionar producto" // Agrega un label
+            label="Producto"
             value={formData.productoId}
             onChange={(e) => setFormData({ ...formData, productoId: e.target.value })}
             required
-            disabled={loading}
           >
-            <option value="">Seleccionar producto</option>
-            {productos.map((producto) => (
-              <option key={producto.idProducto} value={producto.idProducto}>
-                {producto.nombreProducto} - {producto.marca}
+            <option value="">Seleccione un producto</option>
+            {productos.map((prod) => (
+              <option key={prod.idProducto} value={prod.idProducto}>
+                {prod.nombre}
               </option>
             ))}
           </CFormSelect>
         </CCol>
-
-        {/* Campo de porcentaje de utilidad */}
         <CCol md={4}>
           <CFormInput
+            label="Porcentaje de Utilidad"
             type="number"
-            name="porcentajeUtilidad"
-            label="Porcentaje de Utilidad (%)" // Label existente
-            value={formData.porcentajeUtilidad || ''}
-            onChange={(e) => {
-              const value = e.target.value;
-              if (value === '' || (Number(value) >= 0 && Number(value) <= 100)) {
-                setFormData({ ...formData, porcentajeUtilidad: value });
-              }
-            }}
-            placeholder="Ej: 25"
-            min="0"
-            max="100"
-            disabled={loading}
+            step="0.01"
+            value={formData.porcentajeUtilidad}
+            onChange={(e) => setFormData({ ...formData, porcentajeUtilidad: e.target.value })}
+            placeholder="Ej: 25.50"
+            required
           />
         </CCol>
-
-        {/* Botones */}
-        <CCol md={2} className="d-flex align-items-end">
+        <CCol md={2} className="d-flex align-items-center mt-4">
           <CButton type="submit" color="primary" disabled={loading}>
-            {loading ? <CSpinner size="sm" /> : 'Guardar'}
+            {loading ? <CSpinner size="sm" /> : utilidad ? 'Actualizar' : 'Guardar'}
           </CButton>
           {onCancel && (
-            <CButton color="secondary" className="ms-2" onClick={onCancel}>
+            <CButton color="secondary" className="ms-2" onClick={onCancel} disabled={loading}>
               Cancelar
             </CButton>
           )}

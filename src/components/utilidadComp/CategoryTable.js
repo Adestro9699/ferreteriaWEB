@@ -9,21 +9,23 @@ import {
   CBadge,
   CButton,
   CSpinner,
-  CPagination,
-  CPaginationItem,
   CAlert,
+  CModal,
+  CModalHeader,
+  CModalTitle,
+  CModalBody,
+  CModalFooter,
 } from '@coreui/react';
 import apiClient from '../../services/apiClient';
 import CategoryForm from './CategoryForm';
 
-const CategoryTable = () => {
+const CategoryTable = ({ currentPage, itemsPerPage, onDelete, onSuccess, onError }) => {
   const [utilidades, setUtilidades] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
   const [editingId, setEditingId] = useState(null);
-  const itemsPerPage = 5;
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteItem, setDeleteItem] = useState(null);
 
   useEffect(() => {
     fetchUtilidades();
@@ -34,7 +36,6 @@ const CategoryTable = () => {
     setError(null);
     try {
       const response = await apiClient.get('/fs/utilidades/categoria');
-      // Mapear los datos para asegurar la estructura correcta
       const formattedData = response.data.map(item => ({
         idUtilidad: item.idUtilidad,
         categoria: item.categoria,
@@ -44,23 +45,28 @@ const CategoryTable = () => {
     } catch (err) {
       console.error('Error al cargar utilidades:', err);
       setError(err.response?.data?.message || 'Error al cargar utilidades');
+      onError(err.response?.data?.message || 'Error al cargar utilidades');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('¿Está seguro de eliminar esta configuración?')) {
-      try {
-        await apiClient.delete(`/fs/utilidades/${id}`);
-        setSuccess('Configuración eliminada correctamente');
-        setError(null);
-        fetchUtilidades();
-      } catch (err) {
-        console.error('Error al eliminar:', err);
-        setError(err.response?.data?.message || 'Error al eliminar');
-        setSuccess(null);
-      }
+  const handleDelete = (id) => {
+    setDeleteItem(id);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await apiClient.delete(`/fs/utilidades/${deleteItem}`);
+      onSuccess('Configuración eliminada correctamente');
+      fetchUtilidades();
+    } catch (err) {
+      console.error('Error al eliminar:', err);
+      onError(err.response?.data?.message || 'Error al eliminar');
+    } finally {
+      setShowDeleteModal(false);
+      setDeleteItem(null);
     }
   };
 
@@ -76,12 +82,10 @@ const CategoryTable = () => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-  const totalPages = Math.ceil(utilidades.length / itemsPerPage);
 
   return (
     <>
       {error && <CAlert color="danger" className="mb-3">{error}</CAlert>}
-      {success && <CAlert color="success" className="mb-3">{success}</CAlert>}
 
       <div className="mb-4">
         <h4>{editingId ? 'Editar Utilidad' : 'Crear Nueva Utilidad'}</h4>
@@ -92,6 +96,7 @@ const CategoryTable = () => {
             fetchUtilidades();
             setEditingId(null);
             setError(null);
+            onSuccess('Configuración guardada correctamente');
           }}
         />
       </div>
@@ -149,43 +154,23 @@ const CategoryTable = () => {
             </CTableBody>
           </CTable>
 
-          {totalPages > 1 && (
-            <CPagination className="mt-3" align="center">
-              <CPaginationItem
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(1)}
-              >
-                Primera
-              </CPaginationItem>
-              <CPaginationItem
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(p => p - 1)}
-              >
-                &laquo;
-              </CPaginationItem>
-              {[...Array(totalPages)].map((_, i) => (
-                <CPaginationItem
-                  key={i + 1}
-                  active={i + 1 === currentPage}
-                  onClick={() => setCurrentPage(i + 1)}
-                >
-                  {i + 1}
-                </CPaginationItem>
-              ))}
-              <CPaginationItem
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(p => p + 1)}
-              >
-                &raquo;
-              </CPaginationItem>
-              <CPaginationItem
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(totalPages)}
-              >
-                Última
-              </CPaginationItem>
-            </CPagination>
-          )}
+          {/* Modal de confirmación de eliminación */}
+          <CModal visible={showDeleteModal} onClose={() => setShowDeleteModal(false)}>
+            <CModalHeader>
+              <CModalTitle>Confirmar Eliminación</CModalTitle>
+            </CModalHeader>
+            <CModalBody>
+              ¿Está seguro que desea eliminar esta configuración?
+            </CModalBody>
+            <CModalFooter>
+              <CButton color="secondary" onClick={() => setShowDeleteModal(false)}>
+                Cancelar
+              </CButton>
+              <CButton color="danger" onClick={confirmDelete}>
+                Eliminar
+              </CButton>
+            </CModalFooter>
+          </CModal>
         </>
       )}
     </>

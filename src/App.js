@@ -28,6 +28,7 @@ const Cliente = React.lazy(() => import('./views/cliente/cliente'));
 const RolesYPermisos = React.lazy(() => import('./views/rolesYpermisos/rolesYpermisos'));
 const Caja = React.lazy(() => import('./views/caja/caja'));
 const Utilidad = React.lazy(() => import('./views/utilidad/utilidad'));
+const Compra = React.lazy(() => import('./views/compra/compra'));
 
 
 const App = () => {
@@ -209,6 +210,24 @@ const App = () => {
 
                 ]}>
                   <Utilidad />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="compra"
+              element={
+                <ProtectedRoute requiredPermissions={[
+                  '/compras',
+                  '/compras/:id:GET',
+                  '/compras/:id:PUT',
+                  '/compras/:id:DELETE',
+                  '/detalles-compras',
+                  '/detalles-compras/:id:GET',
+                  '/detalles-compras/:id:PUT',
+                  '/detalles-compras/:id:DELETE',
+                ]}>
+                  <Compra />
                 </ProtectedRoute>
               }
             />

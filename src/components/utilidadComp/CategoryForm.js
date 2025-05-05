@@ -13,12 +13,11 @@ import apiClient from '../../services/apiClient';
 const CategoryForm = ({ utilidad, onCancel, onSaved }) => {
   const [formData, setFormData] = useState({
     categoriaId: utilidad?.categoria?.idCategoria || '',
-    porcentajeUtilidad: utilidad?.porcentaje || '',
+    porcentajeUtilidad: utilidad?.porcentajeUtilidad || '',
   });
   const [categorias, setCategorias] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
 
   useEffect(() => {
     const fetchCategorias = async () => {
@@ -26,13 +25,13 @@ const CategoryForm = ({ utilidad, onCancel, onSaved }) => {
         const response = await apiClient.get('/fs/categorias');
         setCategorias(response.data);
       } catch (err) {
-        console.error('Error al cargar categorías:', err);
         setError('Error al cargar categorías');
       }
     };
     fetchCategorias();
   }, []);
 
+  // Efecto para actualizar el formulario cuando cambia el registro a editar
   useEffect(() => {
     if (utilidad) {
       setFormData({
@@ -45,7 +44,6 @@ const CategoryForm = ({ utilidad, onCancel, onSaved }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-    setSuccess(null);
     setLoading(true);
 
     try {
@@ -60,11 +58,9 @@ const CategoryForm = ({ utilidad, onCancel, onSaved }) => {
           ...payload,
           idUtilidad: utilidad.idUtilidad
         });
-        setSuccess('Configuración actualizada exitosamente');
       } else {
         // Modo creación
         await apiClient.post('/fs/utilidades', payload);
-        setSuccess('Configuración creada exitosamente');
       }
 
       setFormData({ categoriaId: '', porcentajeUtilidad: '' });
@@ -78,45 +74,31 @@ const CategoryForm = ({ utilidad, onCancel, onSaved }) => {
   };
 
   return (
-    <CForm onSubmit={handleSubmit} className="mb-4">
-      {error && <div className="alert alert-danger mb-3">{error}</div>}
-      {success && <div className="alert alert-success mb-3">{success}</div>}
-
-      <CRow className="g-3 align-items-center">
-        <CCol md={6}>
+    <CForm onSubmit={handleSubmit}>
+      <CRow className="mb-3">
+        <CCol md={4}>
           <CFormSelect
-            name="categoriaId"
-            label="Seleccionar categoría"
+            label="Categoría"
             value={formData.categoriaId}
             onChange={(e) => setFormData({ ...formData, categoriaId: e.target.value })}
             required
-            disabled={loading}
           >
-            <option value="">Seleccionar categoría</option>
-            {categorias.map((categoria) => (
-              <option key={categoria.idCategoria} value={categoria.idCategoria}>
-                {categoria.nombre}
+            <option value="">Seleccione una categoría</option>
+            {categorias.map((cat) => (
+              <option key={cat.idCategoria} value={cat.idCategoria}>
+                {cat.nombre}
               </option>
             ))}
           </CFormSelect>
         </CCol>
         <CCol md={4}>
           <CFormInput
+            label="Porcentaje de Utilidad"
             type="number"
-            name="porcentajeUtilidad"
-            label="Porcentaje de Utilidad (%)"
-            value={formData.porcentajeUtilidad || ''}
-            onChange={(e) => {
-              const value = e.target.value;
-              if (value === '' || (Number(value) >= 0 && Number(value) <= 100)) {
-                setFormData({ ...formData, porcentajeUtilidad: value });
-              }
-            }}
-            placeholder="Ej: 25"
-            min="0"
-            max="100"
             step="0.01"
-            disabled={loading}
+            value={formData.porcentajeUtilidad}
+            onChange={(e) => setFormData({ ...formData, porcentajeUtilidad: e.target.value })}
+            placeholder="Ej: 25.50"
             required
           />
         </CCol>

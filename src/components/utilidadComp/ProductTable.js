@@ -9,20 +9,22 @@ import {
   CBadge,
   CButton,
   CSpinner,
-  CPagination,
-  CPaginationItem,
+  CModal,
+  CModalHeader,
+  CModalTitle,
+  CModalBody,
+  CModalFooter,
 } from '@coreui/react';
 import apiClient from '../../services/apiClient';
 import ProductForm from './ProductForm'; // Importa el formulario
 
-const ProductTable = () => {
+const ProductTable = ({ currentPage, itemsPerPage, onDelete, onSuccess, onError }) => {
   const [utilidades, setUtilidades] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
   const [editingId, setEditingId] = useState(null); // Estado para edición
-  const itemsPerPage = 5;
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteItem, setDeleteItem] = useState(null);
 
   useEffect(() => {
     fetchUtilidades();
@@ -35,32 +37,27 @@ const ProductTable = () => {
       setUtilidades(response.data);
     } catch (err) {
       setError(err.response?.data?.message || 'Error al cargar utilidades');
+      onError(err.response?.data?.message || 'Error al cargar utilidades');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    setError(null);
-    setSuccess(null);
+  const handleDelete = (id) => {
+    setDeleteItem(id);
+    setShowDeleteModal(true);
+  };
 
-    if (window.confirm('¿Está seguro de eliminar esta configuración?')) {
-      try {
-        const response = await apiClient.delete(`/fs/utilidades/${id}`);
-        if (response.status === 204 || response.status === 200) {
-          setSuccess('Configuración eliminada correctamente');
-          fetchUtilidades();
-
-          // Limpia el mensaje de éxito después de 3 segundos
-          setTimeout(() => {
-            setSuccess(null);
-          }, 3000);
-        } else {
-          setError('Error inesperado al eliminar');
-        }
-      } catch (err) {
-        setError(err.response?.data?.message || 'Error al eliminar');
-      }
+  const confirmDelete = async () => {
+    try {
+      await apiClient.delete(`/fs/utilidades/${deleteItem}`);
+      onSuccess('Configuración eliminada correctamente');
+      fetchUtilidades();
+    } catch (err) {
+      onError(err.response?.data?.message || 'Error al eliminar');
+    } finally {
+      setShowDeleteModal(false);
+      setDeleteItem(null);
     }
   };
 
@@ -83,10 +80,6 @@ const ProductTable = () => {
 
   return (
     <>
-      {/* Mensajes de éxito y error */}
-      {error && <div className="alert alert-danger mb-3">{error}</div>}
-      {success && <div className="alert alert-success mb-3">{success}</div>}
-
       {/* Formulario: Crear o Editar */}
       <div>
         <h4>{editingId ? 'Editar Utilidad' : 'Crear Nueva Utilidad'}</h4>
@@ -97,6 +90,7 @@ const ProductTable = () => {
           onSaved={() => {
             fetchUtilidades(); // Refresca la tabla
             setEditingId(null); // Regresa al modo "crear"
+            onSuccess('Configuración guardada correctamente');
           }}
         />
       </div>
@@ -187,6 +181,24 @@ const ProductTable = () => {
           </CPaginationItem>
         </CPagination>
       )}
+
+      {/* Modal de confirmación de eliminación */}
+      <CModal visible={showDeleteModal} onClose={() => setShowDeleteModal(false)}>
+        <CModalHeader>
+          <CModalTitle>Confirmar Eliminación</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          ¿Está seguro que desea eliminar esta configuración?
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="secondary" onClick={() => setShowDeleteModal(false)}>
+            Cancelar
+          </CButton>
+          <CButton color="danger" onClick={confirmDelete}>
+            Eliminar
+          </CButton>
+        </CModalFooter>
+      </CModal>
     </>
   );
 };

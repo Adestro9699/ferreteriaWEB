@@ -175,7 +175,7 @@ const _nav = () => {
     {
       component: CNavItem,
       name: 'Compras',
-      to: '/compras',
+      to: '/compra',
       icon: <CIcon icon={cilCart} customClassName="nav-icon" />,
       show: isAuthenticated && hasPermission('/compras'),
     },
