@@ -72,7 +72,7 @@ const _nav = () => {
     clientes: ['/clientes', '/creditos'],
     usuarios: ['/usuarios', '/rolesYpermisos', '/cajas'],
     reportes: ['/reportes-ventas', '/reportes-compras', '/reportes-inventario', '/reportes-transferencias'],
-    configuracion: ['/empresa', '/impuestos', '/backup'],
+    configuracion: ['/empresa', '/utilidad', '/backup'],
     extras: ['/notificaciones', '/calendario', '/soporte'],
   };
 
@@ -175,7 +175,7 @@ const _nav = () => {
     {
       component: CNavItem,
       name: 'Compras',
-      to: '/compras',
+      to: '/compra',
       icon: <CIcon icon={cilCart} customClassName="nav-icon" />,
       show: isAuthenticated && hasPermission('/compras'),
     },
@@ -299,9 +299,9 @@ const _nav = () => {
     {
       component: CNavItem,
       name: 'Parametría/Impuestos',
-      to: '/impuestos',
+      to: '/utilidad',
       icon: <CIcon icon={cilList} customClassName="nav-icon" />,
-      show: isAuthenticated && hasPermission('/impuestos'),
+      show: isAuthenticated && hasPermission('/utilidad'),
     },
     {
       component: CNavItem,

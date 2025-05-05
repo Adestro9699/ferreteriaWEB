@@ -30,6 +30,8 @@ const Caja = React.lazy(() => import('./views/caja/caja'));
 const Empresa = React.lazy(() => import('./views/empresa/empresa'));
 const ListarVenta = React.lazy(() => import('./views/listarVenta/listarVenta'));
 const DetalleVentaPage = React.lazy(() => import('./components/listarVentaComp/DetalleVentaPage'));
+const Utilidad = React.lazy(() => import('./views/utilidad/utilidad'));
+const Compra = React.lazy(() => import('./views/compra/compra'));
 
 
 const App = () => {
@@ -227,6 +229,35 @@ const App = () => {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="utilidad"
+              element={
+                <ProtectedRoute requiredPermissions={[
+
+                ]}>
+                  <Utilidad />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="compra"
+              element={
+                <ProtectedRoute requiredPermissions={[
+                  '/compras',
+                  '/compras/:id:GET',
+                  '/compras/:id:PUT',
+                  '/compras/:id:DELETE',
+                  '/detalles-compras',
+                  '/detalles-compras/:id:GET',
+                  '/detalles-compras/:id:PUT',
+                  '/detalles-compras/:id:DELETE',
+                ]}>
+                  <Compra />
+                </ProtectedRoute>
+              }
+            />
+
           </Route>
           {/* Ruta para manejar rutas no encontradas */}
           <Route path="*" element={<Page404 />} />
