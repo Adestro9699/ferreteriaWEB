@@ -18,7 +18,7 @@ import {
   CTableBody,
   CTableDataCell,
 } from '@coreui/react'
-import { cilX } from '@coreui/icons'
+import { cilX, cilPencil, cilTrash } from '@coreui/icons'
 import CIcon from '@coreui/icons-react'
 import CompraForm from './CompraForm'
 import apiClient from '../../services/apiClient'
@@ -41,6 +41,7 @@ const NuevaCompraModal = ({ show, onClose, onCompraGuardada, compraEdicion }) =>
   const [loading, setLoading] = useState(false)
   const [compraId, setCompraId] = useState(null)
   const [detalles, setDetalles] = useState([])
+  const [productoEditando, setProductoEditando] = useState(null)
 
   useEffect(() => {
     // Resetear todo al abrir el modal
@@ -161,16 +162,35 @@ const NuevaCompraModal = ({ show, onClose, onCompraGuardada, compraEdicion }) =>
   }
 
   const handleProductoAgregado = (nuevoDetalle) => {
-    // Verificar si el producto ya existe en los detalles
-    const productoExistente = detalles.find(
-      detalle => detalle.producto.idProducto === nuevoDetalle.producto.idProducto
-    )
-
-    if (!productoExistente) {
-      setDetalles([...detalles, nuevoDetalle])
+    if (productoEditando !== null) {
+      // Si estamos editando, reemplazar el producto existente
+      setDetalles(detalles.map((detalle, index) => 
+        index === productoEditando ? nuevoDetalle : detalle
+      ))
+      setProductoEditando(null)
     } else {
-      setError('Este producto ya ha sido agregado a la compra')
+      // Si no estamos editando, verificar si el producto ya existe
+      const productoExistente = detalles.find(
+        detalle => detalle.producto.idProducto === nuevoDetalle.producto.idProducto
+      )
+
+      if (!productoExistente) {
+        setDetalles([...detalles, nuevoDetalle])
+      } else {
+        setError('Este producto ya ha sido agregado a la compra')
+      }
     }
+  }
+
+  const handleEditarProducto = (index) => {
+    const detalle = detalles[index]
+    setProductoEditando(index)
+    // Aquí podrías pasar el detalle al formulario de productos
+    // Esto dependerá de cómo esté estructurado tu CompraForm
+  }
+
+  const handleEliminarProducto = (index) => {
+    setDetalles(detalles.filter((_, i) => i !== index))
   }
 
   const handleFinalizar = async () => {
@@ -259,7 +279,7 @@ const NuevaCompraModal = ({ show, onClose, onCompraGuardada, compraEdicion }) =>
   }
 
   return (
-    <CModal visible={show} onClose={onClose} size="xl">
+    <CModal visible={show} onClose={onClose} size="xl" backdrop="static">
       <CModalHeader>
         <CModalTitle>Nueva Compra</CModalTitle>
         <CButton color="close" variant="ghost" onClick={onClose}>
@@ -345,7 +365,11 @@ const NuevaCompraModal = ({ show, onClose, onCompraGuardada, compraEdicion }) =>
           </CForm>
         ) : compraId ? (
           <>
-            <CompraForm compraId={compraId} onProductoAgregado={handleProductoAgregado} />
+            <CompraForm 
+              compraId={compraId} 
+              onProductoAgregado={handleProductoAgregado}
+              productoEditando={productoEditando !== null ? detalles[productoEditando] : null}
+            />
             
             <div className="mt-4">
               <h5>Productos Agregados</h5>
@@ -357,6 +381,7 @@ const NuevaCompraModal = ({ show, onClose, onCompraGuardada, compraEdicion }) =>
                     <CTableHeaderCell>Precio Unitario</CTableHeaderCell>
                     <CTableHeaderCell>Subtotal</CTableHeaderCell>
                     <CTableHeaderCell>Utilidad Manual</CTableHeaderCell>
+                    <CTableHeaderCell>Acciones</CTableHeaderCell>
                   </CTableRow>
                 </CTableHead>
                 <CTableBody>
@@ -375,6 +400,26 @@ const NuevaCompraModal = ({ show, onClose, onCompraGuardada, compraEdicion }) =>
                             ? `${detalle.porcentajeUtilidadManual}%`
                             : 'N/A'}
                         </CTableDataCell>
+                        <CTableDataCell>
+                          <div className="d-flex gap-2">
+                            <CButton 
+                              color="primary" 
+                              size="sm"
+                              onClick={() => handleEditarProducto(index)}
+                              disabled={productoEditando !== null}
+                            >
+                              <CIcon icon={cilPencil} />
+                            </CButton>
+                            <CButton 
+                              color="danger" 
+                              size="sm"
+                              onClick={() => handleEliminarProducto(index)}
+                              disabled={productoEditando !== null}
+                            >
+                              <CIcon icon={cilTrash} />
+                            </CButton>
+                          </div>
+                        </CTableDataCell>
                       </CTableRow>
                     );
                   })}
@@ -386,6 +431,7 @@ const NuevaCompraModal = ({ show, onClose, onCompraGuardada, compraEdicion }) =>
                       {formatCurrency(detalles.reduce((total, detalle) => 
                         total + (parseFloat(detalle.cantidad) * parseFloat(detalle.precioUnitario)), 0))}
                     </CTableDataCell>
+                    <CTableDataCell colSpan="2"></CTableDataCell>
                   </CTableRow>
                 </CTableBody>
               </CTable>

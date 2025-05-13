@@ -52,7 +52,7 @@ const DetalleCompraModal = ({ show, onClose, compra }) => {
   }
 
   return (
-    <CModal visible={show} onClose={onClose} size="lg">
+    <CModal visible={show} onClose={onClose} size="lg" backdrop="static">
       <CModalHeader>
         <CModalTitle>Detalles de Compra</CModalTitle>
         <CButton color="close" variant="ghost" onClick={onClose}>

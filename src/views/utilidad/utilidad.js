@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { CNav, CNavItem, CNavLink, CTabContent, CTabPane, CContainer } from '@coreui/react';
 import GlobalUtilidad from './GlobalUtilidad';
 import SpecificUtilidad from './SpecificUtilidad';
+import UnidadMedida from './UnidadMedida';
 
 const Utilidad = () => {
   const [activeTab, setActiveTab] = useState('global');
@@ -29,6 +30,15 @@ const Utilidad = () => {
             <i className="fas fa-bullseye me-2"></i> Utilidades Específicas
           </CNavLink>
         </CNavItem>
+        <CNavItem>
+          <CNavLink 
+            active={activeTab === 'unidad-medida'} 
+            onClick={() => setActiveTab('unidad-medida')}
+            className="fw-semibold"
+          >
+            <i className="fas fa-ruler me-2"></i> Unidades de Medida
+          </CNavLink>
+        </CNavItem>
       </CNav>
 
       <CTabContent>
@@ -37,6 +47,9 @@ const Utilidad = () => {
         </CTabPane>
         <CTabPane visible={activeTab === 'specific'}>
           <SpecificUtilidad />
+        </CTabPane>
+        <CTabPane visible={activeTab === 'unidad-medida'}>
+          <UnidadMedida />
         </CTabPane>
       </CTabContent>
     </CContainer>
