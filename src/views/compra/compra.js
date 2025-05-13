@@ -33,6 +33,8 @@ const Compra = () => {
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
   const [compraToDelete, setCompraToDelete] = useState(null)
   const [toasts, setToasts] = useState([])
+  const [showConfirmDeleteMultiple, setShowConfirmDeleteMultiple] = useState(false)
+  const [comprasToDelete, setComprasToDelete] = useState([])
 
   useEffect(() => {
     fetchCompras()
@@ -83,6 +85,11 @@ const Compra = () => {
     setShowConfirmDelete(true)
   }
 
+  const handleEliminarMultiples = (compraIds) => {
+    setComprasToDelete(compraIds)
+    setShowConfirmDeleteMultiple(true)
+  }
+
   const confirmarEliminacion = async () => {
     try {
       setLoading(true)
@@ -109,6 +116,49 @@ const Compra = () => {
       setError(error.response?.data?.message || 'Error al eliminar la compra')
       addToast('Error al eliminar la compra', 'danger')
       console.error('Error eliminando compra:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const confirmarEliminacionMultiple = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      // Obtener todas las compras seleccionadas
+      const comprasSeleccionadas = compras.filter(compra => 
+        comprasToDelete.includes(compra.idCompra)
+      )
+
+      // Primero eliminar los detalles de las compras COMPLETADAS
+      for (const compra of comprasSeleccionadas) {
+        if (compra.estadoCompra === 'COMPLETADA') {
+          const detallesResponse = await apiClient.get(`/fs/detalles-compras/compra/${compra.idCompra}`)
+          const detalles = detallesResponse.data
+          
+          if (detalles.length > 0) {
+            const detalleIds = detalles.map(detalle => detalle.idDetalleCompra)
+            await apiClient.delete('/fs/detalles-compras/eliminar-multiples', {
+              data: detalleIds
+            })
+          }
+        }
+      }
+
+      // Luego eliminar las compras
+      await apiClient.delete('/fs/compras/eliminar-multiples', {
+        data: comprasToDelete
+      })
+
+      setShowConfirmDeleteMultiple(false)
+      setComprasToDelete([])
+      fetchCompras()
+      addToast(`${comprasToDelete.length} compras eliminadas exitosamente`, 'success')
+    } catch (error) {
+      setError(error.response?.data?.message || 'Error al eliminar las compras')
+      addToast('Error al eliminar las compras', 'danger')
+      console.error('Error eliminando compras:', error)
     } finally {
       setLoading(false)
     }
@@ -160,6 +210,7 @@ const Compra = () => {
                     onVerDetalle={handleVerDetalle}
                     onEditarCompra={handleEditarCompra}
                     onEliminarCompra={handleEliminarCompra}
+                    onEliminarMultiples={handleEliminarMultiples}
                     loading={loading}
                   />
                 )}
@@ -180,7 +231,7 @@ const Compra = () => {
             compra={selectedCompra}
           />
 
-          <CModal visible={showConfirmDelete} onClose={() => setShowConfirmDelete(false)}>
+          <CModal visible={showConfirmDelete} onClose={() => setShowConfirmDelete(false)} backdrop="static">
             <CModalHeader>
               <CModalTitle>Confirmar Eliminación</CModalTitle>
             </CModalHeader>
@@ -193,6 +244,24 @@ const Compra = () => {
                 Cancelar
               </CButton>
               <CButton color="danger" onClick={confirmarEliminacion}>
+                Eliminar
+              </CButton>
+            </CModalFooter>
+          </CModal>
+
+          <CModal visible={showConfirmDeleteMultiple} onClose={() => setShowConfirmDeleteMultiple(false)} backdrop="static">
+            <CModalHeader>
+              <CModalTitle>Confirmar Eliminación Múltiple</CModalTitle>
+            </CModalHeader>
+            <CModalBody>
+              ¿Está seguro que desea eliminar {comprasToDelete.length} compras seleccionadas?
+              Esta acción no se puede deshacer.
+            </CModalBody>
+            <CModalFooter>
+              <CButton color="secondary" onClick={() => setShowConfirmDeleteMultiple(false)}>
+                Cancelar
+              </CButton>
+              <CButton color="danger" onClick={confirmarEliminacionMultiple}>
                 Eliminar
               </CButton>
             </CModalFooter>

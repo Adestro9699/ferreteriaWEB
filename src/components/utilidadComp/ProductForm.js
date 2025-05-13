@@ -77,11 +77,12 @@ const ProductForm = ({ utilidad, onCancel, onSaved }) => {
             value={formData.productoId}
             onChange={(e) => setFormData({ ...formData, productoId: e.target.value })}
             required
+            style={{ color: 'inherit' }}
           >
-            <option value="">Seleccione un producto</option>
+            <option value="" style={{ color: 'inherit' }}>Seleccione un producto</option>
             {productos.map((prod) => (
-              <option key={prod.idProducto} value={prod.idProducto}>
-                {prod.nombre}
+              <option key={prod.idProducto} value={prod.idProducto} style={{ color: 'inherit' }}>
+                {prod.nombre || prod.nombreProducto || prod.descripcion || 'Sin nombre'}
               </option>
             ))}
           </CFormSelect>

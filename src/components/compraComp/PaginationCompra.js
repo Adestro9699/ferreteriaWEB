@@ -3,18 +3,20 @@ import { CPagination, CPaginationItem, CFormSelect } from '@coreui/react';
 
 const PaginationCompra = ({
   currentPage,
-  setCurrentPage,
-  totalPages,
+  totalItems,
   itemsPerPage,
-  handleItemsPerPageChange,
+  onPageChange,
+  onItemsPerPageChange,
 }) => {
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+
   return (
     <div className="d-flex align-items-center justify-content-center gap-3">
       {/* Paginación */}
       <CPagination className="mb-0">
         <CPaginationItem
           disabled={currentPage === 1}
-          onClick={() => setCurrentPage(currentPage - 1)}
+          onClick={() => onPageChange(currentPage - 1)}
         >
           Anterior
         </CPaginationItem>
@@ -22,14 +24,14 @@ const PaginationCompra = ({
           <CPaginationItem
             key={i + 1}
             active={i + 1 === currentPage}
-            onClick={() => setCurrentPage(i + 1)}
+            onClick={() => onPageChange(i + 1)}
           >
             {i + 1}
           </CPaginationItem>
         ))}
         <CPaginationItem
           disabled={currentPage === totalPages}
-          onClick={() => setCurrentPage(currentPage + 1)}
+          onClick={() => onPageChange(currentPage + 1)}
         >
           Siguiente
         </CPaginationItem>
@@ -40,7 +42,7 @@ const PaginationCompra = ({
         <span className="me-2">Mostrar:</span>
         <CFormSelect
           value={itemsPerPage}
-          onChange={handleItemsPerPageChange}
+          onChange={onItemsPerPageChange}
           style={{ width: '80px' }} // Ancho fijo para el selector
         >
           <option value={10}>10</option>

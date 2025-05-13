@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   CForm,
   CFormInput,
@@ -9,18 +9,22 @@ import {
   CInputGroup,
   CInputGroupText,
   CAlert,
+  CDropdown,
+  CDropdownToggle,
+  CDropdownMenu,
+  CDropdownItem,
 } from '@coreui/react'
-import { cilPlus, cilMinus } from '@coreui/icons'
+import { cilPlus, cilMinus, cilSearch } from '@coreui/icons'
 import CIcon from '@coreui/icons-react'
 import apiClient from '../../services/apiClient'
 
-const CompraForm = ({ compraId, onProductoAgregado }) => {
+const CompraForm = ({ compraId, onProductoAgregado, productoEditando }) => {
   const [formData, setFormData] = useState({
     compra: { idCompra: compraId },
     producto: { idProducto: '' },
     cantidad: '',
     precioUnitario: '',
-    porcentajeUtilidadManual: null,
+    porcentajeUtilidadManual: '',
     porcentajeUtilidadManualPersonalizado: '',
   })
 
@@ -30,12 +34,58 @@ const CompraForm = ({ compraId, onProductoAgregado }) => {
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
   const [utilidadGeneralParametro, setUtilidadGeneralParametro] = useState(null)
+  const [busquedaProducto, setBusquedaProducto] = useState('')
+  const [productosFiltrados, setProductosFiltrados] = useState([])
+  const [showDropdown, setShowDropdown] = useState(false)
+  const [selectedIndex, setSelectedIndex] = useState(-1)
+  const dropdownRef = useRef(null)
 
   useEffect(() => {
     fetchProductos()
     fetchUtilidades()
     fetchParametros()
-  }, [])
+
+    // Si hay un producto en edición, cargar sus datos
+    if (productoEditando) {
+      setFormData({
+        compra: { idCompra: compraId },
+        producto: { idProducto: productoEditando.producto.idProducto },
+        cantidad: productoEditando.cantidad,
+        precioUnitario: productoEditando.precioUnitario,
+        porcentajeUtilidadManual: productoEditando.porcentajeUtilidadManual || '',
+        porcentajeUtilidadManualPersonalizado: productoEditando.porcentajeUtilidadManual || '',
+      })
+      setBusquedaProducto(productoEditando.producto.nombreProducto || productoEditando.producto.nombre)
+    }
+
+    // Agregar event listener para cerrar el dropdown cuando se hace click fuera
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [productoEditando])
+
+  // Filtrar productos cuando cambia la búsqueda
+  useEffect(() => {
+    if (busquedaProducto.trim() === '') {
+      setProductosFiltrados([])
+      return
+    }
+
+    const filtrados = productos.filter(producto => 
+      (producto.nombreProducto || producto.nombre)
+        .toLowerCase()
+        .includes(busquedaProducto.toLowerCase())
+    )
+    setProductosFiltrados(filtrados)
+    setShowDropdown(filtrados.length > 0)
+  }, [busquedaProducto, productos])
 
   const fetchProductos = async () => {
     try {
@@ -118,15 +168,41 @@ const CompraForm = ({ compraId, onProductoAgregado }) => {
     }
   }
 
+  const handleKeyDown = (e) => {
+    if (!showDropdown) return
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault()
+        setSelectedIndex(prev => 
+          prev < productosFiltrados.length - 1 ? prev + 1 : prev
+        )
+        break
+      case 'ArrowUp':
+        e.preventDefault()
+        setSelectedIndex(prev => prev > 0 ? prev - 1 : prev)
+        break
+      case 'Enter':
+        e.preventDefault()
+        if (selectedIndex >= 0 && selectedIndex < productosFiltrados.length) {
+          handleSeleccionarProducto(productosFiltrados[selectedIndex])
+        }
+        break
+      case 'Escape':
+        e.preventDefault()
+        setShowDropdown(false)
+        setSelectedIndex(-1)
+        break
+      default:
+        break
+    }
+  }
+
   const handleChange = (e) => {
     const { name, value } = e.target
-    if (name === 'idProducto') {
-      const producto = productos.find(p => p.idProducto === parseInt(value))
-      setFormData({
-        ...formData,
-        producto: { idProducto: value },
-        precioUnitario: producto ? producto.precio : ''
-      })
+    if (name === 'busquedaProducto') {
+      setBusquedaProducto(value)
+      setSelectedIndex(-1) // Reset selected index when typing
     } else {
       setFormData({
         ...formData,
@@ -135,10 +211,32 @@ const CompraForm = ({ compraId, onProductoAgregado }) => {
     }
   }
 
+  const handleSeleccionarProducto = (producto) => {
+    setFormData({
+      ...formData,
+      producto: { idProducto: producto.idProducto },
+      precioUnitario: producto.precio || ''
+    })
+    setBusquedaProducto(producto.nombreProducto || producto.nombre)
+    setShowDropdown(false)
+  }
+
   const handleAgregarProducto = () => {
     // Validar que todos los campos estén llenos
     if (!formData.producto.idProducto || !formData.cantidad || !formData.precioUnitario) {
       setError('Por favor complete todos los campos')
+      return
+    }
+
+    // Validar que se haya seleccionado una utilidad
+    if (!formData.porcentajeUtilidadManual) {
+      setError('Debe seleccionar una utilidad para el producto')
+      return
+    }
+
+    // Si se seleccionó utilidad manual, validar que se haya ingresado un valor
+    if (formData.porcentajeUtilidadManual === 'manual' && !formData.porcentajeUtilidadManualPersonalizado) {
+      setError('Debe ingresar un porcentaje de utilidad manual')
       return
     }
 
@@ -173,9 +271,10 @@ const CompraForm = ({ compraId, onProductoAgregado }) => {
       producto: { idProducto: '' },
       cantidad: '',
       precioUnitario: '',
-      porcentajeUtilidadManual: null,
+      porcentajeUtilidadManual: '',
       porcentajeUtilidadManualPersonalizado: '',
     })
+    setBusquedaProducto('')
     setError(null)
   }
 
@@ -189,130 +288,111 @@ const CompraForm = ({ compraId, onProductoAgregado }) => {
 
       <CRow className="mb-3">
         <CCol md={3}>
-          <CFormSelect
-            label="Producto"
-            name="idProducto"
-            value={formData.producto.idProducto}
-            onChange={handleChange}
-          >
-            <option value="">Seleccionar Producto</option>
-            {productos.length === 0 ? (
-              <option>No hay productos</option>
-            ) : (
-              productos.map(producto => (
-                <option
-                  key={producto.idProducto}
-                  value={producto.idProducto}
-                >
-                  {producto.nombreProducto || producto.nombre || 'Sin nombre'}
-                </option>
-              ))
+          <div ref={dropdownRef} className="position-relative">
+            <CFormInput
+              label="Buscar Producto"
+              name="busquedaProducto"
+              value={busquedaProducto}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              placeholder="Escriba para buscar..."
+              required
+            />
+            {showDropdown && (
+              <div className="position-absolute w-100 border rounded-bottom shadow-sm" 
+                style={{ 
+                  zIndex: 1000, 
+                  maxHeight: '200px', 
+                  overflowY: 'auto',
+                  backgroundColor: 'var(--cui-body-bg)',
+                  color: 'var(--cui-body-color)'
+                }}
+              >
+                {productosFiltrados.map((producto, index) => (
+                  <div
+                    key={producto.idProducto}
+                    className="p-2 cursor-pointer"
+                    style={{ 
+                      cursor: 'pointer',
+                      backgroundColor: index === selectedIndex ? 'var(--cui-component-hover-bg)' : 'transparent',
+                      ':hover': {
+                        backgroundColor: 'var(--cui-component-hover-bg)'
+                      }
+                    }}
+                    onClick={() => handleSeleccionarProducto(producto)}
+                    onMouseEnter={() => setSelectedIndex(index)}
+                  >
+                    {producto.nombreProducto || producto.nombre}
+                  </div>
+                ))}
+              </div>
             )}
-          </CFormSelect>
+          </div>
         </CCol>
-
-        <CCol md={2}>
+        <CCol md={3}>
           <CFormInput
-            type="number"
             label="Cantidad"
+            type="number"
             name="cantidad"
             value={formData.cantidad}
             onChange={handleChange}
-            min="1"
-            step="1"
+            required
           />
         </CCol>
-
-        <CCol md={2}>
+        <CCol md={3}>
           <CFormInput
-            type="number"
             label="Precio Unitario"
+            type="number"
             name="precioUnitario"
             value={formData.precioUnitario}
             onChange={handleChange}
-            min="0"
-            step="0.01"
+            required
           />
         </CCol>
-
-        <CCol md={2}>
+        <CCol md={3}>
           <CFormSelect
-            label="Utilidad (%)"
+            label="Utilidad"
             name="porcentajeUtilidadManual"
-            value={formData.porcentajeUtilidadManual || ''}
-            onChange={(e) => {
-              const value = e.target.value
-              setFormData({
-                ...formData,
-                porcentajeUtilidadManual: value,
-                // Resetear el campo personalizado si no es manual
-                porcentajeUtilidadManualPersonalizado: value === 'manual' 
-                  ? formData.porcentajeUtilidadManualPersonalizado 
-                  : ''
-              })
-            }}
+            value={formData.porcentajeUtilidadManual}
+            onChange={handleChange}
+            required
           >
-            <option value="">Seleccionar</option>
-            {utilidades.length > 0 && (
-              <>
-                <optgroup label="Utilidades por Producto">
-                  {utilidades
-                    .filter(u => u.tipoUtilidad === 'PRODUCTO')
-                    .map((utilidad) => (
-                      <option 
-                        key={`producto-${utilidad.idUtilidad}`} 
-                        value={utilidad.porcentaje}
-                      >
-                        {`${utilidad.nombre} (${utilidad.porcentaje}%)`}
-                      </option>
-                    ))
-                  }
-                </optgroup>
-                <optgroup label="Utilidades por Categoría">
-                  {utilidades
-                    .filter(u => u.tipoUtilidad === 'CATEGORIA')
-                    .map((utilidad) => (
-                      <option 
-                        key={`categoria-${utilidad.idUtilidad}`} 
-                        value={utilidad.porcentaje}
-                      >
-                        {`${utilidad.nombre} (${utilidad.porcentaje}%)`}
-                      </option>
-                    ))
-                  }
-                </optgroup>
-              </>
-            )}
+            <option value="">Seleccionar Utilidad</option>
             {utilidadGeneralParametro && (
               <option value={utilidadGeneralParametro}>
-                {`Utilidad General (${utilidadGeneralParametro}%)`}
+                Utilidad General ({utilidadGeneralParametro}%)
               </option>
             )}
+            {utilidades.map((utilidad) => (
+              <option key={utilidad.idUtilidad} value={utilidad.porcentaje}>
+                {utilidad.tipoUtilidad === 'CATEGORIA' ? 'Categoría' : 'Producto'} {utilidad.nombre} ({utilidad.porcentaje}%)
+              </option>
+            ))}
             <option value="manual">Utilidad Manual</option>
           </CFormSelect>
         </CCol>
-        {formData.porcentajeUtilidadManual === 'manual' && (
-          <CCol md={2}>
+      </CRow>
+
+      {formData.porcentajeUtilidadManual === 'manual' && (
+        <CRow className="mb-3">
+          <CCol md={3}>
             <CFormInput
+              label="Porcentaje de Utilidad Manual"
               type="number"
-              label="Ingrese Utilidad (%)"
               name="porcentajeUtilidadManualPersonalizado"
-              value={formData.porcentajeUtilidadManualPersonalizado || ''}
-              onChange={(e) => setFormData({
-                ...formData,
-                porcentajeUtilidadManualPersonalizado: e.target.value
-              })}
-              min="0"
-              step="0.01"
-              placeholder="Ej: 15.5"
+              value={formData.porcentajeUtilidadManualPersonalizado}
+              onChange={handleChange}
+              required
             />
           </CCol>
-        )}
+        </CRow>
+      )}
 
-        <CCol md={3} className="d-flex align-items-end">
+      <CRow>
+        <CCol>
           <CButton color="primary" onClick={handleAgregarProducto}>
             <CIcon icon={cilPlus} className="me-2" />
-            Agregar Producto
+            {productoEditando ? 'Actualizar Producto' : 'Agregar Producto'}
           </CButton>
         </CCol>
       </CRow>

@@ -9,6 +9,7 @@ import {
   CTableDataCell,
   CSpinner,
   CBadge,
+  CFormCheck,
 } from '@coreui/react'
 import { cilPlus, cilInfo, cilPencil, cilTrash } from '@coreui/icons'
 import CIcon from '@coreui/icons-react'
@@ -18,7 +19,7 @@ import CrearProducto from '../productoComp/CrearProducto';
 import apiClient from '../../services/apiClient';
 import { CToast, CToastBody, CToastClose, CToaster } from '@coreui/react';
 
-const CompraList = ({ compras, onNuevaCompra, onVerDetalle, onEditarCompra, onEliminarCompra }) => {
+const CompraList = ({ compras, onNuevaCompra, onVerDetalle, onEditarCompra, onEliminarCompra, onEliminarMultiples }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
@@ -30,6 +31,8 @@ const CompraList = ({ compras, onNuevaCompra, onVerDetalle, onEditarCompra, onEl
   const [subcategorias, setSubcategorias] = useState([]);
   const [unidadesMedida, setUnidadesMedida] = useState([]);
   const [toast, setToast] = useState({ visible: false, message: '', color: '' });
+  const [selectedCompras, setSelectedCompras] = useState([]);
+  const [selectAll, setSelectAll] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -122,6 +125,34 @@ const CompraList = ({ compras, onNuevaCompra, onVerDetalle, onEditarCompra, onEl
     setTimeout(() => setToast({ visible: false, message: '', color: '' }), 3000); // Ocultar toast después de 3 segundos
   };
 
+  const handleSelectAll = (e) => {
+    const checked = e.target.checked;
+    setSelectAll(checked);
+    if (checked) {
+      setSelectedCompras(paginatedCompras.map(compra => compra.idCompra));
+    } else {
+      setSelectedCompras([]);
+    }
+  };
+
+  const handleSelectCompra = (compraId) => {
+    setSelectedCompras(prev => {
+      if (prev.includes(compraId)) {
+        return prev.filter(id => id !== compraId);
+      } else {
+        return [...prev, compraId];
+      }
+    });
+  };
+
+  const handleEliminarSeleccionadas = () => {
+    if (selectedCompras.length > 0) {
+      onEliminarMultiples(selectedCompras);
+      setSelectedCompras([]);
+      setSelectAll(false);
+    }
+  };
+
   return (
     <div>
       <CToaster position="bottom-right" style={{ bottom: '20px', right: '20px' }}>
@@ -141,6 +172,12 @@ const CompraList = ({ compras, onNuevaCompra, onVerDetalle, onEditarCompra, onEl
           clearSearch={clearSearch}
         />
         <div className="d-flex gap-2">
+          {selectedCompras.length > 0 && (
+            <CButton color="danger" onClick={handleEliminarSeleccionadas}>
+              <CIcon icon={cilTrash} className="me-2" />
+              Eliminar Seleccionadas ({selectedCompras.length})
+            </CButton>
+          )}
           <CButton color="primary" onClick={onNuevaCompra}>
             <CIcon icon={cilPlus} className="me-2" />
             Nueva Compra
@@ -155,6 +192,12 @@ const CompraList = ({ compras, onNuevaCompra, onVerDetalle, onEditarCompra, onEl
       <CTable hover responsive>
         <CTableHead>
           <CTableRow>
+            <CTableHeaderCell>
+              <CFormCheck
+                checked={selectAll}
+                onChange={handleSelectAll}
+              />
+            </CTableHeaderCell>
             <CTableHeaderCell onClick={() => handleSort('numeroFactura')}>
               N° Factura {sortConfig.key === 'numeroFactura' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
             </CTableHeaderCell>
@@ -178,6 +221,12 @@ const CompraList = ({ compras, onNuevaCompra, onVerDetalle, onEditarCompra, onEl
         <CTableBody>
           {paginatedCompras.map((compra) => (
             <CTableRow key={compra.idCompra}>
+              <CTableDataCell>
+                <CFormCheck
+                  checked={selectedCompras.includes(compra.idCompra)}
+                  onChange={() => handleSelectCompra(compra.idCompra)}
+                />
+              </CTableDataCell>
               <CTableDataCell>{compra.numeroFactura}</CTableDataCell>
               <CTableDataCell>{formatDate(compra.fechaCompra)}</CTableDataCell>
               <CTableDataCell>{compra.tipoDocumento}</CTableDataCell>
@@ -198,28 +247,24 @@ const CompraList = ({ compras, onNuevaCompra, onVerDetalle, onEditarCompra, onEl
               <CTableDataCell className="d-flex gap-2">
                 <CButton 
                   color="info" 
-                  size="sm" 
+                  size="sm"
                   onClick={() => onVerDetalle(compra)}
                 >
-                  Ver Detalle
+                  <CIcon icon={cilInfo} />
                 </CButton>
-                {compra.estadoCompra === 'PENDIENTE' ? (
-                  <CButton 
-                    color="warning" 
-                    size="sm" 
-                    onClick={() => onEditarCompra(compra)}
-                  >
-                    <CIcon icon={cilPencil} className="me-1" />
-                    Editar
-                  </CButton>
-                ) : null}
+                <CButton 
+                  color="primary" 
+                  size="sm"
+                  onClick={() => onEditarCompra(compra)}
+                >
+                  <CIcon icon={cilPencil} />
+                </CButton>
                 <CButton 
                   color="danger" 
-                  size="sm" 
+                  size="sm"
                   onClick={() => onEliminarCompra(compra)}
                 >
-                  <CIcon icon={cilTrash} className="me-1" />
-                  Eliminar
+                  <CIcon icon={cilTrash} />
                 </CButton>
               </CTableDataCell>
             </CTableRow>
@@ -228,28 +273,22 @@ const CompraList = ({ compras, onNuevaCompra, onVerDetalle, onEditarCompra, onEl
       </CTable>
       <PaginationCompra
         currentPage={currentPage}
-        setCurrentPage={setCurrentPage}
-        totalPages={Math.ceil(compras.length / itemsPerPage)}
+        totalItems={filteredCompras.length}
         itemsPerPage={itemsPerPage}
-        handleItemsPerPageChange={handleItemsPerPageChange}
+        onPageChange={setCurrentPage}
+        onItemsPerPageChange={handleItemsPerPageChange}
       />
-      <CrearProducto
-        show={showCrearProductoModal}
-        onClose={() => setShowCrearProductoModal(false)}
-        onSave={handleProductoCreado}
-        categorias={categorias}
-        proveedores={proveedores}
-        subcategorias={subcategorias}
-        unidadesMedida={unidadesMedida}
-      />
-      <CToaster position="bottom-right" style={{ bottom: '20px', right: '20px' }}>
-        {toast.visible && (
-          <CToast color={toast.color} autohide={true} fade={true}>
-            <CToastBody>{toast.message}</CToastBody>
-            <CToastClose />
-          </CToast>
-        )}
-      </CToaster>
+      {showCrearProductoModal && (
+        <CrearProducto
+          show={showCrearProductoModal}
+          onClose={() => setShowCrearProductoModal(false)}
+          onProductoCreado={handleProductoCreado}
+          categorias={categorias}
+          proveedores={proveedores}
+          subcategorias={subcategorias}
+          unidadesMedida={unidadesMedida}
+        />
+      )}
     </div>
   );
 };
