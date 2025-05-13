@@ -168,9 +168,9 @@ const _nav = () => {
     {
       component: CNavItem,
       name: 'Cotizaciones',
-      to: '/cotizaciones',
+      to: '/cotizacion',
       icon: <CIcon icon={cilPencil} customClassName="nav-icon" />,
-      show: isAuthenticated && hasPermission('/cotizaciones'),
+      show: isAuthenticated && hasPermission('/cotizacion'),
     },
     {
       component: CNavItem,

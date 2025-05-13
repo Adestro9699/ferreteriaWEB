@@ -32,6 +32,7 @@ const ListarVenta = React.lazy(() => import('./views/listarVenta/listarVenta'));
 const DetalleVentaPage = React.lazy(() => import('./components/listarVentaComp/DetalleVentaPage'));
 const Utilidad = React.lazy(() => import('./views/utilidad/utilidad'));
 const Compra = React.lazy(() => import('./views/compra/compra'));
+const Cotizacion = React.lazy(() => import('./views/cotizacion/cotizacion'));
 
 
 const App = () => {
@@ -254,6 +255,14 @@ const App = () => {
                   '/detalles-compras/:id:DELETE',
                 ]}>
                   <Compra />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="cotizacion"
+              element={
+                <ProtectedRoute requiredPermissions={[ '/cotizacion']}> 
+                  <Cotizacion />
                 </ProtectedRoute>
               }
             />

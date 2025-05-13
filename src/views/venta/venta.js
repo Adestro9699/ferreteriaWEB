@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import CIcon from '@coreui/icons-react';
-import { cilTrash } from '@coreui/icons';
+import { cilTrash, cilSearch, cilSave, cilChevronBottom } from '@coreui/icons';
 import {
   CCard,
   CCardBody,
@@ -18,6 +18,13 @@ import {
   CToastBody,
   CContainer,
   CRow,
+  CCol,
+  CInputGroup,
+  CInputGroupText,
+  CDropdown,
+  CDropdownToggle,
+  CDropdownMenu,
+  CDropdownItem,
 } from '@coreui/react';
 import ModalProductos from './modalProducto'; // Importamos el modal
 import CompletarVenta from './completarVenta'; // Importamos el modal
@@ -45,6 +52,7 @@ const DetalleVenta = () => {
   const [reiniciarModalProductos, setReiniciarModalProductos] = useState(null);
   const [reiniciarModalDatosComplementarios, setReiniciarModalDatosComplementarios] = useState(null);
   const [toast, setToast] = useState({ visible: false, message: '', color: 'danger' });
+  const [codigoCotizacion, setCodigoCotizacion] = useState('');
 
   const monedas = {
     SOLES: { nombre: 'Soles', simbolo: 'S/' },
@@ -479,6 +487,149 @@ const DetalleVenta = () => {
     cargarVentaParaEditar();
   }, [location.state]);
 
+  const handleBuscarCotizacion = async () => {
+    if (!codigoCotizacion) {
+      showToast('Por favor ingrese un código de cotización', 'warning');
+      return;
+    }
+
+    try {
+      const response = await apiClient.get(`/fs/ventas/precargar-venta/${codigoCotizacion}`);
+      const datosCotizacion = response.data;
+
+      // Actualizar los productos vendidos
+      if (datosCotizacion.detalles) {
+        setProductosVendidos(datosCotizacion.detalles.map(detalle => ({
+          idProducto: detalle.idProducto,
+          nombre: detalle.nombreProducto,
+          precio: detalle.precioUnitario,
+          cantidad: detalle.cantidad,
+          descuento: detalle.descuento || 0,
+          unidadMedida: detalle.unidadMedida,
+          subtotal: detalle.subtotal
+        })));
+      }
+
+      // Actualizar datos complementarios con la información disponible
+      setDatosComplementarios(prev => ({
+        ...prev,
+        tipoPagoId: datosCotizacion.idTipoPago,
+        empresaId: datosCotizacion.idEmpresa,
+        clienteId: datosCotizacion.idCliente,
+        tipoComprobanteId: datosCotizacion.idTipoComprobantePago,
+        trabajadorId: datosCotizacion.idTrabajador,
+        fecha: datosCotizacion.fechaVenta || new Date().toISOString().slice(0, 19),
+        moneda: datosCotizacion.moneda || 'SOLES'
+      }));
+
+      showToast('Cotización cargada exitosamente', 'success');
+    } catch (error) {
+      console.error('Error al cargar la cotización:', error);
+      showToast('Error al cargar la cotización', 'danger');
+    }
+  };
+
+  const handleGuardarComoCotizacion = async () => {
+    // Validar que se hayan agregado productos
+    if (productosVendidos.length === 0) {
+      showToast('Debes agregar al menos un producto para guardar la cotización.', 'danger');
+      return;
+    }
+
+    // Validar que las cantidades de los productos sean válidas
+    const productosInvalidos = productosVendidos.some(
+      (producto) => !producto.cantidad || isNaN(producto.cantidad) || producto.cantidad <= 0
+    );
+
+    if (productosInvalidos) {
+      showToast('Por favor, ingresa una cantidad válida para todos los productos.', 'danger');
+      return;
+    }
+
+    // Validar que los datos complementarios estén completos
+    const datosComplementariosIncompletos = !datosComplementarios.tipoPagoId ||
+      !datosComplementarios.empresaId ||
+      !datosComplementarios.clienteId ||
+      !datosComplementarios.trabajadorId;
+
+    if (datosComplementariosIncompletos) {
+      showToast('Falta agregar Datos Venta. Por favor, completa todos los campos requeridos.', 'danger');
+      return;
+    }
+
+    // Calcular el total de la venta
+    const totalVenta = productosVendidos.reduce((total, producto) => {
+      const subtotal = (producto.precio * (1 - (producto.descuento || 0) / 100)) * producto.cantidad;
+      return total + subtotal;
+    }, 0);
+
+    // Preparar los datos para enviar al backend
+    const ventaData = {
+      idVenta: null,
+      serieComprobante: "",
+      numeroComprobante: "",
+      fechaVenta: datosComplementarios.fecha,
+      estadoVenta: "PENDIENTE",
+      totalVenta: Number(totalVenta.toFixed(2)),
+      fechaModificacion: null,
+      moneda: "SOLES",
+      observaciones: null,
+      idCaja: null,
+      idEmpresa: datosComplementarios.empresaId,
+      idTipoComprobantePago: datosComplementarios.tipoComprobanteId,
+      idTrabajador: datosComplementarios.trabajadorId,
+      idCliente: datosComplementarios.clienteId,
+      idTipoPago: datosComplementarios.tipoPagoId,
+      detalles: productosVendidos.map((producto, index) => {
+        const subtotal = (producto.precio * (1 - (producto.descuento || 0) / 100)) * producto.cantidad;
+        const subtotalSinIGV = subtotal / 1.18;
+        const igvAplicado = subtotal - subtotalSinIGV;
+
+        return {
+          idDetalleVenta: null,
+          idVenta: null,
+          idProducto: producto.idProducto,
+          nombreProducto: null,
+          unidadMedida: null,
+          cantidad: Number(producto.cantidad.toFixed(2)),
+          precioUnitario: Number(producto.precio.toFixed(2)),
+          descuento: Number((producto.descuento || 0).toFixed(2)),
+          subtotal: Number(subtotal.toFixed(2)),
+          subtotalSinIGV: Number(subtotalSinIGV.toFixed(2)),
+          igvAplicado: Number(igvAplicado.toFixed(2))
+        };
+      })
+    };
+
+    // Agregar console.log para ver el JSON que se envía
+    console.log('JSON enviado al convertir venta a cotización:', JSON.stringify(ventaData, null, 2));
+
+    try {
+      const response = await apiClient.post('/fs/cotizaciones/convertir-venta', ventaData);
+      showToast('Cotización guardada correctamente.', 'success');
+      
+      // Limpiar el estado después de guardar
+      setProductosVendidos([]);
+      setDatosComplementarios({
+        tipoPagoId: null,
+        empresaId: null,
+        clienteId: null,
+        tipoComprobanteId: null,
+        trabajadorId: null,
+        fecha: new Date().toISOString().slice(0, 19),
+        moneda: 'SOLES'
+      });
+
+      // Reiniciar los estados de los modales
+      if (reiniciarModalProductos) reiniciarModalProductos();
+      if (reiniciarModalDatosComplementarios) reiniciarModalDatosComplementarios();
+    } catch (error) {
+      console.error('Error al guardar la cotización:', error);
+      const errorMessage = error.response?.data?.message || error.message;
+      showToast(`Error al guardar la cotización: ${errorMessage}`, 'danger');
+    }
+  };
+
   return (
     <CContainer fluid className="px-4" style={{ 
       marginLeft: 'var(--cui-sidebar-width-collapsed, 56px)',
@@ -518,9 +669,39 @@ const DetalleVenta = () => {
                   Datos Venta
                 </CButton>
               </div>
-              <CButton color="success" onClick={handleGuardarVenta}>
-                {modoEdicion ? 'Actualizar Venta' : 'Guardar Venta'}
-              </CButton>
+              <div className="d-flex align-items-center">
+                <CInputGroup size="sm" className="me-2" style={{ width: '150px' }}>
+                  <CInputGroupText>
+                    <CIcon icon={cilSearch} />
+                  </CInputGroupText>
+                  <CFormInput
+                    placeholder="Código cotización"
+                    value={codigoCotizacion}
+                    onChange={(e) => setCodigoCotizacion(e.target.value)}
+                  />
+                  <CButton
+                    color="primary"
+                    onClick={handleBuscarCotizacion}
+                  >
+                    Buscar
+                  </CButton>
+                </CInputGroup>
+                <CDropdown>
+                  <CDropdownToggle color="success">
+                    {modoEdicion ? 'Actualizar Venta' : 'Guardar Venta'}
+                  </CDropdownToggle>
+                  <CDropdownMenu>
+                    <CDropdownItem onClick={handleGuardarVenta} style={{ cursor: 'pointer' }}>
+                      <CIcon icon={cilSave} className="me-2" />
+                      Guardar como Venta
+                    </CDropdownItem>
+                    <CDropdownItem onClick={handleGuardarComoCotizacion} style={{ cursor: 'pointer' }}>
+                      <CIcon icon={cilSave} className="me-2" />
+                      Guardar como Cotización
+                    </CDropdownItem>
+                  </CDropdownMenu>
+                </CDropdown>
+              </div>
             </div>
 
             {/* Tabla de productos seleccionados */}
