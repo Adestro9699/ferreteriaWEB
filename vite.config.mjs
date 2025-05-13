@@ -48,8 +48,14 @@ export default defineConfig(() => {
     server: {
       port: 3000,
       proxy: {
-        // https://vitejs.dev/config/server-options.html
+        '/fs': {
+          target: process.env.REACT_APP_API_URL || 'http://localhost:8080',
+          changeOrigin: true,
+        },
       },
+    },
+    define: {
+      'process.env': process.env,
     },
   }
 })

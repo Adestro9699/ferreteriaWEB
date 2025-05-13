@@ -1,23 +1,14 @@
 {
-  "name": "@coreui/coreui-free-react-admin-template",
-  "version": "5.2.0",
-  "description": "CoreUI Free React Admin Template",
+  "name": "ferreteria-web",
+  "version": "1.0.0",
+  "description": "Sistema de Gestión para Ferretería",
   "homepage": ".",
-  "proxy": "http://localhost:8080",
-  "bugs": {
-    "url": "https://github.com/coreui/coreui-free-react-admin-template/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git@github.com:coreui/coreui-free-react-admin-template.git"
-  },
-  "license": "MIT",
-  "author": "The CoreUI Team (https://github.com/orgs/coreui/people)",
   "scripts": {
+    "dev": "vite",
     "build": "vite build",
+    "preview": "vite preview",
     "lint": "eslint \"src/**/*.js\"",
-    "serve": "vite preview",
-    "start": "vite"
+    "format": "prettier --write \"src/**/*.{js,jsx,scss,css}\""
   },
   "dependencies": {
     "@coreui/chartjs": "^4.0.0",
@@ -56,5 +47,8 @@
     "prettier": "3.3.3",
     "sass": "^1.81.0",
     "vite": "^5.4.11"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   }
 }
