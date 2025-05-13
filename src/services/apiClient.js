@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Crear una instancia de Axios con la URL base de tu backend
 const apiClient = axios.create({
-  baseURL: `${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/fs`,
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8080',
   timeout: 10000,
 });
 
