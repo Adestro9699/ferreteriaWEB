@@ -248,7 +248,7 @@ const DetalleVenta = () => {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
         };
-        response = await apiClient.put(`/fs/ventas/${ventaId}`, ventaData, config);
+        response = await apiClient.put(`/ventas/${ventaId}`, ventaData, config);
         showToast('Venta actualizada correctamente.', 'success');
         
         // Limpiar el estado después de actualizar
@@ -271,7 +271,7 @@ const DetalleVenta = () => {
         navigate('/listarVenta');
         return;
       } else {
-        response = await apiClient.post('/fs/ventas', ventaData);
+        response = await apiClient.post('/ventas', ventaData);
         showToast('Venta guardada correctamente.', 'success');
         
         // Limpiar el estado después de guardar
@@ -416,14 +416,14 @@ const DetalleVenta = () => {
           setVentaId(venta.idVenta);
 
           // 1. Cargar los detalles completos de la venta desde la API
-          const response = await apiClient.get(`/fs/ventas/${venta.idVenta}`);
+          const response = await apiClient.get(`/ventas/${venta.idVenta}`);
           const ventaCompleta = response.data;
 
           // 2. Obtener la información completa de cada producto
           const productosCompletos = await Promise.all(
             ventaCompleta.detalles.map(async (detalle) => {
               try {
-                const productoResponse = await apiClient.get(`/fs/productos/${detalle.idProducto}`);
+                const productoResponse = await apiClient.get(`/productos/${detalle.idProducto}`);
                 return {
                   idProducto: detalle.idProducto,
                   nombre: productoResponse.data.nombreProducto,
@@ -494,7 +494,7 @@ const DetalleVenta = () => {
     }
 
     try {
-      const response = await apiClient.get(`/fs/ventas/precargar-venta/${codigoCotizacion}`);
+      const response = await apiClient.get(`/ventas/precargar-venta/${codigoCotizacion}`);
       const datosCotizacion = response.data;
 
       // Actualizar los productos vendidos
@@ -605,7 +605,7 @@ const DetalleVenta = () => {
     console.log('JSON enviado al convertir venta a cotización:', JSON.stringify(ventaData, null, 2));
 
     try {
-      const response = await apiClient.post('/fs/cotizaciones/convertir-venta', ventaData);
+      const response = await apiClient.post('/cotizaciones/convertir-venta', ventaData);
       showToast('Cotización guardada correctamente.', 'success');
       
       // Limpiar el estado después de guardar

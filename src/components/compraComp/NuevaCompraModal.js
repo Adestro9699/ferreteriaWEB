@@ -68,7 +68,7 @@ const NuevaCompraModal = ({ show, onClose, onCompraGuardada, compraEdicion }) =>
         // Cargar detalles de la compra
         const cargarDetallesCompra = async () => {
           try {
-            const response = await apiClient.get(`/fs/detalles-compras/compra/${compraEdicion.idCompra}`)
+            const response = await apiClient.get(`/detalles-compras/compra/${compraEdicion.idCompra}`)
             const detallesData = Array.isArray(response.data) ? response.data : [response.data]
             // Filtrar solo los detalles que tienen productos válidos
             const detallesValidos = detallesData.filter(detalle => 
@@ -112,7 +112,7 @@ const NuevaCompraModal = ({ show, onClose, onCompraGuardada, compraEdicion }) =>
 
   const fetchProveedores = async () => {
     try {
-      const response = await apiClient.get('/fs/proveedores')
+      const response = await apiClient.get('/proveedores')
       setProveedores(response.data)
     } catch (error) {
       console.error('Error fetching proveedores:', error)
@@ -151,7 +151,7 @@ const NuevaCompraModal = ({ show, onClose, onCompraGuardada, compraEdicion }) =>
         estado: 'PENDIENTE' // Asegurar estado inicial
       }
 
-      const response = await apiClient.post('/fs/compras', compraData)
+      const response = await apiClient.post('/compras', compraData)
       setCompraId(response.data.idCompra)
       setShowProductForm(true)
     } catch (error) {
@@ -217,7 +217,7 @@ const NuevaCompraModal = ({ show, onClose, onCompraGuardada, compraEdicion }) =>
             producto: { idProducto: detalle.producto.idProducto },
             compra: { idCompra: compraId }
           }
-          return apiClient.post('/fs/detalles-compras', detalleCompra)
+          return apiClient.post('/detalles-compras', detalleCompra)
         })
 
         try {
@@ -230,7 +230,7 @@ const NuevaCompraModal = ({ show, onClose, onCompraGuardada, compraEdicion }) =>
         }
 
         // Si los detalles se guardaron correctamente, actualizar el estado de la compra
-        await apiClient.put(`/fs/compras/${compraId}`, {
+        await apiClient.put(`/compras/${compraId}`, {
           ...formData,
           totalCompra: totalCompra.toFixed(2),
           estadoCompra: 'COMPLETADA'

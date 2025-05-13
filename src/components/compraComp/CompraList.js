@@ -38,10 +38,10 @@ const CompraList = ({ compras, onNuevaCompra, onVerDetalle, onEditarCompra, onEl
     const fetchData = async () => {
       try {
         const [categoriasRes, proveedoresRes, subcategoriasRes, unidadesMedidaRes] = await Promise.all([
-          apiClient.get('/fs/categorias'),
-          apiClient.get('/fs/proveedores'),
-          apiClient.get('/fs/subcategorias'),
-          apiClient.get('/fs/unidades-medida')
+          apiClient.get('/categorias'),
+          apiClient.get('/proveedores'),
+          apiClient.get('/subcategorias'),
+          apiClient.get('/unidades-medida')
         ]);
 
         setCategorias(categoriasRes.data);

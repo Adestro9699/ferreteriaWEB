@@ -33,7 +33,7 @@ const ProductTable = ({ currentPage, itemsPerPage, onDelete, onSuccess, onError 
   const fetchUtilidades = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.get('/fs/utilidades/producto');
+      const response = await apiClient.get('/utilidades/producto');
       setUtilidades(response.data);
     } catch (err) {
       setError(err.response?.data?.message || 'Error al cargar utilidades');
@@ -50,7 +50,7 @@ const ProductTable = ({ currentPage, itemsPerPage, onDelete, onSuccess, onError 
 
   const confirmDelete = async () => {
     try {
-      await apiClient.delete(`/fs/utilidades/${deleteItem}`);
+      await apiClient.delete(`/utilidades/${deleteItem}`);
       onSuccess('Configuración eliminada correctamente');
       fetchUtilidades();
     } catch (err) {

@@ -77,7 +77,7 @@ const Register = () => {
       },
     };
     try {
-      const response = await apiClient.post('/fs/usuarios', nuevoUsuario); // Usa apiClient
+      const response = await apiClient.post('/usuarios', nuevoUsuario); // Usa apiClient
       return response.data;
     } catch (error) {
       console.error('Error al registrar el usuario:', error);
@@ -104,7 +104,7 @@ const Register = () => {
         estadoTrabajador,
         fechaIngresoTrabajador,
       };
-      const trabajadorResponse = await apiClient.post('/fs/trabajadores', nuevoTrabajador); // Usa apiClient
+      const trabajadorResponse = await apiClient.post('/trabajadores', nuevoTrabajador); // Usa apiClient
       // Luego registramos el usuario usando el ID del trabajador
       const usuarioResponse = await registrarUsuario(trabajadorResponse.data.idTrabajador);
       alert('Registro completado con éxito');

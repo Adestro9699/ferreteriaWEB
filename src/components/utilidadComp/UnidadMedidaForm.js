@@ -26,11 +26,11 @@ const UnidadMedidaForm = ({ unidadMedida, onCancel, onSaved, onToast }) => {
     try {
       if (unidadMedida) {
         // Modo edición
-        await apiClient.put(`/fs/unidades-medida/${unidadMedida.idUnidadMedida}`, formData);
+        await apiClient.put(`/unidades-medida/${unidadMedida.idUnidadMedida}`, formData);
         onToast('Unidad de medida actualizada exitosamente', 'success');
       } else {
         // Modo creación
-        await apiClient.post('/fs/unidades-medida', formData);
+        await apiClient.post('/unidades-medida', formData);
         onToast('Unidad de medida creada exitosamente', 'success');
       }
 

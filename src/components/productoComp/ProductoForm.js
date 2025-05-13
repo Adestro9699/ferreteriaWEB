@@ -52,7 +52,7 @@ const ProductoForm = ({ producto }) => {
       if (fileName) {
         try {
           // Obtener la imagen como un Blob usando apiClient
-          const response = await apiClient.get(`/fs/productos/imagen/${fileName}`, {
+          const response = await apiClient.get(`/productos/imagen/${fileName}`, {
             responseType: 'blob', // Indicar que la respuesta es un Blob
           });
 

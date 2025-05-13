@@ -90,7 +90,7 @@ const Categoria = () => {
   useEffect(() => {
     const fetchCategorias = async () => {
       try {
-        const response = await apiClient.get('/fs/categorias');
+        const response = await apiClient.get('/categorias');
         setCategorias(response.data);
       } catch (error) {
         setError('Error al cargar las categorías.');
@@ -107,7 +107,7 @@ const Categoria = () => {
     if (selectedCategoria) {
       const fetchSubcategorias = async () => {
         try {
-          const response = await apiClient.get(`/fs/subcategorias?categoria=${selectedCategoria.idCategoria}`);
+          const response = await apiClient.get(`/subcategorias?categoria=${selectedCategoria.idCategoria}`);
           setSubcategorias(response.data);
         } catch (error) {
           console.error('Error fetching subcategorías:', error);
@@ -122,7 +122,7 @@ const Categoria = () => {
   // Crear una nueva categoría
   const handleCreateCategoria = async (newCategoria) => {
     try {
-      const response = await apiClient.post('/fs/categorias', newCategoria);
+      const response = await apiClient.post('/categorias', newCategoria);
       setCategorias([...categorias, response.data]);
       setShowCreateCategoriaModal(false);
       addToast('Categoría creada exitosamente.', 'success'); // Mensaje de éxito
@@ -135,7 +135,7 @@ const Categoria = () => {
   // Editar una categoría existente
   const handleSaveEditCategoria = async (updatedCategoria) => {
     try {
-      await apiClient.put(`/fs/categorias/${updatedCategoria.idCategoria}`, updatedCategoria);
+      await apiClient.put(`/categorias/${updatedCategoria.idCategoria}`, updatedCategoria);
       setCategorias(
         categorias.map((cat) =>
           cat.idCategoria === updatedCategoria.idCategoria ? updatedCategoria : cat
@@ -152,7 +152,7 @@ const Categoria = () => {
   // Crear una nueva subcategoría
   const handleCreateSubcategoria = async (newSubcategoria) => {
     try {
-      const response = await apiClient.post('/fs/subcategorias', newSubcategoria);
+      const response = await apiClient.post('/subcategorias', newSubcategoria);
       setSubcategorias([...subcategorias, response.data]);
       setShowCreateSubcategoriaModal(false);
       addToast('Subcategoría creada exitosamente.', 'success'); // Mensaje de éxito
@@ -165,7 +165,7 @@ const Categoria = () => {
   // Editar una subcategoría existente
   const handleSaveEditSubcategoria = async (updatedSubcategoria) => {
     try {
-      await apiClient.put(`/fs/subcategorias/${updatedSubcategoria.idSubcategoria}`, updatedSubcategoria);
+      await apiClient.put(`/subcategorias/${updatedSubcategoria.idSubcategoria}`, updatedSubcategoria);
       setSubcategorias(
         subcategorias.map((sub) =>
           sub.idSubcategoria === updatedSubcategoria.idSubcategoria ? updatedSubcategoria : sub
@@ -182,7 +182,7 @@ const Categoria = () => {
   // Eliminar una categoría
   const confirmDeleteCategoria = async () => {
     try {
-      await apiClient.delete(`/fs/categorias/${categoriaToDelete}`);
+      await apiClient.delete(`/categorias/${categoriaToDelete}`);
       setCategorias(categorias.filter((cat) => cat.idCategoria !== categoriaToDelete));
       addToast('Categoría eliminada exitosamente.', 'success'); // Mensaje de éxito
     } catch (error) {
@@ -197,7 +197,7 @@ const Categoria = () => {
   // Eliminar una subcategoría
   const confirmDeleteSubcategoria = async () => {
     try {
-      await apiClient.delete(`/fs/subcategorias/${subcategoriaToDelete}`);
+      await apiClient.delete(`/subcategorias/${subcategoriaToDelete}`);
       setSubcategorias(subcategorias.filter((sub) => sub.idSubcategoria !== subcategoriaToDelete));
       addToast('Subcategoría eliminada exitosamente.', 'success'); // Mensaje de éxito
     } catch (error) {
@@ -233,7 +233,7 @@ const Categoria = () => {
   //Eliminar en grupo subcategorías
   const confirmDeleteSelected = async () => {
     try {
-      await Promise.all(selectedSubcategorias.map((id) => apiClient.delete(`/fs/subcategorias/${id}`)));
+      await Promise.all(selectedSubcategorias.map((id) => apiClient.delete(`/subcategorias/${id}`)));
       setSubcategorias((prevSubcategorias) =>
         prevSubcategorias.filter((sub) => !selectedSubcategorias.includes(sub.idSubcategoria))
       );

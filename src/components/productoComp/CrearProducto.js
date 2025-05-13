@@ -64,7 +64,7 @@ const CrearProducto = ({ show, onClose, onSave, categorias, proveedores, subcate
       formData.append('file', file);
 
       try {
-        const response = await apiClient.post('/fs/productos/upload', formData, {
+        const response = await apiClient.post('/productos/upload', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
 
@@ -111,7 +111,7 @@ const CrearProducto = ({ show, onClose, onSave, categorias, proveedores, subcate
     console.log('Datos enviados desde CrearProducto:', productWithDate); // Log para depuración
   
     try {
-      const response = await apiClient.post('/fs/productos', productWithDate); // Enviar el producto al backend
+      const response = await apiClient.post('/productos', productWithDate); // Enviar el producto al backend
       console.log('Respuesta del backend:', response.data); // Log para depuración
   
       if (response.status === 201) {

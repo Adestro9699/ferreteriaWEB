@@ -30,7 +30,7 @@ const Login = () => {
 
     try {
       // Enviar las credenciales al backend para iniciar sesión
-      const response = await apiClient.post('/fs/usuarios/login', {
+      const response = await apiClient.post('/usuarios/login', {
         nombreUsuario: username,
         contrasena: password,
       });

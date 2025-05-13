@@ -88,7 +88,7 @@ const CompletarVenta = ({ visible, onClose, onSave, registrarReinicio, initialDa
   useEffect(() => {
     const fetchEmpresas = async () => {
       try {
-        const response = await apiClient.get('/fs/empresas');
+        const response = await apiClient.get('/empresas');
         if (response.data) {
           setEmpresas(response.data);
         }
@@ -99,7 +99,7 @@ const CompletarVenta = ({ visible, onClose, onSave, registrarReinicio, initialDa
 
     const fetchTiposComprobante = async () => {
       try {
-        const response = await apiClient.get('/fs/tipo-comprobantes-pago');
+        const response = await apiClient.get('/tipo-comprobantes-pago');
         if (response.data) {
           setTiposComprobante(response.data);
         }
@@ -110,7 +110,7 @@ const CompletarVenta = ({ visible, onClose, onSave, registrarReinicio, initialDa
 
     const fetchTiposPago = async () => {
       try {
-        const response = await apiClient.get('/fs/tipos-pago');
+        const response = await apiClient.get('/tipos-pago');
         if (response.data) {
           setTiposPago(response.data);
         }
@@ -142,7 +142,7 @@ const CompletarVenta = ({ visible, onClose, onSave, registrarReinicio, initialDa
       }
 
       if (initialData.clienteId) {
-        apiClient.get(`/fs/clientes/${initialData.clienteId}`)
+        apiClient.get(`/clientes/${initialData.clienteId}`)
           .then(response => {
             const cliente = response.data;
             setCliente(cliente);
@@ -206,7 +206,7 @@ const CompletarVenta = ({ visible, onClose, onSave, registrarReinicio, initialDa
       if (value.length > 0) {
         if (/^\d+$/.test(value)) {
           try {
-            const response = await apiClient.get(`/fs/clientes/buscarPorNumeroDocumento?numeroDocumento=${value}`);
+            const response = await apiClient.get(`/clientes/buscarPorNumeroDocumento?numeroDocumento=${value}`);
             if (response.data) {
               resultados = Array.isArray(response.data) ? response.data : [response.data];
             }
@@ -216,7 +216,7 @@ const CompletarVenta = ({ visible, onClose, onSave, registrarReinicio, initialDa
         } else {
           try {
             // Primero intentar buscar por nombre
-            const response = await apiClient.get(`/fs/clientes/buscarPorNombre?nombres=${encodeURIComponent(value)}`);
+            const response = await apiClient.get(`/clientes/buscarPorNombre?nombres=${encodeURIComponent(value)}`);
             if (response.data) {
               resultados = Array.isArray(response.data) ? response.data : [response.data];
             }
@@ -227,7 +227,7 @@ const CompletarVenta = ({ visible, onClose, onSave, registrarReinicio, initialDa
           // Si no hay resultados, intentar por apellido
           if (resultados.length === 0) {
             try {
-              const response = await apiClient.get(`/fs/clientes/buscarPorApellido?apellidos=${encodeURIComponent(value)}`);
+              const response = await apiClient.get(`/clientes/buscarPorApellido?apellidos=${encodeURIComponent(value)}`);
               if (response.data) {
                 resultados = Array.isArray(response.data) ? response.data : [response.data];
               }
@@ -239,7 +239,7 @@ const CompletarVenta = ({ visible, onClose, onSave, registrarReinicio, initialDa
           // Si aún no hay resultados, intentar por razón social
           if (resultados.length === 0) {
             try {
-              const response = await apiClient.get(`/fs/clientes/buscarPorRazonSocial?razonSocial=${encodeURIComponent(value)}`);
+              const response = await apiClient.get(`/clientes/buscarPorRazonSocial?razonSocial=${encodeURIComponent(value)}`);
               if (response.data) {
                 resultados = Array.isArray(response.data) ? response.data : [response.data];
               }

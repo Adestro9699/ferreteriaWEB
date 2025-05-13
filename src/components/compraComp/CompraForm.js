@@ -89,7 +89,7 @@ const CompraForm = ({ compraId, onProductoAgregado, productoEditando }) => {
 
   const fetchProductos = async () => {
     try {
-      const response = await apiClient.get('/fs/productos')
+      const response = await apiClient.get('/productos')
       setProductos(response.data)
     } catch (error) {
       setError(error.response?.data?.message || 'Error al cargar los productos')
@@ -99,7 +99,7 @@ const CompraForm = ({ compraId, onProductoAgregado, productoEditando }) => {
   const fetchUtilidades = async () => {
     try {
       console.log('Iniciando fetchUtilidades...')
-      const utilidadesResponse = await apiClient.get('/fs/utilidades')
+      const utilidadesResponse = await apiClient.get('/utilidades')
       
       console.log('Respuesta completa:', utilidadesResponse)
       console.log('Datos de la respuesta:', utilidadesResponse.data)
@@ -133,8 +133,8 @@ const CompraForm = ({ compraId, onProductoAgregado, productoEditando }) => {
       // Si hay un error en la solicitud, intentar con endpoints separados
       try {
         const [productosResponse, categoriasResponse] = await Promise.all([
-          apiClient.get('/fs/utilidades/producto'),
-          apiClient.get('/fs/utilidades/categoria')
+          apiClient.get('/utilidades/producto'),
+          apiClient.get('/utilidades/categoria')
         ])
         
         console.log('Utilidades de Productos:', productosResponse.data)
@@ -155,7 +155,7 @@ const CompraForm = ({ compraId, onProductoAgregado, productoEditando }) => {
 
   const fetchParametros = async () => {
     try {
-      const response = await apiClient.get('/fs/parametros')
+      const response = await apiClient.get('/parametros')
       setParametros(response.data)
       
       // Buscar parámetro de utilidad general

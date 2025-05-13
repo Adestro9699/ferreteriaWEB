@@ -64,7 +64,7 @@ const Producto = () => {
     const fetchData = async () => {
       try {
         // Obtener productos
-        const productosResponse = await apiClient.get('/fs/productos');
+        const productosResponse = await apiClient.get('/productos');
         setItems(productosResponse.data);
 
         // Extraer marcas únicas de los productos
@@ -74,19 +74,19 @@ const Producto = () => {
         setMarcas(marcasUnicas);
 
         // Obtener categorías
-        const categoriasResponse = await apiClient.get('/fs/categorias');
+        const categoriasResponse = await apiClient.get('/categorias');
         setCategorias(categoriasResponse.data);
 
         // Obtener proveedores
-        const proveedoresResponse = await apiClient.get('/fs/proveedores');
+        const proveedoresResponse = await apiClient.get('/proveedores');
         setProveedores(proveedoresResponse.data);
 
         // Obtener subcategorías
-        const subcategoriasResponse = await apiClient.get('/fs/subcategorias');
+        const subcategoriasResponse = await apiClient.get('/subcategorias');
         setSubcategorias(subcategoriasResponse.data);
 
         // Obtener unidades de medida
-        const unidadesMedidaResponse = await apiClient.get('/fs/unidades-medida');
+        const unidadesMedidaResponse = await apiClient.get('/unidades-medida');
         setUnidadesMedida(unidadesMedidaResponse.data);
 
         setLoading(false);
@@ -161,7 +161,7 @@ const Producto = () => {
 
     try {
       // Enviar el producto actualizado al backend
-      const response = await apiClient.put(`/fs/productos/${updatedProduct.idProducto}`, updatedProduct);
+      const response = await apiClient.put(`/productos/${updatedProduct.idProducto}`, updatedProduct);
 
       // Actualizar el estado local con los datos actualizados
       const updatedItems = items.map((item) =>
@@ -193,7 +193,7 @@ const Producto = () => {
     if (!productToDelete) return;
 
     try {
-      await apiClient.delete(`/fs/productos/${productToDelete}`);
+      await apiClient.delete(`/productos/${productToDelete}`);
       const updatedItems = items.filter((item) => item.idProducto !== productToDelete);
       setItems(updatedItems);
       addToast('Producto eliminado correctamente', 'success');
@@ -239,7 +239,7 @@ const Producto = () => {
   // Función para confirmar la eliminación múltiple
   const confirmDeleteMultiple = async () => {
     try {
-      await apiClient.delete('/fs/productos/eliminar-multiples', {
+      await apiClient.delete('/productos/eliminar-multiples', {
         data: selectedItems,
       });
 

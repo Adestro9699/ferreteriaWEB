@@ -25,7 +25,7 @@ const Cotizacion = () => {
 
   const obtenerCotizaciones = async () => {
     try {
-      const response = await apiClient.get('/fs/cotizaciones/resumen')
+      const response = await apiClient.get('/cotizaciones/resumen')
       console.log('Respuesta de la API:', response.data)
       setCotizaciones(response.data)
       setLoading(false)
@@ -39,7 +39,7 @@ const Cotizacion = () => {
   const handleEliminar = async (id) => {
     if (window.confirm('¿Está seguro de eliminar esta cotización?')) {
       try {
-        await apiClient.delete(`/fs/cotizaciones/${id}`)
+        await apiClient.delete(`/cotizaciones/${id}`)
         obtenerCotizaciones()
       } catch (error) {
         console.error('Error al eliminar cotización:', error)

@@ -22,7 +22,7 @@ const CategoryForm = ({ utilidad, onCancel, onSaved }) => {
   useEffect(() => {
     const fetchCategorias = async () => {
       try {
-        const response = await apiClient.get('/fs/categorias');
+        const response = await apiClient.get('/categorias');
         setCategorias(response.data);
       } catch (err) {
         setError('Error al cargar categorías');
@@ -54,13 +54,13 @@ const CategoryForm = ({ utilidad, onCancel, onSaved }) => {
 
       if (utilidad) {
         // Modo edición - incluir el ID
-        await apiClient.put(`/fs/utilidades/${utilidad.idUtilidad}`, {
+        await apiClient.put(`/utilidades/${utilidad.idUtilidad}`, {
           ...payload,
           idUtilidad: utilidad.idUtilidad
         });
       } else {
         // Modo creación
-        await apiClient.post('/fs/utilidades', payload);
+        await apiClient.post('/utilidades', payload);
       }
 
       setFormData({ categoriaId: '', porcentajeUtilidad: '' });

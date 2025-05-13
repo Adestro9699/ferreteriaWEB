@@ -57,7 +57,7 @@ const ListarVenta = () => {
   const fetchVentasResumen = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/fs/ventas/resumen');
+      const response = await apiClient.get('/ventas/resumen');
       
       // Transformamos los datos para un mejor manejo
       const ventasTransformadas = response.data.map(venta => ({
@@ -90,7 +90,7 @@ const ListarVenta = () => {
 
     try {
       setConfirmandoId(idVenta);
-      await apiClient.post(`/fs/ventas/${idVenta}/completar`, { idCaja });
+      await apiClient.post(`/ventas/${idVenta}/completar`, { idCaja });
       await fetchVentasResumen();
       showToast('Venta confirmada correctamente', 'success');
     } catch (err) {
@@ -103,7 +103,7 @@ const ListarVenta = () => {
   const handleEliminarVenta = async (idVenta) => {
     try {
       setEliminandoId(idVenta);
-      await apiClient.delete(`/fs/ventas/${idVenta}`);
+      await apiClient.delete(`/ventas/${idVenta}`);
       await fetchVentasResumen();
       showToast('Venta eliminada correctamente', 'success');
     } catch (err) {

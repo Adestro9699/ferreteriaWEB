@@ -57,7 +57,7 @@ const GlobalUtilidad = () => {
   const fetchParametros = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.get('/fs/parametros');
+      const response = await apiClient.get('/parametros');
       setParametros(response.data);
       setError(null);
     } catch (err) {
@@ -79,10 +79,10 @@ const GlobalUtilidad = () => {
           observaciones: formData.observaciones || editingParam.observaciones
         };
 
-        await apiClient.put(`/fs/parametros/${editingParam.clave}`, updatedData);
+        await apiClient.put(`/parametros/${editingParam.clave}`, updatedData);
         addToast('Parámetro actualizado exitosamente');
       } else {
-        await apiClient.post('/fs/parametros', formData);
+        await apiClient.post('/parametros', formData);
         addToast('Parámetro creado exitosamente');
       }
       
@@ -104,7 +104,7 @@ const GlobalUtilidad = () => {
   const confirmDelete = async () => {
     setLoading(true);
     try {
-      const url = `/fs/parametros/${encodeURIComponent(deleteParam)}`;
+      const url = `/parametros/${encodeURIComponent(deleteParam)}`;
       await apiClient.delete(url);
       addToast('Parámetro eliminado exitosamente');
       fetchParametros();

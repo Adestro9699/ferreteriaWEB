@@ -83,7 +83,7 @@ const ModalProductos = ({ modalVisible, setModalVisible, handleProductosSeleccio
     setError(null);
 
     try {
-      const response = await apiClient.get(`/fs/productos/paginados?page=${page}&pageSize=${pageSize}`);
+      const response = await apiClient.get(`/productos/paginados?page=${page}&pageSize=${pageSize}`);
       setProductos(response.data.data); // Datos de la página actual
       setPagination({
         page: response.data.page,
@@ -105,22 +105,22 @@ const ModalProductos = ({ modalVisible, setModalVisible, handleProductosSeleccio
     setSearchTerm(value);
 
     try {
-      let url = '/fs/productos';
+      let url = '/productos';
 
       if (value.length > 0) {
         if (/^\d+$/.test(value)) {
-          url = `/fs/productos/buscarPorCodigoBarra?codigoBarra=${value}`;
+          url = `/productos/buscarPorCodigoBarra?codigoBarra=${value}`;
         } else if (value.toLowerCase() === 'activo' || value.toLowerCase() === 'inactivo') {
-          url = `/fs/productos/buscarPorEstado?estado=${value.toUpperCase()}`;
+          url = `/productos/buscarPorEstado?estado=${value.toUpperCase()}`;
         } else {
           const endpoints = [
-            `/fs/productos/buscarPorNombre?nombre=${encodeURIComponent(value)}`,
-            `/fs/productos/buscarPorMarca?marca=${encodeURIComponent(value)}`,
-            `/fs/productos/buscarPorCategoria?categoria=${encodeURIComponent(value)}`,
-            `/fs/productos/buscarPorMaterial?material=${encodeURIComponent(value)}`,
-            `/fs/productos/buscarPorNombreProveedor?nombreProveedor=${encodeURIComponent(value)}`,
-            `/fs/productos/buscarPorNombreSubcategoria?nombreSubcategoria=${encodeURIComponent(value)}`,
-            `/fs/productos/buscarPorCodigoSKU?codigoSKU=${encodeURIComponent(value)}`,
+            `/productos/buscarPorNombre?nombre=${encodeURIComponent(value)}`,
+            `/productos/buscarPorMarca?marca=${encodeURIComponent(value)}`,
+            `/productos/buscarPorCategoria?categoria=${encodeURIComponent(value)}`,
+            `/productos/buscarPorMaterial?material=${encodeURIComponent(value)}`,
+            `/productos/buscarPorNombreProveedor?nombreProveedor=${encodeURIComponent(value)}`,
+            `/productos/buscarPorNombreSubcategoria?nombreSubcategoria=${encodeURIComponent(value)}`,
+            `/productos/buscarPorCodigoSKU?codigoSKU=${encodeURIComponent(value)}`,
           ];
 
           const responses = await Promise.all(

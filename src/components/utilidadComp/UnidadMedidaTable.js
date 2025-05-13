@@ -18,7 +18,7 @@ const UnidadMedidaTable = ({ onEdit, onToast }) => {
 
   const fetchUnidadesMedida = async () => {
     try {
-      const response = await apiClient.get('/fs/unidades-medida');
+      const response = await apiClient.get('/unidades-medida');
       setUnidadesMedida(response.data);
       setError(null);
     } catch (err) {
@@ -37,7 +37,7 @@ const UnidadMedidaTable = ({ onEdit, onToast }) => {
   const handleDelete = async (id) => {
     if (window.confirm('¿Está seguro de eliminar esta unidad de medida?')) {
       try {
-        await apiClient.delete(`/fs/unidades-medida/${id}`);
+        await apiClient.delete(`/unidades-medida/${id}`);
         onToast('Unidad de medida eliminada exitosamente', 'success');
         fetchUnidadesMedida(); // Recargar la tabla
       } catch (err) {

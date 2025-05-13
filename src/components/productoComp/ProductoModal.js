@@ -69,7 +69,7 @@ const ProductoModal = ({
 
       try {
         console.log('Subiendo nueva imagen...');
-        const response = await apiClient.post('/fs/productos/upload', formData, {
+        const response = await apiClient.post('/productos/upload', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
 
@@ -93,7 +93,7 @@ const ProductoModal = ({
       try {
         const fileName = currentProduct.imagenURL.split(/[\\/]/).pop();
         console.log('Eliminando imagen anterior:', fileName);
-        const response = await apiClient.delete(`/fs/productos/imagen/${fileName}`);
+        const response = await apiClient.delete(`/productos/imagen/${fileName}`);
         console.log('Respuesta del servidor:', response.data);
         setCurrentProduct({ ...currentProduct, imagenURL: '' }); // Limpiar la URL de la imagen anterior
       } catch (error) {

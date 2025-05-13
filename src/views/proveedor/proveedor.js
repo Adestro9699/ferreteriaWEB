@@ -62,7 +62,7 @@ const Proveedor = () => {
   useEffect(() => {
     const fetchProveedores = async () => {
       try {
-        const response = await apiClient.get('/fs/proveedores');
+        const response = await apiClient.get('/proveedores');
         console.log('Datos recibidos del backend:', response.data);
         setProveedores(response.data);
       } catch (error) {
@@ -79,7 +79,7 @@ const Proveedor = () => {
   // Crear un nuevo proveedor
   const handleCreateProveedor = async (newProveedor) => {
     try {
-      const response = await apiClient.post('/fs/proveedores', newProveedor);
+      const response = await apiClient.post('/proveedores', newProveedor);
       setProveedores([...proveedores, response.data]);
       setShowCreateModal(false);
 
@@ -94,7 +94,7 @@ const Proveedor = () => {
   // Editar un proveedor existente
   const handleSaveEdit = async (updatedProveedor) => {
     try {
-      await apiClient.put(`/fs/proveedores/${updatedProveedor.idProveedor}`, updatedProveedor);
+      await apiClient.put(`/proveedores/${updatedProveedor.idProveedor}`, updatedProveedor);
       setProveedores(
         proveedores.map((p) =>
           p.idProveedor === updatedProveedor.idProveedor ? updatedProveedor : p
@@ -113,7 +113,7 @@ const Proveedor = () => {
   // Eliminar un proveedor
   const confirmDelete = async () => {
     try {
-      await apiClient.delete(`/fs/proveedores/${proveedorToDelete}`);
+      await apiClient.delete(`/proveedores/${proveedorToDelete}`);
       setProveedores(proveedores.filter((p) => p.idProveedor !== proveedorToDelete));
       setProveedorToDelete(null);
       setShowDeleteModal(false);
@@ -129,7 +129,7 @@ const Proveedor = () => {
   // Eliminar múltiples proveedores
   const confirmDeleteSelected = async () => {
     try {
-      await Promise.all(selectedProveedores.map((id) => apiClient.delete(`/fs/proveedores/${id}`)));
+      await Promise.all(selectedProveedores.map((id) => apiClient.delete(`/proveedores/${id}`)));
       setProveedores(proveedores.filter((p) => !selectedProveedores.includes(p.idProveedor)));
       setSelectedProveedores([]);
       setShowDeleteModal(false);
