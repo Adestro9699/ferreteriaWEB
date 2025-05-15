@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Crear una instancia de Axios con la URL base de tu backend
 const apiClient = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8080',
+  baseURL: import.meta.env.VITE_API_URL,
   timeout: 10000,
 });
 
@@ -12,6 +12,10 @@ apiClient.interceptors.request.use(
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    // Log para desarrollo
+    if (import.meta.env.VITE_MODE === 'development') {
+      console.log('API Request:', config.method.toUpperCase(), config.url);
     }
     return config;
   },

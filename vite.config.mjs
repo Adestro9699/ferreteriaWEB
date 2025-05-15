@@ -1,13 +1,17 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'node:path'
 import autoprefixer from 'autoprefixer'
 
-export default defineConfig(() => {
+export default defineConfig(({ command, mode }) => {
+  // Carga las variables de entorno según el modo
+  const env = loadEnv(mode, process.cwd(), '')
+  
   return {
-    base: './',
+    base: '/',
     build: {
-      outDir: 'build',
+      outDir: 'dist',
+      sourcemap: mode === 'development',
     },
     css: {
       postcss: {
@@ -48,14 +52,15 @@ export default defineConfig(() => {
     server: {
       port: 3000,
       proxy: {
-        '/fs': {
-          target: process.env.REACT_APP_API_URL || 'http://localhost:8080',
+        '/api': {
+          target: env.VITE_API_URL,
           changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api/, ''),
         },
       },
     },
     define: {
-      'process.env': process.env,
-    },
+      'process.env': env
+    }
   }
 })

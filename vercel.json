@@ -5,7 +5,7 @@
       "destination": "/index.html"
     }
   ],
-  "buildCommand": "npm run build",
-  "outputDirectory": "build",
-  "framework": "create-react-app"
+  "buildCommand": "npm run build:prod",
+  "outputDirectory": "dist",
+  "framework": "vite"
 } 
