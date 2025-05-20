@@ -1,0 +1,405 @@
+/* Dashboard.css - Styles for the hardware store dashboard */
+
+/* Dashboard Container */
+.dashboard-container {
+  padding: 1.5rem;
+  max-width: 1800px;
+  margin: 0 auto;
+}
+
+/* Card animations and effects */
+.dashboard-card {
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: none;
+  border-radius: 0.75rem;
+  overflow: visible !important;
+  margin-bottom: 1.5rem;
+  background-color: #fff;
+}
+
+/* Efecto hover para cards */
+.hover-card {
+  transition: all 0.3s ease;
+}
+
+.hover-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Ajustes para modo oscuro */
+html[data-coreui-theme="dark"] .dashboard-card {
+  background-color: #2c2c34;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+html[data-coreui-theme="dark"] .dashboard-card .card-header {
+  background-color: #2c2c34;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+html[data-coreui-theme="dark"] .dashboard-title {
+  color: #fff;
+}
+
+html[data-coreui-theme="dark"] .dashboard-subtitle,
+html[data-coreui-theme="dark"] .text-medium-emphasis,
+html[data-coreui-theme="dark"] small {
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+
+html[data-coreui-theme="dark"] .quick-access-title {
+  color: #e9ecef;
+}
+
+html[data-coreui-theme="dark"] .dashboard-table th {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+html[data-coreui-theme="dark"] .dashboard-table td {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dashboard-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-card .card-header {
+  background-color: #fff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 1.25rem 1.5rem;
+}
+
+.dashboard-card .card-body {
+  padding: 1.5rem;
+  overflow: visible !important;
+}
+
+/* Metric card styling */
+.metric-card {
+  height: 100%;
+  min-height: 140px;
+  transition: all 0.3s ease;
+}
+
+.metric-card .card-body {
+  padding: 1.5rem;
+}
+
+.metric-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
+}
+
+.metric-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.metric-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #6c757d;
+  margin-bottom: 0.75rem;
+}
+
+/* Quick access icons */
+.quick-access-icon {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  margin: 0 auto 1.25rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.quick-access-card {
+  transition: all 0.3s ease;
+  height: 100%;
+  border: none;
+}
+
+.quick-access-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+}
+
+.quick-access-card:hover .quick-access-icon {
+  transform: scale(1.15);
+}
+
+.quick-access-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+  color: #495057;
+}
+
+/* Table styles */
+.dashboard-table {
+  box-shadow: none;
+  border-radius: 0.5rem;
+  margin-bottom: 0;
+}
+
+.dashboard-table th {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  color: #6c757d;
+  border-top: none;
+  padding: 1rem;
+}
+
+.dashboard-table td {
+  vertical-align: middle;
+  padding: 1rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Status badges */
+.status-badge {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 50rem;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+  .dashboard-container {
+    padding: 1rem;
+  }
+  
+  .metric-value {
+    font-size: 1.5rem;
+  }
+  
+  .metric-title {
+    font-size: 0.85rem;
+  }
+  
+  .quick-access-icon {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .quick-access-title {
+    font-size: 1rem;
+  }
+  
+  .dashboard-card {
+    margin-bottom: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 0.75rem;
+  }
+  
+  .metric-value {
+    font-size: 1.25rem;
+  }
+  
+  .metric-title {
+    font-size: 0.8rem;
+  }
+  
+  .quick-access-icon {
+    width: 45px;
+    height: 45px;
+    margin-bottom: 0.75rem;
+  }
+  
+  .quick-access-title {
+    font-size: 0.9rem;
+  }
+  
+  .dashboard-card .card-header,
+  .dashboard-card .card-body {
+    padding: 1rem;
+  }
+  
+  .dashboard-table th,
+  .dashboard-table td {
+    padding: 0.75rem;
+  }
+}
+
+/* Progress bar customizations */
+.thin-progress {
+  height: 4px !important;
+  border-radius: 4px;
+  overflow: hidden;
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+html[data-coreui-theme="dark"] .thin-progress {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Chart container */
+.chart-container {
+  position: relative;
+  margin: auto;
+  height: 260px;
+  width: 100%;
+  overflow: visible !important;
+  z-index: 1;
+}
+
+/* Estilos para el gráfico principal */
+.main-chart-container {
+  width: 100%;
+  height: 100%;
+}
+
+.main-chart-container button {
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+}
+
+.main-chart-container button:hover {
+  transform: translateY(-2px);
+}
+
+.main-chart-container .btn-group {
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+  border-radius: 50rem;
+}
+
+/* Responsive chart */
+@media (max-width: 576px) {
+  .chart-container {
+    height: 210px;
+  }
+  
+  .main-chart-container .btn-group button {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+  }
+}
+
+@media (min-width: 577px) and (max-width: 768px) {
+  .chart-container {
+    height: 220px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 992px) {
+  .chart-container {
+    height: 230px;
+  }
+}
+
+/* Dashboard header styling */
+.dashboard-header {
+  margin-bottom: 2rem;
+  position: relative;
+  padding-bottom: 1rem;
+}
+
+.dashboard-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 60px;
+  background: linear-gradient(90deg, #0d6efd, #4dabf7);
+  border-radius: 3px;
+}
+
+html[data-coreui-theme="dark"] .dashboard-header::after {
+  background: linear-gradient(90deg, #3395ff, #97caff);
+}
+
+.dashboard-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: #212529;
+}
+
+.dashboard-subtitle {
+  color: #6c757d;
+  font-size: 1rem;
+}
+
+/* Estilo para Callout en modo oscuro */
+html[data-coreui-theme="dark"] .bg-white {
+  background-color: #2c2c34 !important;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+html[data-coreui-theme="dark"] .fw-bold {
+  color: #fff;
+}
+
+/* Estilos para las tarjetas de métricas en modo oscuro */
+html[data-coreui-theme="dark"] .metric-card .card-body {
+  background-color: #2c2c34;
+}
+
+/* Estilos para los títulos y valores de las métricas */
+.metric-card .card-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #6c757d;
+}
+
+.metric-card .fs-4 {
+  font-size: 1.75rem !important;
+  font-weight: 700;
+}
+
+/* Ajustes para modo oscuro */
+html[data-coreui-theme="dark"] .metric-card .card-title {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+html[data-coreui-theme="dark"] .metric-card .fs-4 {
+  color: #fff !important;
+}
+
+html[data-coreui-theme="dark"] .btn-light {
+  background-color: #3c3c44;
+  border-color: #3c3c44;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+html[data-coreui-theme="dark"] .btn-light:hover {
+  background-color: #4c4c56;
+  border-color: #4c4c56;
+  color: #fff;
+}
+
+html[data-coreui-theme="dark"] .quick-access-card {
+  background-color: #2c2c34;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+} 
