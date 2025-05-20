@@ -10,7 +10,7 @@ const EmpresaList = ({ onEdit, onAdd }) => {
 
   const fetchEmpresas = async () => {
     try {
-      const response = await apiClient.get('/fs/empresas');
+      const response = await apiClient.get('/empresas');
       setEmpresas(response.data);
     } catch (error) {
       console.error('Error al obtener las empresas:', error);
@@ -20,7 +20,7 @@ const EmpresaList = ({ onEdit, onAdd }) => {
   const handleDelete = async (id) => {
     if (window.confirm('¿Estás seguro de eliminar esta empresa?')) {
       try {
-        await apiClient.delete(`/fs/empresas/${id}`);
+        await apiClient.delete(`/empresas/${id}`);
         fetchEmpresas(); // Actualiza la lista después de eliminar
       } catch (error) {
         console.error('Error al eliminar la empresa:', error);

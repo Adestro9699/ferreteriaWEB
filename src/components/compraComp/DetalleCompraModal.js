@@ -34,7 +34,7 @@ const DetalleCompraModal = ({ show, onClose, compra }) => {
     setLoading(true)
     setError(null)
     try {
-      const response = await apiClient.get(`/fs/detalles-compras/compra/${compra.idCompra}`)
+      const response = await apiClient.get(`/detalles-compras/compra/${compra.idCompra}`)
       setDetalles(response.data)
     } catch (error) {
       setError(error.response?.data?.message || 'Error al cargar los detalles')

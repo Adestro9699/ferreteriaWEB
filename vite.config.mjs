@@ -1,13 +1,25 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'node:path'
 import autoprefixer from 'autoprefixer'
 
-export default defineConfig(() => {
+export default defineConfig(({ command, mode }) => {
+  // Carga las variables de entorno según el modo
+  const env = loadEnv(mode, process.cwd(), '')
+  
   return {
-    base: './',
+    base: '/',
     build: {
-      outDir: 'build',
+      outDir: 'dist',
+      sourcemap: mode === 'development',
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor': ['react', 'react-dom', 'react-router-dom', 'react-redux'],
+            'coreui': ['@coreui/react', '@coreui/icons-react', '@coreui/icons'],
+          },
+        },
+      },
     },
     css: {
       postcss: {
@@ -34,8 +46,29 @@ export default defineConfig(() => {
           '.js': 'jsx',
         },
       },
+      include: [
+        'react',
+        'react-dom',
+        'react-router-dom',
+        'react-redux',
+        '@coreui/react',
+        '@coreui/icons-react',
+        '@coreui/icons'
+      ],
     },
-    plugins: [react()],
+    plugins: [
+      react({
+        babel: {
+          presets: ['@babel/preset-react'],
+          plugins: [
+            ['@babel/plugin-transform-react-jsx', { 
+              runtime: 'automatic',
+              throwIfNamespace: false
+            }],
+          ],
+        },
+      }),
+    ],
     resolve: {
       alias: [
         {
@@ -48,8 +81,18 @@ export default defineConfig(() => {
     server: {
       port: 3000,
       proxy: {
-        // https://vitejs.dev/config/server-options.html
+        '/api': {
+          target: env.VITE_API_URL,
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api/, ''),
+        },
+      },
+      hmr: {
+        overlay: true,
       },
     },
+    define: {
+      'process.env': env
+    }
   }
 })

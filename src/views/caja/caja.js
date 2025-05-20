@@ -32,7 +32,7 @@ const Caja = () => {
 
   const obtenerCajas = async () => {
     try {
-      const response = await apiClient.get('/fs/cajas');
+      const response = await apiClient.get('/cajas');
       if (response.data) {
         console.log("Estructura completa de las cajas:", response.data);
         response.data.forEach((caja, index) => {
@@ -80,7 +80,7 @@ const Caja = () => {
     };
 
     try {
-      const response = await apiClient.post('/fs/cajas', nuevaCaja);
+      const response = await apiClient.post('/cajas', nuevaCaja);
       if (response.data) {
         setCajas([...cajas, response.data]);
       }
@@ -102,7 +102,7 @@ const Caja = () => {
     console.log("ID de la caja a eliminar:", cajaId);
 
     try {
-      await apiClient.delete(`/fs/cajas/${cajaId}`);
+      await apiClient.delete(`/cajas/${cajaId}`);
 
       // Actualizar la lista de cajas
       const nuevasCajas = cajas.filter((_, i) => i !== index);
@@ -150,7 +150,7 @@ const Caja = () => {
 
       try {
         // Enviar la caja actualizada al backend
-        await apiClient.put(`/fs/cajas/${cajaId}`, cajaActualizada);
+        await apiClient.put(`/cajas/${cajaId}`, cajaActualizada);
 
         // Actualizar el estado local de las cajas
         const nuevasCajas = [...cajas];
@@ -211,7 +211,7 @@ const Caja = () => {
     console.log("Datos enviados para abrir la caja:", datosApertura);
 
     try {
-      const response = await apiClient.post('/fs/cajas/abrir', datosApertura);
+      const response = await apiClient.post('/cajas/abrir', datosApertura);
       console.log("Respuesta del backend al abrir la caja:", response.data);
 
       // Despachar la acción para guardar el idCaja en el estado global
@@ -290,7 +290,7 @@ const Caja = () => {
     console.log("Datos enviados para cerrar la caja:", datosCierre);
 
     try {
-      const response = await apiClient.post('/fs/cajas/cerrar', datosCierre);
+      const response = await apiClient.post('/cajas/cerrar', datosCierre);
       console.log("Respuesta del backend al cerrar la caja:", response.data);
 
       // Despachar la acción para eliminar el idCaja del estado global

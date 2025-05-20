@@ -9,106 +9,159 @@ import {
   CFormCheck,
   CButton,
   CBadge,
+  CTooltip,
 } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilPencil, cilTrash } from '@coreui/icons';
+import { cilPencil, cilTrash, cilSortAlphaDown, cilSortAlphaUp } from '@coreui/icons';
 
 const ProveedorTable = ({
   proveedores,
-  selectedProveedores,
-  handleSelectProveedor,
-  handleSort,
-  sortField,
+  selectedItems,
+  onSelectItem,
+  onSelectAll,
+  onEdit,
+  onDelete,
+  sortColumn,
   sortDirection,
-  handleDelete,
-  handleEdit, // Asegúrate de recibir esta prop
+  onSort,
 }) => {
+  const getSortIcon = (column) => {
+    if (sortColumn === column) {
+      return sortDirection === 'asc' ? cilSortAlphaDown : cilSortAlphaUp;
+    }
+    return null;
+  };
+
   return (
     <div className="table-responsive">
-      <CTable>
-        <CTableHead>
+      <CTable align="middle" className="mb-0 border" hover responsive>
+        <CTableHead className="bg-body-secondary">
           <CTableRow>
-            <CTableHeaderCell style={{ width: '50px' }}>
+            <CTableHeaderCell className="text-center" style={{ width: '50px' }}>
               <CFormCheck
-                checked={selectedProveedores.length === proveedores.length}
-                onChange={() => {
-                  if (selectedProveedores.length === proveedores.length) {
-                    handleSelectProveedor([]); // Deseleccionar todos
-                  } else {
-                    handleSelectProveedor(proveedores.map((p) => p.idProveedor)); // Seleccionar todos
-                  }
-                }}
+                checked={selectedItems.length === proveedores.length && proveedores.length > 0}
+                indeterminate={selectedItems.length > 0 && selectedItems.length < proveedores.length}
+                onChange={onSelectAll}
               />
             </CTableHeaderCell>
-            <CTableHeaderCell style={{ width: '200px' }} onClick={() => handleSort('nombre')}>
-              Nombre{' '}
-              {sortField === 'nombre' && <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>}
+            <CTableHeaderCell 
+              className="cursor-pointer" 
+              onClick={() => onSort('nombre')}
+              style={{ width: '200px' }}
+            >
+              Nombre
+              {getSortIcon('nombre') && <CIcon icon={getSortIcon('nombre')} className="ms-2" />}
             </CTableHeaderCell>
-            <CTableHeaderCell style={{ width: '200px' }} onClick={() => handleSort('direccion')}>
-              Dirección{' '}
-              {sortField === 'direccion' && <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>}
+            <CTableHeaderCell 
+              className="cursor-pointer" 
+              onClick={() => onSort('direccion')}
+              style={{ width: '200px' }}
+            >
+              Dirección
+              {getSortIcon('direccion') && <CIcon icon={getSortIcon('direccion')} className="ms-2" />}
             </CTableHeaderCell>
-            <CTableHeaderCell style={{ width: '150px' }} onClick={() => handleSort('telefono')}>
-              Teléfono{' '}
-              {sortField === 'telefono' && <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>}
+            <CTableHeaderCell 
+              className="cursor-pointer" 
+              onClick={() => onSort('telefono')}
+              style={{ width: '150px' }}
+            >
+              Teléfono
+              {getSortIcon('telefono') && <CIcon icon={getSortIcon('telefono')} className="ms-2" />}
             </CTableHeaderCell>
-            <CTableHeaderCell style={{ width: '200px' }} onClick={() => handleSort('correoProveedor')}>
-              Correo{' '}
-              {sortField === 'correo' && <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>}
+            <CTableHeaderCell 
+              className="cursor-pointer" 
+              onClick={() => onSort('correoProveedor')}
+              style={{ width: '200px' }}
+            >
+              Correo
+              {getSortIcon('correoProveedor') && <CIcon icon={getSortIcon('correoProveedor')} className="ms-2" />}
             </CTableHeaderCell>
-            <CTableHeaderCell style={{ width: '150px' }} onClick={() => handleSort('pais')}>
-              País{' '}
-              {sortField === 'pais' && <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>}
+            <CTableHeaderCell 
+              className="cursor-pointer" 
+              onClick={() => onSort('pais')}
+              style={{ width: '150px' }}
+            >
+              País
+              {getSortIcon('pais') && <CIcon icon={getSortIcon('pais')} className="ms-2" />}
             </CTableHeaderCell>
-            <CTableHeaderCell style={{ width: '150px' }} onClick={() => handleSort('fechaRegistro')}>
-              Fecha de Registro{' '}
-              {sortField === 'fechaRegistro' && <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>}
+            <CTableHeaderCell 
+              className="cursor-pointer" 
+              onClick={() => onSort('fechaRegistro')}
+              style={{ width: '150px' }}
+            >
+              Fecha de Registro
+              {getSortIcon('fechaRegistro') && <CIcon icon={getSortIcon('fechaRegistro')} className="ms-2" />}
             </CTableHeaderCell>
-            <CTableHeaderCell style={{ width: '100px' }}>Estado</CTableHeaderCell>
-            <CTableHeaderCell style={{ width: '150px' }}>Acciones</CTableHeaderCell>
+            <CTableHeaderCell 
+              className="cursor-pointer" 
+              onClick={() => onSort('estado')}
+              style={{ width: '100px' }}
+            >
+              Estado
+              {getSortIcon('estado') && <CIcon icon={getSortIcon('estado')} className="ms-2" />}
+            </CTableHeaderCell>
+            <CTableHeaderCell className="text-center" style={{ width: '150px' }}>
+              Acciones
+            </CTableHeaderCell>
           </CTableRow>
         </CTableHead>
         <CTableBody>
           {proveedores.map((proveedor) => (
-            <CTableRow key={proveedor.idProveedor}>
-              <>
-                <CTableDataCell style={{ width: '50px' }}>
-                  <CFormCheck
-                    checked={selectedProveedores.includes(proveedor.idProveedor)}
-                    onChange={() => handleSelectProveedor(proveedor.idProveedor)}
-                  />
-                </CTableDataCell>
-                <CTableDataCell style={{ width: '200px' }}>{proveedor.nombre}</CTableDataCell>
-                <CTableDataCell style={{ width: '200px' }}>{proveedor.direccion}</CTableDataCell>
-                <CTableDataCell style={{ width: '150px' }}>{proveedor.telefono}</CTableDataCell>
-                <CTableDataCell style={{ width: '200px' }}>{proveedor.correoProveedor}</CTableDataCell>
-                <CTableDataCell style={{ width: '150px' }}>{proveedor.pais}</CTableDataCell>
-                <CTableDataCell style={{ width: '150px' }}>{proveedor.fechaRegistro}</CTableDataCell>
-                <CTableDataCell style={{ width: '100px' }}>
-                  <CBadge color={proveedor.estado === 'ACTIVO' ? 'success' : 'danger'}>
-                    {proveedor.estado === 'ACTIVO' ? 'Activo' : 'Inactivo'}
-                  </CBadge>
-                </CTableDataCell>
-                <CTableDataCell style={{ width: '150px' }}>
-                  <CButton
-                    color="warning"
-                    size="sm"
-                    className="me-2"
-                    onClick={() => handleEdit(proveedor)} // Usar la función de edición
-                  >
-                    <CIcon icon={cilPencil} />
-                  </CButton>
-                  <CButton
-                    color="danger"
-                    size="sm"
-                    onClick={() => handleDelete(proveedor.idProveedor)} // Usar la función de eliminación
-                  >
-                    <CIcon icon={cilTrash} />
-                  </CButton>
-                </CTableDataCell>
-              </>
+            <CTableRow 
+              key={proveedor.idProveedor}
+              className={selectedItems.includes(proveedor.idProveedor) ? 'selected-row' : ''}
+            >
+              <CTableDataCell className="text-center">
+                <CFormCheck
+                  checked={selectedItems.includes(proveedor.idProveedor)}
+                  onChange={() => onSelectItem(proveedor.idProveedor)}
+                />
+              </CTableDataCell>
+              <CTableDataCell>{proveedor.nombre}</CTableDataCell>
+              <CTableDataCell>{proveedor.direccion}</CTableDataCell>
+              <CTableDataCell>{proveedor.telefono}</CTableDataCell>
+              <CTableDataCell>{proveedor.correoProveedor}</CTableDataCell>
+              <CTableDataCell>{proveedor.pais}</CTableDataCell>
+              <CTableDataCell>{proveedor.fechaRegistro}</CTableDataCell>
+              <CTableDataCell>
+                <CBadge 
+                  color={proveedor.estado === 'ACTIVO' ? 'success' : 'danger'}
+                  className="ms-2"
+                >
+                  {proveedor.estado === 'ACTIVO' ? 'Activo' : 'Inactivo'}
+                </CBadge>
+              </CTableDataCell>
+              <CTableDataCell className="text-center">
+                <div className="d-flex gap-2 justify-content-center">
+                  <CTooltip content="Editar proveedor">
+                    <CButton
+                      color="warning"
+                      size="sm"
+                      onClick={() => onEdit(proveedor)}
+                    >
+                      <CIcon icon={cilPencil} />
+                    </CButton>
+                  </CTooltip>
+                  <CTooltip content="Eliminar proveedor">
+                    <CButton
+                      color="danger"
+                      size="sm"
+                      onClick={() => onDelete(proveedor.idProveedor)}
+                    >
+                      <CIcon icon={cilTrash} />
+                    </CButton>
+                  </CTooltip>
+                </div>
+              </CTableDataCell>
             </CTableRow>
           ))}
+          {proveedores.length === 0 && (
+            <CTableRow>
+              <CTableDataCell colSpan="9" className="text-center py-4">
+                No hay proveedores disponibles
+              </CTableDataCell>
+            </CTableRow>
+          )}
         </CTableBody>
       </CTable>
     </div>

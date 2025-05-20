@@ -1,23 +1,16 @@
 {
-  "name": "@coreui/coreui-free-react-admin-template",
-  "version": "5.2.0",
-  "description": "CoreUI Free React Admin Template",
+  "name": "ferreteria-web",
+  "version": "1.0.0",
+  "description": "Sistema de Gestión para Ferretería",
   "homepage": ".",
-  "proxy": "http://localhost:8080",
-  "bugs": {
-    "url": "https://github.com/coreui/coreui-free-react-admin-template/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git@github.com:coreui/coreui-free-react-admin-template.git"
-  },
-  "license": "MIT",
-  "author": "The CoreUI Team (https://github.com/orgs/coreui/people)",
   "scripts": {
-    "build": "vite build",
+    "dev": "vite --mode development",
+    "build": "vite build --mode production",
+    "build:dev": "vite build --mode development",
+    "build:prod": "vite build --mode production",
+    "preview": "vite preview",
     "lint": "eslint \"src/**/*.js\"",
-    "serve": "vite preview",
-    "start": "vite"
+    "format": "prettier --write \"src/**/*.{js,jsx,scss,css}\""
   },
   "dependencies": {
     "@coreui/chartjs": "^4.0.0",
@@ -28,10 +21,12 @@
     "@coreui/react-chartjs": "^3.0.0",
     "@coreui/utils": "^2.0.2",
     "@popperjs/core": "^2.11.8",
+    "@types/file-saver": "^2.0.7",
     "axios": "^1.7.9",
     "chart.js": "^4.4.6",
     "classnames": "^2.5.1",
     "core-js": "^3.39.0",
+    "file-saver": "^2.0.5",
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
     "jwt-decode": "^4.0.0",
@@ -45,6 +40,8 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@babel/plugin-transform-react-jsx": "^7.27.1",
+    "@babel/preset-react": "^7.27.1",
     "@vitejs/plugin-react": "^4.3.3",
     "autoprefixer": "^10.4.20",
     "eslint": "^8.57.0",
@@ -56,5 +53,8 @@
     "prettier": "3.3.3",
     "sass": "^1.81.0",
     "vite": "^5.4.11"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   }
 }

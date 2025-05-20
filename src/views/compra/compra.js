@@ -44,7 +44,7 @@ const Compra = () => {
     try {
       setLoading(true)
       setError(null)
-      const response = await apiClient.get('/fs/compras')
+      const response = await apiClient.get('/compras')
       setCompras(response.data)
     } catch (error) {
       setError(error.response?.data?.message || 'Error al cargar las compras')
@@ -97,17 +97,17 @@ const Compra = () => {
       // Si la compra está COMPLETADA, eliminar primero los detalles
       if (compraToDelete.estadoCompra === 'COMPLETADA') {
         // Obtener los detalles de la compra
-        const detallesResponse = await apiClient.get(`/fs/detalles-compras/compra/${compraToDelete.idCompra}`)
+        const detallesResponse = await apiClient.get(`/detalles-compras/compra/${compraToDelete.idCompra}`)
         const detalles = detallesResponse.data
 
         // Eliminar cada detalle
         for (const detalle of detalles) {
-          await apiClient.delete(`/fs/detalles-compras/${detalle.idDetalleCompra}`)
+          await apiClient.delete(`/detalles-compras/${detalle.idDetalleCompra}`)
         }
       }
 
       // Eliminar la compra
-      await apiClient.delete(`/fs/compras/${compraToDelete.idCompra}`)
+      await apiClient.delete(`/compras/${compraToDelete.idCompra}`)
       setShowConfirmDelete(false)
       setCompraToDelete(null)
       fetchCompras()
@@ -134,12 +134,12 @@ const Compra = () => {
       // Primero eliminar los detalles de las compras COMPLETADAS
       for (const compra of comprasSeleccionadas) {
         if (compra.estadoCompra === 'COMPLETADA') {
-          const detallesResponse = await apiClient.get(`/fs/detalles-compras/compra/${compra.idCompra}`)
+          const detallesResponse = await apiClient.get(`/detalles-compras/compra/${compra.idCompra}`)
           const detalles = detallesResponse.data
           
           if (detalles.length > 0) {
             const detalleIds = detalles.map(detalle => detalle.idDetalleCompra)
-            await apiClient.delete('/fs/detalles-compras/eliminar-multiples', {
+            await apiClient.delete('/detalles-compras/eliminar-multiples', {
               data: detalleIds
             })
           }
@@ -147,7 +147,7 @@ const Compra = () => {
       }
 
       // Luego eliminar las compras
-      await apiClient.delete('/fs/compras/eliminar-multiples', {
+      await apiClient.delete('/compras/eliminar-multiples', {
         data: comprasToDelete
       })
 

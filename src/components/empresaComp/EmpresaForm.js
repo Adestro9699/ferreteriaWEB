@@ -52,12 +52,12 @@ const EmpresaForm = ({ empresaEdit, onSave, firstEmpresa, isFormActive }) => {
 
       if (empresaEdit) {
         // Actualizar empresa
-        await apiClient.put(`/fs/empresas/${empresaEdit.idEmpresa}`, formDataToSend, {
+        await apiClient.put(`/empresas/${empresaEdit.idEmpresa}`, formDataToSend, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
       } else {
         // Crear nueva empresa
-        await apiClient.post('/fs/empresas', formDataToSend, {
+        await apiClient.post('/empresas', formDataToSend, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
       }

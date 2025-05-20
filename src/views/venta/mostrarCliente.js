@@ -31,7 +31,7 @@ const MostrarCliente = ({ visible, onClose, onSeleccionarCliente }) => {
   useEffect(() => {
     const fetchClientes = async () => {
       try {
-        const response = await apiClient.get('/fs/clientes');
+        const response = await apiClient.get('/clientes');
         setClientes(response.data);
         setLoading(false);
       } catch (error) {
@@ -53,15 +53,15 @@ const MostrarCliente = ({ visible, onClose, onSeleccionarCliente }) => {
 
       if (value.length > 0) {
         if (/^\d+$/.test(value)) {
-          const response = await apiClient.get(`/fs/clientes/buscarPorNumeroDocumento?numeroDocumento=${value}`);
+          const response = await apiClient.get(`/clientes/buscarPorNumeroDocumento?numeroDocumento=${value}`);
           if (response.data) {
             resultados = Array.isArray(response.data) ? response.data : [response.data];
           }
         } else {
           const endpoints = [
-            `/fs/clientes/buscarPorNombre?nombres=${encodeURIComponent(value)}`,
-            `/fs/clientes/buscarPorApellido?apellidos=${encodeURIComponent(value)}`,
-            `/fs/clientes/buscarPorRazonSocial?razonSocial=${encodeURIComponent(value)}`,
+            `/clientes/buscarPorNombre?nombres=${encodeURIComponent(value)}`,
+            `/clientes/buscarPorApellido?apellidos=${encodeURIComponent(value)}`,
+            `/clientes/buscarPorRazonSocial?razonSocial=${encodeURIComponent(value)}`,
           ];
 
           const responses = await Promise.all(
@@ -79,7 +79,7 @@ const MostrarCliente = ({ visible, onClose, onSeleccionarCliente }) => {
           resultados = uniqueResults;
         }
       } else {
-        const response = await apiClient.get('/fs/clientes');
+        const response = await apiClient.get('/clientes');
         resultados = response.data;
       }
 
@@ -93,7 +93,7 @@ const MostrarCliente = ({ visible, onClose, onSeleccionarCliente }) => {
   const clearSearch = async () => {
     setFilterText('');
     try {
-      const response = await apiClient.get('/fs/clientes');
+      const response = await apiClient.get('/clientes');
       setClientes(response.data);
     } catch (error) {
       console.error('Error al cargar los datos:', error);
@@ -103,7 +103,7 @@ const MostrarCliente = ({ visible, onClose, onSeleccionarCliente }) => {
   // Guardar nuevo cliente
   const handleGuardarCliente = async (nuevoCliente) => {
     try {
-      const response = await apiClient.post('/fs/clientes', nuevoCliente);
+      const response = await apiClient.post('/clientes', nuevoCliente);
       setClientes([...clientes, response.data]); // Agregar el nuevo cliente a la lista
       setModalCrearClienteVisible(false); // Cerrar el modal
     } catch (error) {

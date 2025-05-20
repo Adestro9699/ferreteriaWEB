@@ -1,8 +1,14 @@
 import { legacy_createStore as createStore } from 'redux';
 
+// Verificar si estamos en modo móvil al inicio
+const isMobile = window.innerWidth < 992;
+
+// Guardar el valor inicial según el tamaño
+localStorage.setItem('initialIsMobile', isMobile.toString());
+
 // Estado inicial
 const initialState = {
-  sidebarShow: true,
+  sidebarShow: !isMobile, // En móvil comienza cerrado, en desktop abierto
   sidebarUnfoldable: false,
   theme: 'light',
   auth: {
@@ -22,14 +28,15 @@ const initialState = {
 const loadInitialState = () => {
   const token = localStorage.getItem('token');
   const idCaja = localStorage.getItem('idCaja');
+  
   if (token) {
-    return {
+    const estado = {
       ...initialState,
       auth: {
         isAuthenticated: true,
         user: JSON.parse(localStorage.getItem('user')),
         trabajador: JSON.parse(localStorage.getItem('trabajador')),
-        role: localStorage.getItem('role'),
+        role: localStorage.getItem('rol'),
         permissions: JSON.parse(localStorage.getItem('permissions')) || {},
         token: token,
       },
@@ -37,6 +44,7 @@ const loadInitialState = () => {
         idCaja: idCaja ? Number(idCaja) : null,
       },
     };
+    return estado;
   }
   return initialState;
 };
@@ -45,18 +53,29 @@ const loadInitialState = () => {
 const changeState = (state = loadInitialState(), { type, payload }) => {
   switch (type) {
     case 'set':
+      // Si estamos actualizando sidebarShow, verificar posible transición de dispositivo
+      if (payload.hasOwnProperty('sidebarShow')) {
+        // Comparar la detección actual con la inicial
+        const currentIsMobile = window.innerWidth < 992;
+        const initialIsMobile = localStorage.getItem('initialIsMobile') === 'true';
+        
+        // Si hubo un cambio de tipo de dispositivo, actualizar localStorage
+        if (currentIsMobile !== initialIsMobile) {
+          localStorage.setItem('initialIsMobile', currentIsMobile.toString());
+        }
+      }
+      
       return {
         ...state,
         ...payload,
       };
 
     case 'LOGIN_SUCCESS':
-      console.log("Payload recibido en LOGIN_SUCCESS:", payload);
       // Guardar los datos en localStorage
       localStorage.setItem('token', payload.token);
       localStorage.setItem('user', JSON.stringify(payload.user));
       localStorage.setItem('trabajador', JSON.stringify(payload.trabajador));
-      localStorage.setItem('role', payload.role);
+      localStorage.setItem('rol', payload.role);
       localStorage.setItem('permissions', JSON.stringify(payload.permissions || {}));
       
       // Recuperar el idCaja existente para este usuario (si existe)
@@ -88,7 +107,7 @@ const changeState = (state = loadInitialState(), { type, payload }) => {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('trabajador');
-      localStorage.removeItem('role');
+      localStorage.removeItem('rol');
       localStorage.removeItem('permissions');
       
       // Opción 1: Si queremos preservar el idCaja entre sesiones
@@ -147,5 +166,8 @@ const store = createStore(
   changeState,
   window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
 );
+
+// Exponer el store al objeto window para depuración
+window.store = store;
 
 export default store;

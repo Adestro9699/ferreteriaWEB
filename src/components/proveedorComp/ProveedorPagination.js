@@ -1,53 +1,55 @@
 import React from 'react';
-import { CPagination, CPaginationItem, CFormSelect } from '@coreui/react';
+import {
+  CPagination,
+  CPaginationItem,
+  CFormSelect,
+} from '@coreui/react';
 
 const ProveedorPagination = ({
   currentPage,
-  setCurrentPage,
   totalPages,
+  onPageChange,
   itemsPerPage,
-  handleItemsPerPageChange,
+  onItemsPerPageChange,
 }) => {
   return (
-    <div className="d-flex align-items-center justify-content-center gap-3">
+    <div className="d-flex align-items-center justify-content-between mt-3">
       {/* Paginación */}
-      <CPagination className="mb-0">
+      <CPagination className="m-0">
         <CPaginationItem
           disabled={currentPage === 1}
-          onClick={() => setCurrentPage(currentPage - 1)}
+          onClick={() => onPageChange(currentPage - 1)}
         >
-          Anterior
+          Previous
         </CPaginationItem>
         {Array.from({ length: totalPages }, (_, i) => (
           <CPaginationItem
             key={i + 1}
             active={i + 1 === currentPage}
-            onClick={() => setCurrentPage(i + 1)}
+            onClick={() => onPageChange(i + 1)}
           >
             {i + 1}
           </CPaginationItem>
         ))}
         <CPaginationItem
           disabled={currentPage === totalPages}
-          onClick={() => setCurrentPage(currentPage + 1)}
+          onClick={() => onPageChange(currentPage + 1)}
         >
-          Siguiente
+          Next
         </CPaginationItem>
       </CPagination>
 
-      {/* Selector de cantidad de elementos por página */}
-      <div className="d-flex align-items-center">
-        <span className="me-2">Mostrar:</span>
-        <CFormSelect
-          value={itemsPerPage}
-          onChange={handleItemsPerPageChange}
-          style={{ width: '80px' }} // Ancho fijo para el selector
-        >
-          <option value={10}>10</option>
-          <option value={20}>20</option>
-          <option value={30}>30</option>
-        </CFormSelect>
-      </div>
+      {/* Selector de elementos por página */}
+      <CFormSelect
+        value={itemsPerPage}
+        onChange={onItemsPerPageChange}
+        className="ms-3"
+        style={{ width: 'auto', height: 'fit-content' }}
+      >
+        <option value={10}>10 por página</option>
+        <option value={20}>20 por página</option>
+        <option value={30}>30 por página</option>
+      </CFormSelect>
     </div>
   );
 };

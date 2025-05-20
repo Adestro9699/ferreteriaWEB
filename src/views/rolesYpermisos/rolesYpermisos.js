@@ -112,7 +112,7 @@ const RolesYPermisos = () => {
     if (usuarioId) {
       const cargarUsuario = async () => {
         try {
-          const response = await apiClient.get('/fs/usuarios/completo');
+          const response = await apiClient.get('/usuarios/completo');
           const usuarioCompleto = response.data.find(u => u.idAcceso === parseInt(usuarioId));
           // Manejar permisos vacíos
           const permisosIniciales = usuarioCompleto?.permisos || permisos;
@@ -219,7 +219,7 @@ const RolesYPermisos = () => {
         rol: rol,
         permisos: permisos,
       };
-      const response = await apiClient.put(`/fs/accesos/${usuarioId}/permisos`, requestBody);
+      const response = await apiClient.put(`/accesos/${usuarioId}/permisos`, requestBody);
       if (response.status === 200) {
         setMensajeGuardado("Permisos actualizados correctamente.");
         setTimeout(() => setMensajeGuardado(null), 3000); // Ocultar después de 3 segundos

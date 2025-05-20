@@ -23,7 +23,7 @@ const ProductForm = ({ utilidad, onCancel, onSaved }) => {
   useEffect(() => {
     const fetchProductos = async () => {
       try {
-        const response = await apiClient.get('/fs/productos');
+        const response = await apiClient.get('/productos');
         setProductos(response.data);
       } catch (err) {
         setError('Error al cargar productos');
@@ -48,10 +48,10 @@ const ProductForm = ({ utilidad, onCancel, onSaved }) => {
 
       if (utilidad) {
         // Modo edición
-        await apiClient.put(`/fs/utilidades/${utilidad.idUtilidad}`, payload);
+        await apiClient.put(`/utilidades/${utilidad.idUtilidad}`, payload);
       } else {
         // Modo creación
-        await apiClient.post('/fs/utilidades', payload);
+        await apiClient.post('/utilidades', payload);
       }
 
       setSuccess('Configuración guardada exitosamente');

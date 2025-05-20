@@ -56,7 +56,7 @@ const CrearCliente = ({ visible, onClose, onGuardar }) => {
   useEffect(() => {
     const fetchTiposDocumento = async () => {
       try {
-        const response = await apiClient.get('/fs/tipos-documento');
+        const response = await apiClient.get('/tipos-documento');
         // Mapeamos para asegurarnos que tenga abreviatura
         const tiposConAbreviatura = response.data.map(tipo => ({
           ...tipo,
@@ -117,7 +117,7 @@ const CrearCliente = ({ visible, onClose, onGuardar }) => {
       }
 
       // Validar si el cliente ya existe usando el método buscarPorNumeroDocumento
-      const response = await apiClient.get(`/fs/clientes/buscarPorNumeroDocumento?numeroDocumento=${nuevoCliente.numeroDocumento}`);
+      const response = await apiClient.get(`/clientes/buscarPorNumeroDocumento?numeroDocumento=${nuevoCliente.numeroDocumento}`);
       if (response.data) {
         throw new Error('El cliente con este número de documento ya existe.');
       }
@@ -142,7 +142,7 @@ const CrearCliente = ({ visible, onClose, onGuardar }) => {
       console.log('Datos enviados al backend:', datosCliente); // Depuración
 
       // Enviar los datos del nuevo cliente al backend
-      const guardarResponse = await apiClient.post('/fs/clientes', datosCliente);
+      const guardarResponse = await apiClient.post('/clientes', datosCliente);
 
       // Notificar al componente padre que se guardó el cliente
       onGuardar(guardarResponse.data);
@@ -204,7 +204,7 @@ const CrearCliente = ({ visible, onClose, onGuardar }) => {
 
       console.log('Enviando consulta con:', requestBody);
 
-      const response = await apiClient.post('/fs/consulta', requestBody);
+      const response = await apiClient.post('/consulta', requestBody);
 
       if (response.data) {
         setNuevoCliente({

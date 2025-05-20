@@ -1,353 +1,479 @@
 import React, { useState, useEffect } from 'react';
 import {
+  CContainer,
+  CRow,
+  CCol,
+  CInputGroup,
+  CFormInput,
+  CInputGroupText,
+  CButton,
+  CFormSelect,
+  CModal,
+  CModalHeader,
+  CModalTitle,
+  CModalBody,
+  CModalFooter,
   CCard,
   CCardBody,
   CCardHeader,
-  CCol,
-  CRow,
-  CContainer,
+  CBadge,
   CSpinner,
   CAlert,
-  CButton,
-  CToaster, // Importar el contenedor de toasts
-  CToast,   // Importar el componente de toast
-  CToastHeader, // Importar el encabezado del toast
-  CToastBody,   // Importar el cuerpo del toast
+  CDropdown,
+  CDropdownToggle,
+  CDropdownMenu,
+  CDropdownItem,
 } from '@coreui/react';
+import { CIcon } from '@coreui/icons-react';
+import { 
+  cilX, 
+  cilSearch,
+  cilFilter,
+  cilSortAlphaDown, 
+  cilSortAlphaUp, 
+  cilCloudDownload, 
+  cilPlus,
+  cilOptions,
+  cilPencil,
+  cilTrash
+} from '@coreui/icons';
+import apiClient from '../../services/apiClient';
 import ProveedorTable from '../../components/proveedorComp/ProveedorTable';
 import ProveedorModal from '../../components/proveedorComp/ProveedorModal';
 import ProveedorFilters from '../../components/proveedorComp/ProveedorFilters';
 import ProveedorPagination from '../../components/proveedorComp/ProveedorPagination';
 import ProveedorCreateModal from '../../components/proveedorComp/ProveedorCreateModal';
 import ProveedorEditModal from '../../components/proveedorComp/ProveedorEditModal';
-import apiClient from '../../services/apiClient'; // Ajusta la ruta según tu estructura
 
 const Proveedor = () => {
-  // Estados para manejar los proveedores y la lógica de la vista
   const [proveedores, setProveedores] = useState([]);
-  const [isLoading, setIsLoading] = useState(true); // Estado de carga
-  const [error, setError] = useState(null); // Estado para manejar errores
-  const [selectedProveedores, setSelectedProveedores] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [filterText, setFilterText] = useState('');
+  const [sortColumn, setSortColumn] = useState('nombre');
+  const [sortDirection, setSortDirection] = useState('asc');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [statusFilter, setStatusFilter] = useState('ACTIVO');
-  const [sortField, setSortField] = useState('nombre');
-  const [sortDirection, setSortDirection] = useState('asc');
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [proveedorToDelete, setProveedorToDelete] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showCreateModal, setShowCreateModal] = useState(false); // Modal de creación
-  const [showEditModal, setShowEditModal] = useState(false); // Modal de edición
-  const [proveedorToEdit, setProveedorToEdit] = useState(null); // Proveedor a editar
-
-  // Nuevo estado para los toasts
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [filters, setFilters] = useState({
+    status: 'ACTIVO',
+    searchTerm: '',
+  });
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [currentProveedor, setCurrentProveedor] = useState(null);
   const [toasts, setToasts] = useState([]);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [showDeleteMultipleConfirmation, setShowDeleteMultipleConfirmation] = useState(false);
+  const [proveedorToDelete, setProveedorToDelete] = useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
-  // Función para agregar un nuevo toast
-  const addToast = (message, type = 'success') => {
-    const newToast = {
-      id: Date.now(),
-      message,
-      type,
-    };
-    setToasts((prevToasts) => [...prevToasts, newToast]); // Usar el estado anterior
+  // Función para agregar un toast
+  const addToast = (message, color = 'success') => {
+    const id = Date.now();
+    setToasts((prevToasts) => [
+      ...prevToasts,
+      {
+        id,
+        message,
+        color,
+      },
+    ]);
+    setTimeout(() => {
+      setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
+    }, 3000);
   };
 
-  // Función para eliminar un toast después de mostrarlo
-  const removeToast = (id) => {
-    setToasts(toasts.filter((toast) => toast.id !== id));
-  };
-
-  // Obtener proveedores desde el backend
+  // Obtener proveedores
   useEffect(() => {
     const fetchProveedores = async () => {
       try {
-        const response = await apiClient.get('/fs/proveedores');
-        console.log('Datos recibidos del backend:', response.data);
+        const response = await apiClient.get('/proveedores');
         setProveedores(response.data);
-      } catch (error) {
-        setError('Error al cargar los proveedores. Por favor, inténtalo de nuevo.');
-        console.error('Error fetching proveedores:', error);
-      } finally {
         setIsLoading(false);
+      } catch (error) {
+        setError('Error al cargar los proveedores');
+        setIsLoading(false);
+        addToast('Error al cargar los proveedores', 'danger');
       }
     };
 
     fetchProveedores();
   }, []);
 
-  // Crear un nuevo proveedor
-  const handleCreateProveedor = async (newProveedor) => {
-    try {
-      const response = await apiClient.post('/fs/proveedores', newProveedor);
-      setProveedores([...proveedores, response.data]);
-      setShowCreateModal(false);
-
-      // Mostrar toast de éxito
-      addToast('Proveedor creado exitosamente.');
-    } catch (error) {
-      console.error('Error creating proveedor:', error);
-      addToast('Error al crear el proveedor.', 'error'); // Mostrar toast de error
-    }
+  // Función para manejar cambios en la búsqueda
+  const handleSearchChange = (e) => {
+    setFilterText(e.target.value);
   };
 
-  // Editar un proveedor existente
-  const handleSaveEdit = async (updatedProveedor) => {
-    try {
-      await apiClient.put(`/fs/proveedores/${updatedProveedor.idProveedor}`, updatedProveedor);
-      setProveedores(
-        proveedores.map((p) =>
-          p.idProveedor === updatedProveedor.idProveedor ? updatedProveedor : p
-        )
-      );
-      setShowEditModal(false);
-
-      // Mostrar toast de éxito
-      addToast('Proveedor actualizado exitosamente.');
-    } catch (error) {
-      console.error('Error updating proveedor:', error);
-      addToast('Error al actualizar el proveedor.', 'error'); // Mostrar toast de error
-    }
+  // Función para limpiar la búsqueda
+  const clearSearch = () => {
+    setFilterText('');
   };
 
-  // Eliminar un proveedor
-  const confirmDelete = async () => {
-    try {
-      await apiClient.delete(`/fs/proveedores/${proveedorToDelete}`);
-      setProveedores(proveedores.filter((p) => p.idProveedor !== proveedorToDelete));
-      setProveedorToDelete(null);
-      setShowDeleteModal(false);
-
-      // Mostrar toast de éxito
-      addToast('Proveedor eliminado exitosamente.');
-    } catch (error) {
-      console.error('Error deleting proveedor:', error);
-      addToast('Error al eliminar el proveedor.', 'error'); // Mostrar toast de error
-    }
-  };
-
-  // Eliminar múltiples proveedores
-  const confirmDeleteSelected = async () => {
-    try {
-      await Promise.all(selectedProveedores.map((id) => apiClient.delete(`/fs/proveedores/${id}`)));
-      setProveedores(proveedores.filter((p) => !selectedProveedores.includes(p.idProveedor)));
-      setSelectedProveedores([]);
-      setShowDeleteModal(false);
-
-      // Mostrar toast de éxito
-      addToast('Proveedores seleccionados eliminados exitosamente.');
-    } catch (error) {
-      setError('Error al eliminar los proveedores seleccionados. Por favor, inténtalo de nuevo.');
-      console.error('Error deleting selected proveedores:', error);
-      addToast('Error al eliminar los proveedores seleccionados.', 'error'); // Mostrar toast de error
-    }
-  };
-
-  // Manejar la selección de proveedores
-  const handleSelectProveedor = (idOrAll) => {
-    if (Array.isArray(idOrAll)) {
-      // Si se pasa un array, seleccionar/deseleccionar todos los registros
-      setSelectedProveedores(idOrAll);
-    } else {
-      // Si se pasa un ID, manejar la selección/deselección individual
-      if (selectedProveedores.includes(idOrAll)) {
-        setSelectedProveedores(selectedProveedores.filter((item) => item !== idOrAll));
-      } else {
-        setSelectedProveedores([...selectedProveedores, idOrAll]);
-      }
-    }
-  };
-
-  // Ordenar proveedores
-  const handleSort = (field) => {
-    if (sortField === field) {
+  // Función para manejar el ordenamiento
+  const handleAdvancedSort = (column) => {
+    if (sortColumn === column) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
-      setSortField(field);
+      setSortColumn(column);
       setSortDirection('asc');
     }
   };
 
-  // Filtrar y ordenar proveedores
-  const sortedProveedores = [...proveedores].sort((a, b) => {
-    if (sortField) {
-      if (a[sortField] < b[sortField]) return sortDirection === 'asc' ? -1 : 1;
-      if (a[sortField] > b[sortField]) return sortDirection === 'asc' ? 1 : -1;
+  // Función para manejar cambios en los filtros
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters({ ...filters, [name]: value });
+  };
+
+  // Función para reiniciar los filtros
+  const resetFilters = () => {
+    setFilters({
+      status: 'ACTIVO',
+      searchTerm: '',
+    });
+  };
+
+  // Función para manejar la creación de un proveedor
+  const handleCreateProveedor = async (newProveedor) => {
+    try {
+      const response = await apiClient.post('/proveedores', newProveedor);
+      setProveedores([...proveedores, response.data]);
+      setShowCreateModal(false);
+      addToast('Proveedor creado correctamente', 'success');
+    } catch (error) {
+      addToast('Error al crear el proveedor', 'danger');
     }
-    return 0;
+  };
+
+  // Función para manejar la edición
+  const handleEdit = (proveedor) => {
+    setCurrentProveedor(proveedor);
+    setShowEditModal(true);
+  };
+
+  // Función para guardar cambios en la edición
+  const handleSaveChanges = async (updatedProveedor) => {
+    if (!updatedProveedor) return;
+
+    try {
+      const response = await apiClient.put(`/proveedores/${updatedProveedor.idProveedor}`, updatedProveedor);
+      const updatedItems = proveedores.map((item) =>
+        item.idProveedor === updatedProveedor.idProveedor ? response.data : item
+      );
+      setProveedores(updatedItems);
+      addToast('Proveedor actualizado correctamente', 'success');
+      setShowEditModal(false);
+    } catch (error) {
+      addToast('Error al actualizar el proveedor', 'danger');
+    }
+  };
+
+  // Función para confirmar la eliminación
+  const confirmDelete = (id) => {
+    setProveedorToDelete(id);
+    setShowDeleteConfirmation(true);
+  };
+
+  // Función para eliminar
+  const handleDelete = async () => {
+    if (!proveedorToDelete) return;
+
+    try {
+      await apiClient.delete(`/proveedores/${proveedorToDelete}`);
+      const updatedItems = proveedores.filter((item) => item.idProveedor !== proveedorToDelete);
+      setProveedores(updatedItems);
+      addToast('Proveedor eliminado correctamente', 'success');
+    } catch (error) {
+      addToast('Error al eliminar el proveedor', 'danger');
+    } finally {
+      setShowDeleteConfirmation(false);
+      setProveedorToDelete(null);
+    }
+  };
+
+  // Función para manejar la selección de items
+  const handleSelectItem = (id) => {
+    const isSelected = selectedItems.includes(id);
+    if (isSelected) {
+      setSelectedItems(selectedItems.filter((itemId) => itemId !== id));
+    } else {
+      setSelectedItems([...selectedItems, id]);
+    }
+  };
+
+  // Función para seleccionar todos los items
+  const handleSelectAll = () => {
+    if (selectedItems.length === currentProveedores.length) {
+      setSelectedItems([]);
+    } else {
+      setSelectedItems(currentProveedores.map((item) => item.idProveedor));
+    }
+  };
+
+  // Función para eliminar los items seleccionados
+  const handleDeleteSelected = async () => {
+    try {
+      await Promise.all(selectedItems.map((id) => apiClient.delete(`/proveedores/${id}`)));
+      const updatedItems = proveedores.filter((item) => !selectedItems.includes(item.idProveedor));
+      setProveedores(updatedItems);
+      setSelectedItems([]);
+      addToast('Proveedores eliminados correctamente', 'success');
+    } catch (error) {
+      addToast('Error al eliminar los proveedores', 'danger');
+    } finally {
+      setShowDeleteMultipleConfirmation(false);
+    }
+  };
+
+  // Filtrar y ordenar proveedores
+  const filteredProveedores = proveedores.filter((proveedor) => {
+    const matchesStatus = filters.status === 'all' || proveedor.estado === filters.status;
+    const matchesSearch = Object.values(proveedor).some((value) =>
+      String(value).toLowerCase().includes(filterText.toLowerCase())
+    );
+    return matchesStatus && matchesSearch;
   });
 
-  // Filtrar y ordenar proveedores
-  const filteredProveedores = sortedProveedores.filter((proveedor) => {
-    const matchesStatus =
-      statusFilter === 'all' ||
-      (statusFilter === 'ACTIVO' && proveedor.estado === 'ACTIVO') || // Coincidir con el backend
-      (statusFilter === 'INACTIVO' && proveedor.estado === 'INACTIVO'); // Coincidir con el backend
-
-    const matchesSearch = Object.values(proveedor).some((value) =>
-      String(value).toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    return matchesStatus && matchesSearch;
+  // Ordenar proveedores
+  const sortedProveedores = [...filteredProveedores].sort((a, b) => {
+    if (sortColumn) {
+      const aValue = a[sortColumn];
+      const bValue = b[sortColumn];
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+    }
+    return 0;
   });
 
   // Paginación
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentProveedores = filteredProveedores.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredProveedores.length / itemsPerPage);
+  const currentProveedores = sortedProveedores.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(sortedProveedores.length / itemsPerPage);
 
-  // Limpiar la búsqueda
-  const clearSearch = () => {
-    setSearchTerm('');
-  };
-
-  // Mostrar un spinner mientras se cargan los datos
   if (isLoading) {
     return (
-      <CContainer>
-        <CRow className="justify-content-center">
-          <CCol md="auto">
-            <CSpinner color="primary" />
-          </CCol>
-        </CRow>
+      <CContainer fluid>
+        <CCard className="mb-4">
+          <CCardBody>
+            <div className="text-center my-3">
+              <CSpinner color="primary" />
+            </div>
+          </CCardBody>
+        </CCard>
       </CContainer>
     );
   }
 
-  // Mostrar un mensaje de error si ocurre un problema
   if (error) {
     return (
-      <CContainer>
-        <CRow className="justify-content-center">
-          <CCol md="6">
+      <CContainer fluid>
+        <CCard className="mb-4">
+          <CCardBody>
             <CAlert color="danger">{error}</CAlert>
-          </CCol>
-        </CRow>
+          </CCardBody>
+        </CCard>
       </CContainer>
     );
   }
 
   return (
-    <CContainer>
-      {/* Contenedor de toasts */}
-      <CToaster placement="bottom-end">
-        {console.log('Toaster renderizado')}
-        {toasts.map((toast) => (
-          <CToast
-            key={toast.id}
-            visible={true} // Asegura que el toast sea visible
-            autohide={true}
-            delay={3000}
-            onClose={() => removeToast(toast.id)}
-            color={toast.type === 'success' ? 'success' : 'danger'} // Opcional: define el color
-          >
-            <CToastHeader closeButton>
-              <strong className="me-auto">
-                {toast.type === 'success' ? 'Éxito' : 'Error'}
-              </strong>
-            </CToastHeader>
-            <CToastBody>{toast.message}</CToastBody>
-          </CToast>
-        ))}
-      </CToaster>
-
-      {/* Modal de Confirmación para Eliminar */}
-      <ProveedorModal
-        showDeleteModal={showDeleteModal}
-        setShowDeleteModal={setShowDeleteModal}
-        proveedorToDelete={proveedorToDelete}
-        confirmDelete={confirmDelete}
-        confirmDeleteSelected={confirmDeleteSelected}
-      />
-
-      {/* Modal de Creación de Proveedor */}
-      <ProveedorCreateModal
-        showCreateModal={showCreateModal}
-        setShowCreateModal={setShowCreateModal}
-        handleCreateProveedor={handleCreateProveedor}
-      />
-
-      {/* Modal de Edición de Proveedor */}
-      <ProveedorEditModal
-        showEditModal={showEditModal}
-        setShowEditModal={setShowEditModal}
-        proveedorToEdit={proveedorToEdit}
-        handleSaveEdit={handleSaveEdit}
-      />
-
-      <CRow>
-        <CCol xs={12}>
-          <CCard>
-            <CCardHeader>
-              <CRow className="mb-3"> {/* Margen inferior para separar los filtros */}
-                <CCol xs={12} md={8}>
-                  <ProveedorFilters
-                    statusFilter={statusFilter}
-                    setStatusFilter={setStatusFilter}
-                    searchTerm={searchTerm}
-                    setSearchTerm={setSearchTerm}
-                    clearSearch={clearSearch}
-                  />
+    <CContainer fluid>
+      <CCard className="mb-4">
+        <CCardHeader className="bg-body-secondary">
+          <CRow className="align-items-center">
+            <CCol>
+              <h4 className="mb-0">Gestión de Proveedores</h4>
+            </CCol>
+            <CCol xs="auto" className="d-flex gap-2">
+              <CButton 
+                color="primary"
+                onClick={() => setShowCreateModal(true)}
+              >
+                <CIcon icon={cilPlus} className="me-2" />
+                Nuevo Proveedor
+              </CButton>
+            </CCol>
+          </CRow>
+        </CCardHeader>
+        <CCardBody>
+          {isLoading ? (
+            <div className="text-center my-3">
+              <CSpinner color="primary" />
+            </div>
+          ) : error ? (
+            <CAlert color="danger">{error}</CAlert>
+          ) : (
+            <>
+              <CRow className="mb-3">
+                <CCol xs={12} md={6} className="mb-3 mb-md-0">
+                  <CInputGroup>
+                    <CFormInput
+                      placeholder="Buscar proveedor..."
+                      value={filterText}
+                      onChange={handleSearchChange}
+                    />
+                    {filterText && (
+                      <CInputGroupText 
+                        role="button" 
+                        className="bg-transparent cursor-pointer" 
+                        onClick={clearSearch}
+                      >
+                        <CIcon icon={cilX} />
+                      </CInputGroupText>
+                    )}
+                    <CButton 
+                      color="primary" 
+                      variant="outline"
+                      onClick={() => setShowFilters(!showFilters)}
+                    >
+                      <CIcon icon={cilFilter} />
+                    </CButton>
+                  </CInputGroup>
                 </CCol>
-                <CCol xs={12} md={4} className="text-end">
-                  {/* Botones "Crear Proveedor" y "Exportar Data" */}
-                  <div className="d-flex flex-column flex-md-row justify-content-end gap-2">
-                    <CButton color="success" onClick={() => setShowCreateModal(true)}>
-                      Crear Proveedor
+                <CCol xs={12} md={6} className="d-flex justify-content-md-end">
+                  {selectedItems.length > 0 && (
+                    <CButton 
+                      color="danger" 
+                      variant="outline" 
+                      className="w-100 w-md-auto"
+                      onClick={() => setShowDeleteMultipleConfirmation(true)}
+                    >
+                      <CIcon icon={cilTrash} className="me-2" />
+                      Eliminar Seleccionados ({selectedItems.length})
                     </CButton>
-                    <CButton color="primary" disabled>
-                      Exportar Data
-                    </CButton>
-                  </div>
+                  )}
                 </CCol>
               </CRow>
-            </CCardHeader>
-            <CCardBody>
-              {/* Botón "Eliminar Seleccionados" en la parte izquierda */}
-              <div className="d-flex justify-content-start mb-3">
-                {selectedProveedores.length > 0 && (
-                  <CButton
-                    color="danger"
-                    onClick={() => setShowDeleteModal(true)}
-                  >
-                    Eliminar Seleccionados ({selectedProveedores.length})
-                  </CButton>
-                )}
-              </div>
 
-              {/* Tabla de proveedores */}
-              <ProveedorTable
-                proveedores={currentProveedores}
-                selectedProveedores={selectedProveedores}
-                handleSelectProveedor={handleSelectProveedor}
-                handleSort={handleSort}
-                sortField={sortField}
-                sortDirection={sortDirection}
-                const handleDelete={(id) => {
-                  setProveedorToDelete(id); // Establecer el ID del proveedor a eliminar
-                  setShowDeleteModal(true); // Mostrar el modal de confirmación
-                }}
-                handleEdit={(proveedor) => {
-                  setProveedorToEdit(proveedor);
-                  setShowEditModal(true);
-                }}
-              />
+              {showFilters && (
+                <ProveedorFilters
+                  filters={filters}
+                  onFilterChange={handleFilterChange}
+                  onResetFilters={resetFilters}
+                  className="mb-3"
+                />
+              )}
 
-              {/* Paginación y selector de cantidad de elementos */}
-              <div className="d-flex justify-content-center mt-3">
-                <ProveedorPagination
-                  currentPage={currentPage}
-                  setCurrentPage={setCurrentPage}
-                  totalPages={totalPages}
-                  itemsPerPage={itemsPerPage}
-                  handleItemsPerPageChange={(e) => setItemsPerPage(Number(e.target.value))}
+              <div className="table-responsive">
+                <ProveedorTable
+                  proveedores={currentProveedores}
+                  selectedItems={selectedItems}
+                  onSelectItem={handleSelectItem}
+                  onSelectAll={handleSelectAll}
+                  onEdit={handleEdit}
+                  onDelete={confirmDelete}
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onSort={handleAdvancedSort}
                 />
               </div>
-            </CCardBody>
-          </CCard>
-        </CCol>
-      </CRow>
+
+              <ProveedorPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                itemsPerPage={itemsPerPage}
+                onItemsPerPageChange={(e) => setItemsPerPage(Number(e.target.value))}
+              />
+            </>
+          )}
+        </CCardBody>
+      </CCard>
+
+      <ProveedorCreateModal
+        show={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreate={handleCreateProveedor}
+      />
+
+      <ProveedorEditModal
+        show={showEditModal}
+        proveedor={currentProveedor}
+        onClose={() => setShowEditModal(false)}
+        onSave={handleSaveChanges}
+      />
+
+      <CModal 
+        visible={showDeleteConfirmation} 
+        onClose={() => setShowDeleteConfirmation(false)}
+        alignment="center"
+      >
+        <CModalHeader>
+          <CModalTitle>Confirmar Eliminación</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          ¿Está seguro que desea eliminar este proveedor?
+        </CModalBody>
+        <CModalFooter>
+          <CButton 
+            color="secondary" 
+            onClick={() => setShowDeleteConfirmation(false)}
+          >
+            Cancelar
+          </CButton>
+          <CButton 
+            color="danger" 
+            onClick={handleDelete}
+          >
+            Eliminar
+          </CButton>
+        </CModalFooter>
+      </CModal>
+
+      <CModal
+        visible={showDeleteMultipleConfirmation}
+        onClose={() => setShowDeleteMultipleConfirmation(false)}
+        alignment="center"
+      >
+        <CModalHeader>
+          <CModalTitle>Confirmar Eliminación Múltiple</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          ¿Está seguro que desea eliminar los {selectedItems.length} proveedores seleccionados?
+        </CModalBody>
+        <CModalFooter>
+          <CButton 
+            color="secondary" 
+            onClick={() => setShowDeleteMultipleConfirmation(false)}
+          >
+            Cancelar
+          </CButton>
+          <CButton 
+            color="danger" 
+            onClick={handleDeleteSelected}
+          >
+            Eliminar
+          </CButton>
+        </CModalFooter>
+      </CModal>
+
+      {/* Toast notifications */}
+      <div className="toast-container position-fixed bottom-0 end-0 p-3">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className={`toast show bg-${toast.color} text-white`}
+            role="alert"
+            aria-live="assertive"
+            aria-atomic="true"
+          >
+            <div className="toast-header bg-transparent text-white">
+              <strong className="me-auto">
+                {toast.color === 'success' ? 'Éxito' : 'Error'}
+              </strong>
+              <button
+                type="button"
+                className="btn-close btn-close-white"
+                onClick={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
+              />
+            </div>
+            <div className="toast-body">{toast.message}</div>
+          </div>
+        ))}
+      </div>
     </CContainer>
   );
 };

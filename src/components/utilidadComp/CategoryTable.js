@@ -35,7 +35,7 @@ const CategoryTable = ({ currentPage, itemsPerPage, onDelete, onSuccess, onError
     setLoading(true);
     setError(null);
     try {
-      const response = await apiClient.get('/fs/utilidades/categoria');
+      const response = await apiClient.get('/utilidades/categoria');
       const formattedData = response.data.map(item => ({
         idUtilidad: item.idUtilidad,
         categoria: item.categoria,
@@ -58,7 +58,7 @@ const CategoryTable = ({ currentPage, itemsPerPage, onDelete, onSuccess, onError
 
   const confirmDelete = async () => {
     try {
-      await apiClient.delete(`/fs/utilidades/${deleteItem}`);
+      await apiClient.delete(`/utilidades/${deleteItem}`);
       onSuccess('Configuración eliminada correctamente');
       fetchUtilidades();
     } catch (err) {

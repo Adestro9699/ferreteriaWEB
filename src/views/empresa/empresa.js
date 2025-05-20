@@ -15,7 +15,7 @@ const Empresa = () => {
 
   const fetchFirstEmpresa = async () => {
     try {
-      const response = await apiClient.get('/fs/empresas');
+      const response = await apiClient.get('/empresas');
       const firstEmpresaData = response.data[0]; // Obtener la primera empresa
       if (firstEmpresaData) {
         setFirstEmpresa(firstEmpresaData);

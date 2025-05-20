@@ -31,7 +31,7 @@ const Usuarios = () => {
   useEffect(() => {
     const obtenerUsuarios = async () => {
       try {
-        const response = await apiClient.get('/fs/usuarios/completo');
+        const response = await apiClient.get('/usuarios/completo');
         const usuariosConIndice = response.data.map((usuario, index) => ({
           ...usuario,
           uniqueIndex: `user-${index}-${usuario.idAcceso || 'no-id'}`,

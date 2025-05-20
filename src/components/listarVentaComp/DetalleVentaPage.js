@@ -24,7 +24,7 @@ const DetalleVentaPage = () => {
     const fetchVenta = async () => {
       try {
         setLoading(true);
-        const response = await apiClient.get(`/fs/ventas/${id}/detalle`);
+        const response = await apiClient.get(`/ventas/${id}/detalle`);
         setVenta(response.data);
         setError(null);
       } catch (err) {
@@ -65,7 +65,7 @@ const DetalleVentaPage = () => {
   const handleConfirm = async () => {
     setIsConfirming(true);
     try {
-      await apiClient.put(`/fs/ventas/${id}/confirmar`);
+      await apiClient.put(`/ventas/${id}/confirmar`);
       navigate('/listarVenta');
     } catch (err) {
       setError(err.message);
@@ -77,7 +77,7 @@ const DetalleVentaPage = () => {
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      await apiClient.delete(`/fs/ventas/${id}`);
+      await apiClient.delete(`/ventas/${id}`);
       navigate('/listarVenta');
     } catch (err) {
       setError(err.message);

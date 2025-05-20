@@ -11,7 +11,7 @@ import {
   CFormSelect,
 } from '@coreui/react';
 
-const ProveedorCreateModal = ({ showCreateModal, setShowCreateModal, handleCreateProveedor }) => {
+const ProveedorCreateModal = ({ show, onClose, onCreate }) => {
   const [formData, setFormData] = useState({
     nombre: '',
     direccion: '',
@@ -36,7 +36,7 @@ const ProveedorCreateModal = ({ showCreateModal, setShowCreateModal, handleCreat
     // Convertir la primera letra en mayúscula para campos específicos
     let formattedValue = value;
     if (['nombre', 'direccion', 'pais'].includes(name) && value.length > 0) {
-      formattedValue = value.charAt(0).toUpperCase() + value.slice(1); // Solo convertir la primera letra
+      formattedValue = value.charAt(0).toUpperCase() + value.slice(1);
     }
 
     setFormData({ ...formData, [name]: formattedValue });
@@ -45,37 +45,32 @@ const ProveedorCreateModal = ({ showCreateModal, setShowCreateModal, handleCreat
   // Función para validar el formulario
   const validateForm = () => {
     const newErrors = {};
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Expresión regular para validar correos
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   
-    // Validar nombre
     if (!formData.nombre.trim()) {
       newErrors.nombre = 'El nombre es obligatorio.';
     } else if (!/^[A-ZÁÉÍÓÚÑ].*$/.test(formData.nombre)) {
       newErrors.nombre = 'El nombre debe comenzar con mayúscula.';
     }
   
-    // Validar dirección
     if (!formData.direccion.trim()) {
       newErrors.direccion = 'La dirección es obligatoria.';
     } else if (!/^[A-ZÁÉÍÓÚÑ].*$/.test(formData.direccion)) {
       newErrors.direccion = 'La dirección debe comenzar con mayúscula.';
     }
   
-    // Validar teléfono
     if (!formData.telefono.trim()) {
       newErrors.telefono = 'El teléfono es obligatorio.';
     } else if (!/^[\d\s\-]+$/.test(formData.telefono)) {
       newErrors.telefono = 'El teléfono solo debe contener números, espacios o guiones.';
     }
   
-    // Validar correo
     if (!formData.correoProveedor.trim()) {
       newErrors.correoProveedor = 'El correo es obligatorio.';
     } else if (!emailRegex.test(formData.correoProveedor.trim())) {
       newErrors.correoProveedor = 'El correo debe tener un formato válido.';
     }
   
-    // Validar país
     if (!formData.pais.trim()) {
       newErrors.pais = 'El país es obligatorio.';
     } else if (!/^[A-ZÁÉÍÓÚÑ].*$/.test(formData.pais)) {
@@ -83,21 +78,21 @@ const ProveedorCreateModal = ({ showCreateModal, setShowCreateModal, handleCreat
     }
   
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0; // Retorna `true` si no hay errores
+    return Object.keys(newErrors).length === 0;
   };
 
   // Función para manejar el envío del formulario
   const handleSubmit = () => {
     if (!validateForm()) {
-      return; // Detener el envío si hay errores
+      return;
     }
 
     const dataToSend = {
       ...formData,
-      fechaRegistro: new Date().toISOString().split('T')[0], // Fecha actual en formato YYYY-MM-DD
-      estado: formData.estado === 'Activo' ? 'ACTIVO' : 'INACTIVO', // Asegurar formato correcto del estado
+      fechaRegistro: new Date().toISOString().split('T')[0],
+      estado: formData.estado === 'Activo' ? 'ACTIVO' : 'INACTIVO',
     };
-    handleCreateProveedor(dataToSend);
+    onCreate(dataToSend);
 
     // Reiniciar el formulario
     setFormData({
@@ -108,80 +103,72 @@ const ProveedorCreateModal = ({ showCreateModal, setShowCreateModal, handleCreat
       pais: '',
       estado: 'Activo',
     });
-
-    setShowCreateModal(false); // Cerrar el modal
   };
 
   return (
     <CModal
-      visible={showCreateModal}
-      onClose={() => setShowCreateModal(false)}
-      backdrop="static" // Evitar que se cierre al hacer clic fuera
-      keyboard={false} // Evitar que se cierre con la tecla Esc
+      visible={show}
+      onClose={onClose}
+      backdrop="static"
+      keyboard={false}
     >
       <CModalHeader>
         <CModalTitle>Agregar nuevo Proveedor</CModalTitle>
       </CModalHeader>
       <CModalBody>
         <CForm>
-          {/* Campo Nombre */}
           <CFormInput
+            className="mb-3"
             label="Nombre"
             name="nombre"
             value={formData.nombre}
             onChange={handleChange}
-            invalid={!!errors.nombre} // Marcar como inválido si hay un error
+            invalid={!!errors.nombre}
+            feedback={errors.nombre}
           />
-          <div style={{ minHeight: '20px' }}> {/* Espacio reservado para el mensaje de error */}
-            {errors.nombre && <small className="text-danger">{errors.nombre}</small>}
-          </div>
 
           <CFormInput
+            className="mb-3"
             label="Dirección"
             name="direccion"
             value={formData.direccion}
             onChange={handleChange}
             invalid={!!errors.direccion}
+            feedback={errors.direccion}
           />
-          <div style={{ minHeight: '20px' }}> {/* Espacio reservado para el mensaje de error */}
-            {errors.direccion && <small className="text-danger">{errors.direccion}</small>}
-          </div>
 
           <CFormInput
+            className="mb-3"
             label="Teléfono"
             name="telefono"
             value={formData.telefono}
             onChange={handleChange}
             invalid={!!errors.telefono}
+            feedback={errors.telefono}
           />
-          <div style={{ minHeight: '20px' }}> {/* Espacio reservado para el mensaje de error */}
-            {errors.telefono && <small className="text-danger">{errors.telefono}</small>}
-          </div>
 
           <CFormInput
+            className="mb-3"
             label="Correo"
             name="correoProveedor"
             value={formData.correoProveedor}
             onChange={handleChange}
             invalid={!!errors.correoProveedor}
+            feedback={errors.correoProveedor}
           />
-          <div style={{ minHeight: '20px' }}> {/* Espacio reservado para el mensaje de error */}
-            {errors.correoProveedor && <small className="text-danger">{errors.correoProveedor}</small>}
-          </div>
 
           <CFormInput
+            className="mb-3"
             label="País"
             name="pais"
             value={formData.pais}
             onChange={handleChange}
             invalid={!!errors.pais}
+            feedback={errors.pais}
           />
-          <div style={{ minHeight: '20px' }}> {/* Espacio reservado para el mensaje de error */}
-            {errors.pais && <small className="text-danger">{errors.pais}</small>}
-          </div>
 
-          {/* Campo Estado */}
           <CFormSelect
+            className="mb-3"
             label="Estado"
             name="estado"
             value={formData.estado}
@@ -193,7 +180,7 @@ const ProveedorCreateModal = ({ showCreateModal, setShowCreateModal, handleCreat
         </CForm>
       </CModalBody>
       <CModalFooter>
-        <CButton color="secondary" onClick={() => setShowCreateModal(false)}>
+        <CButton color="secondary" onClick={onClose}>
           Cancelar
         </CButton>
         <CButton color="primary" onClick={handleSubmit}>
