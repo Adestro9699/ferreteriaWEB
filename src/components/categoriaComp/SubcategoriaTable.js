@@ -40,11 +40,9 @@ const SubcategoriaTable = ({
   };
 
   return (
-    <>
-    
-
+    <div className="table-responsive">
       {/* Tabla de Subcategorías */}
-      <CTable>
+      <CTable className="align-middle mb-0">
         <CTableHead>
           <CTableRow>
             <CTableHeaderCell>
@@ -80,29 +78,36 @@ const SubcategoriaTable = ({
                 </CBadge>
               </CTableDataCell>
               <CTableDataCell>
-                {/* Botón de Editar */}
-                <CButton
-                  color="warning"
-                  size="sm"
-                  className="me-2"
-                  onClick={() => handleEdit(subcategoria)}
-                >
-                  <CIcon icon={cilPencil} />
-                </CButton>
-                {/* Botón de Eliminar */}
-                <CButton
-                  color="danger"
-                  size="sm"
-                  onClick={() => handleDelete(subcategoria.idSubcategoria)}
-                >
-                  <CIcon icon={cilTrash} />
-                </CButton>
+                <div className="d-flex flex-wrap gap-2 justify-content-center">
+                  {/* Botón de Editar */}
+                  <CButton
+                    color="warning"
+                    size="sm"
+                    className="d-flex align-items-center"
+                    style={{ minWidth: 36 }}
+                    onClick={() => handleEdit(subcategoria)}
+                    title="Editar subcategoría"
+                  >
+                    <CIcon icon={cilPencil} />
+                  </CButton>
+                  {/* Botón de Eliminar */}
+                  <CButton
+                    color="danger"
+                    size="sm"
+                    className="d-flex align-items-center"
+                    style={{ minWidth: 36 }}
+                    onClick={() => handleDelete(subcategoria.idSubcategoria)}
+                    title="Eliminar subcategoría"
+                  >
+                    <CIcon icon={cilTrash} />
+                  </CButton>
+                </div>
               </CTableDataCell>
             </CTableRow>
           ))}
         </CTableBody>
       </CTable>
-    </>
+    </div>
   );
 };
 

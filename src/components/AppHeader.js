@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useCallback } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import {
@@ -42,11 +42,23 @@ const AppHeader = () => {
     })
   }, [])
 
+  const toggleSidebar = useCallback(() => {
+    try {
+      if (window.store) {
+        window.store.dispatch({ type: 'set', payload: { sidebarShow: !sidebarShow } });
+      } else {
+        dispatch({ type: 'set', payload: { sidebarShow: !sidebarShow } });
+      }
+    } catch (error) {
+      console.error('Error al toggle sidebar:', error);
+    }
+  }, [dispatch, sidebarShow]);
+
   return (
     <CHeader position="sticky" className="mb-4 p-0" ref={headerRef}>
       <CContainer className="border-bottom px-4" fluid>
         <CHeaderToggler
-          onClick={() => dispatch({ type: 'set', payload: { sidebarShow: !sidebarShow } })}
+          onClick={toggleSidebar}
           style={{ marginInlineStart: '-14px' }}
         >
           <CIcon icon={cilMenu} size="lg" />

@@ -13,9 +13,30 @@ import {
   CModalTitle,
   CModalBody,
   CModalFooter,
+  CCard,
+  CCardBody,
+  CCardHeader,
+  CBadge,
+  CSpinner,
+  CAlert,
+  CDropdown,
+  CDropdownToggle,
+  CDropdownMenu,
+  CDropdownItem,
 } from '@coreui/react';
 import { CIcon } from '@coreui/icons-react';
-import { cilX, cilSortAlphaDown, cilSortAlphaUp, cilCloudDownload } from '@coreui/icons';
+import { 
+  cilX, 
+  cilSearch,
+  cilFilter,
+  cilSortAlphaDown, 
+  cilSortAlphaUp, 
+  cilCloudDownload, 
+  cilPlus,
+  cilOptions,
+  cilPencil,
+  cilTrash
+} from '@coreui/icons';
 import apiClient from '../../services/apiClient';
 import CrearProducto from '../../components/productoComp/CrearProducto';
 import ProductoTable from '../../components/productoComp/ProductoTable';
@@ -51,13 +72,13 @@ const Producto = () => {
   const [productToDelete, setProductToDelete] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [marcas, setMarcas] = useState([]);
+  const [showFilters, setShowFilters] = useState(false);
 
-  // Estados para categorías, proveedores y subcategorías y unidades de medida
+  // Estados para categorías, proveedores, subcategorías y unidades de medida
   const [categorias, setCategorias] = useState([]);
   const [proveedores, setProveedores] = useState([]);
   const [subcategorias, setSubcategorias] = useState([]);
   const [unidadesMedida, setUnidadesMedida] = useState([]);
-
 
   // Obtener datos del backend (productos, categorías, proveedores, subcategorías y unidades de medida)
   useEffect(() => {
@@ -309,105 +330,219 @@ const Producto = () => {
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = sortedItems.slice(indexOfFirstItem, indexOfLastItem);
 
+  // Manejar estado de loading y error
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '300px' }}>
+        <CSpinner color="primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <CAlert color="danger">
+        Error al cargar los productos: {error}
+      </CAlert>
+    );
+  }
+
+  // Función para obtener la clase de color según el nivel de stock
+  const getStockStatusClass = (stock, stockMinimo = 10) => {
+    if (stock <= 0) return 'danger';
+    if (stock < stockMinimo) return 'warning';
+    return 'success';
+  };
+
   return (
-    <CContainer>
-      {/* Barra de búsqueda, ordenamiento y botón "Crear Producto" */}
-      <CRow className="mb-3 align-items-center">
-        <CCol>
-          <CInputGroup>
-            <CFormInput
-              type="text"
-              placeholder="Buscar por nombre, marca, categoría, material, etc..."
-              value={filterText}
-              onChange={handleSearchChange}
-            />
-            <CInputGroupText>
-              <CButton color="light" onClick={clearSearch}>
-                <CIcon icon={cilX} />
+    <CContainer fluid className="producto-container">
+      <CCard className="mb-4 border-0 shadow-sm">
+        <CCardHeader className="bg-transparent border-bottom-0">
+          <CRow className="align-items-center">
+            <CCol>
+              <h4 className="mb-0">Gestión de Productos</h4>
+              <small className="text-medium-emphasis">
+                {filteredItems.length} productos encontrados
+              </small>
+            </CCol>
+            <CCol xs="auto">
+              <CButton 
+                color="primary" 
+                onClick={() => setShowCreateModal(true)}
+                className="d-flex align-items-center"
+              >
+                <CIcon icon={cilPlus} className="me-2" />
+                Nuevo Producto
               </CButton>
-            </CInputGroupText>
-          </CInputGroup>
-        </CCol>
-        <CCol xs="auto">
-          <CFormSelect
-            value={sortColumn}
-            onChange={(e) => handleAdvancedSort(e.target.value)}
-          >
-            <option value="nombreProducto">Ordenar por Nombre</option>
-            <option value="precio">Ordenar por Precio</option>
-            <option value="stock">Ordenar por Stock</option>
-            <option value="fechaModificacion">Ordenar por Fecha</option>
-          </CFormSelect>
-        </CCol>
-        <CCol xs="auto">
-          <CButton color="primary" onClick={() => setShowCreateModal(true)}>
-            Crear Producto
-          </CButton>
-        </CCol>
-      </CRow>
+            </CCol>
+          </CRow>
+        </CCardHeader>
+        
+        <CCardBody>
+          {/* Barra de búsqueda y filtros */}
+          <CRow className="mb-4 g-3">
+            <CCol md={6} lg={7}>
+              <CInputGroup className="shadow-sm">
+                <CInputGroupText>
+                  <CIcon icon={cilSearch} />
+                </CInputGroupText>
+                <CFormInput
+                  type="text"
+                  placeholder="Buscar producto por nombre, marca, categoría..."
+                  value={filterText}
+                  onChange={handleSearchChange}
+                  className="border-start-0"
+                />
+                {filterText && (
+                  <CInputGroupText className="bg-transparent border-start-0">
+                    <CButton 
+                      color="transparent" 
+                      size="sm" 
+                      onClick={clearSearch}
+                      className="p-0"
+                    >
+                      <CIcon icon={cilX} />
+                    </CButton>
+                  </CInputGroupText>
+                )}
+              </CInputGroup>
+            </CCol>
+            
+            <CCol md={3} lg={3}>
+              <CInputGroup className="shadow-sm">
+                <CInputGroupText>
+                  <CIcon icon={cilSortAlphaDown} />
+                </CInputGroupText>
+                <CFormSelect
+                  value={sortColumn}
+                  onChange={(e) => handleAdvancedSort(e.target.value)}
+                  className="border-start-0"
+                >
+                  <option value="nombreProducto">Ordenar por Nombre</option>
+                  <option value="precio">Ordenar por Precio</option>
+                  <option value="stock">Ordenar por Stock</option>
+                  <option value="fechaModificacion">Ordenar por Fecha</option>
+                </CFormSelect>
+              </CInputGroup>
+            </CCol>
+            
+            <CCol md={3} lg={2}>
+              <CRow className="g-2">
+                <CCol>
+                  <CButton 
+                    color={showFilters ? "primary" : "light"} 
+                    className="w-100 shadow-sm d-flex align-items-center justify-content-center"
+                    onClick={() => setShowFilters(!showFilters)}
+                  >
+                    <CIcon icon={cilFilter} className="me-2" />
+                    Filtros
+                  </CButton>
+                </CCol>
+                <CCol>
+                  <ProductoExport 
+                    data={items} 
+                    className="w-100 shadow-sm d-flex align-items-center justify-content-center"
+                  />
+                </CCol>
+              </CRow>
+            </CCol>
+          </CRow>
+          
+          {/* Contenedor para filtros y tabla */}
+          <CRow>
+            {/* Filtros (panel colapsable) */}
+            {showFilters && (
+              <CCol md={3} lg={3} className="mb-4">
+                <CCard className="h-100 border-0 shadow-sm">
+                  <CCardHeader className="bg-light bg-opacity-50 d-flex justify-content-between align-items-center">
+                    <h5 className="mb-0 fs-6">Filtros Avanzados</h5>
+                    <CButton 
+                      color="transparent" 
+                      size="sm" 
+                      onClick={() => setShowFilters(false)}
+                      className="p-0 text-dark"
+                    >
+                      <CIcon icon={cilX} />
+                    </CButton>
+                  </CCardHeader>
+                  <CCardBody>
+                    <ProductoFilters
+                      filters={filters}
+                      handleFilterChange={handleFilterChange}
+                      resetFilters={resetFilters}
+                      marcas={marcas}
+                    />
+                  </CCardBody>
+                </CCard>
+              </CCol>
+            )}
+            
+            {/* Tabla de productos */}
+            <CCol md={showFilters ? 9 : 12} lg={showFilters ? 9 : 12}>
+              <CCard className="border-0 shadow-sm">
+                <CCardBody className="p-0">
+                  <div className="table-responsive">
+                    <ProductoTable
+                      items={currentItems}
+                      details={details}
+                      selectedItems={selectedItems}
+                      handleSelectItem={handleSelectItem}
+                      handleSelectAll={handleSelectAll}
+                      toggleDetails={(id) => setDetails((prev) => prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id])}
+                      handleEdit={handleEdit}
+                      confirmDelete={confirmDelete}
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      handleAdvancedSort={handleAdvancedSort}
+                    />
+                  </div>
+                </CCardBody>
+              </CCard>
+              
+              {/* Controles de paginación y acciones masivas */}
+              <CCard className="mt-3 border-0 shadow-sm">
+                <CCardBody className="py-2">
+                  <CRow className="align-items-center">
+                    <CCol xs={12} md="auto" className="mb-2 mb-md-0">
+                      {selectedItems.length > 0 && (
+                        <CButton 
+                          color="danger" 
+                          size="sm"
+                          onClick={handleDeleteSelected}
+                          className="d-flex align-items-center"
+                        >
+                          <CIcon icon={cilTrash} className="me-2" />
+                          Eliminar Seleccionados ({selectedItems.length})
+                        </CButton>
+                      )}
+                    </CCol>
+                    <CCol className="d-flex justify-content-md-end justify-content-center">
+                      <ProductoPagination
+                        currentPage={currentPage}
+                        setCurrentPage={setCurrentPage}
+                        itemsPerPage={itemsPerPage}
+                        handleItemsPerPageChange={handleItemsPerPageChange}
+                        totalItems={sortedItems.length}
+                      />
+                    </CCol>
+                  </CRow>
+                </CCardBody>
+              </CCard>
+            </CCol>
+          </CRow>
+        </CCardBody>
+      </CCard>
 
       {/* Modal de creación de producto */}
       <CrearProducto
         show={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSave={handleCreateProduct}
-        categorias={categorias} // Pasa las categorías
-        proveedores={proveedores} // Pasa los proveedores
-        subcategorias={subcategorias} // Pasa las subcategorías
-        unidadesMedida={unidadesMedida} // Pasar las unidades de medida
+        categorias={categorias}
+        proveedores={proveedores}
+        subcategorias={subcategorias}
+        unidadesMedida={unidadesMedida}
       />
-
-      {/* Filtros avanzados y botón de exportación */}
-      <CRow>
-        <CCol md={3}>
-          <ProductoFilters
-            filters={filters}
-            handleFilterChange={handleFilterChange}
-            resetFilters={resetFilters}
-            marcas={marcas} // Pasa las marcas como prop
-          />
-          <div className="mt-3">
-            <ProductoExport data={items} />
-          </div>
-        </CCol>
-
-        {/* Tabla */}
-        <CCol md={9}>
-          <ProductoTable
-            items={currentItems}
-            details={details}
-            selectedItems={selectedItems}
-            handleSelectItem={handleSelectItem}
-            handleSelectAll={handleSelectAll}
-            toggleDetails={(id) => setDetails((prev) => prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id])}
-            handleEdit={handleEdit}
-            confirmDelete={confirmDelete}
-            sortColumn={sortColumn}
-            sortDirection={sortDirection}
-            handleAdvancedSort={handleAdvancedSort}
-          />
-
-          {/* Paginación y Selector de items por página */}
-          <CRow className="mt-3 align-items-center p-3 bg-body rounded mb-3">
-            <CCol xs="auto" className="d-flex align-items-center">
-              {selectedItems.length > 0 && (
-                <CButton color="danger" onClick={handleDeleteSelected}>
-                  Eliminar Seleccionados ({selectedItems.length})
-                </CButton>
-              )}
-            </CCol>
-            <CCol className="d-flex align-items-center justify-content-center">
-              <ProductoPagination
-                currentPage={currentPage}
-                setCurrentPage={setCurrentPage}
-                itemsPerPage={itemsPerPage}
-                handleItemsPerPageChange={handleItemsPerPageChange}
-                totalItems={sortedItems.length}
-              />
-            </CCol>
-          </CRow>
-        </CCol>
-      </CRow>
 
       {/* Modal de Edición */}
       <ProductoModal
@@ -415,7 +550,7 @@ const Producto = () => {
         onClose={() => setShowEditModal(false)}
         currentProduct={currentProduct}
         setCurrentProduct={setCurrentProduct}
-        handleSaveChanges={handleSaveChanges} // Pasar la función del padre
+        handleSaveChanges={handleSaveChanges}
         categorias={categorias}
         proveedores={proveedores}
         subcategorias={subcategorias}
@@ -423,14 +558,16 @@ const Producto = () => {
       />
 
       {/* Modal de Confirmación para Eliminar */}
-      <CModal visible={showDeleteConfirmation} onClose={() => setShowDeleteConfirmation(false)}>
-        <CModalHeader>
+      <CModal visible={showDeleteConfirmation} onClose={() => setShowDeleteConfirmation(false)} alignment="center">
+        <CModalHeader className="border-bottom-0">
           <CModalTitle>Confirmar Eliminación</CModalTitle>
         </CModalHeader>
-        <CModalBody>
-          ¿Estás seguro de que deseas eliminar este producto?
+        <CModalBody className="text-center py-4">
+          <CIcon icon={cilTrash} size="3xl" className="text-danger mb-3" />
+          <p className="mb-0">¿Estás seguro de que deseas eliminar este producto?</p>
+          <p className="text-muted small">Esta acción no se puede deshacer.</p>
         </CModalBody>
-        <CModalFooter>
+        <CModalFooter className="border-top-0">
           <CButton color="secondary" onClick={() => setShowDeleteConfirmation(false)}>
             Cancelar
           </CButton>
@@ -441,14 +578,16 @@ const Producto = () => {
       </CModal>
 
       {/* Modal de Confirmación para Eliminación Múltiple */}
-      <CModal visible={showDeleteMultipleConfirmation} onClose={() => setShowDeleteMultipleConfirmation(false)}>
-        <CModalHeader>
+      <CModal visible={showDeleteMultipleConfirmation} onClose={() => setShowDeleteMultipleConfirmation(false)} alignment="center">
+        <CModalHeader className="border-bottom-0">
           <CModalTitle>Confirmar Eliminación Múltiple</CModalTitle>
         </CModalHeader>
-        <CModalBody>
-          ¿Estás seguro de que deseas eliminar los {selectedItems.length} productos seleccionados?
+        <CModalBody className="text-center py-4">
+          <CIcon icon={cilTrash} size="3xl" className="text-danger mb-3" />
+          <p className="mb-0">¿Estás seguro de que deseas eliminar los {selectedItems.length} productos seleccionados?</p>
+          <p className="text-muted small">Esta acción no se puede deshacer.</p>
         </CModalBody>
-        <CModalFooter>
+        <CModalFooter className="border-top-0">
           <CButton color="secondary" onClick={() => setShowDeleteMultipleConfirmation(false)}>
             Cancelar
           </CButton>

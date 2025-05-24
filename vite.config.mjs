@@ -12,6 +12,14 @@ export default defineConfig(({ command, mode }) => {
     build: {
       outDir: 'dist',
       sourcemap: mode === 'development',
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor': ['react', 'react-dom', 'react-router-dom', 'react-redux'],
+            'coreui': ['@coreui/react', '@coreui/icons-react', '@coreui/icons'],
+          },
+        },
+      },
     },
     css: {
       postcss: {
@@ -38,8 +46,29 @@ export default defineConfig(({ command, mode }) => {
           '.js': 'jsx',
         },
       },
+      include: [
+        'react',
+        'react-dom',
+        'react-router-dom',
+        'react-redux',
+        '@coreui/react',
+        '@coreui/icons-react',
+        '@coreui/icons'
+      ],
     },
-    plugins: [react()],
+    plugins: [
+      react({
+        babel: {
+          presets: ['@babel/preset-react'],
+          plugins: [
+            ['@babel/plugin-transform-react-jsx', { 
+              runtime: 'automatic',
+              throwIfNamespace: false
+            }],
+          ],
+        },
+      }),
+    ],
     resolve: {
       alias: [
         {
@@ -57,6 +86,9 @@ export default defineConfig(({ command, mode }) => {
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, ''),
         },
+      },
+      hmr: {
+        overlay: true,
       },
     },
     define: {

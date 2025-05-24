@@ -21,7 +21,7 @@ import {
   CToastBody,   // Importar el cuerpo del toast 
 } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilPencil, cilTrash, cilX } from '@coreui/icons';
+import { cilPencil, cilTrash, cilX, cilList, cilPlus, cilFilter, cilSearch } from '@coreui/icons';
 import apiClient from '../../services/apiClient';
 import CategoriaList from '../../components/categoriaComp/CategoriaList';
 import SubcategoriaTable from '../../components/categoriaComp/SubcategoriaTable';
@@ -259,17 +259,16 @@ const Categoria = () => {
   };
 
   return (
-    <CContainer>
-
+    <CContainer fluid>
       <CToaster placement="bottom-end">
         {toasts.map((toast) => (
           <CToast
             key={toast.id}
-            visible={true} // Asegura que el toast sea visible
+            visible={true}
             autohide={true}
-            delay={3000} // Duración del toast en milisegundos
+            delay={3000}
             onClose={() => removeToast(toast.id)}
-            color={toast.type === 'success' ? 'success' : 'danger'} // Color del toast
+            color={toast.type === 'success' ? 'success' : 'danger'}
           >
             <CToastHeader closeButton>
               <strong className="me-auto">
@@ -280,6 +279,147 @@ const Categoria = () => {
           </CToast>
         ))}
       </CToaster>
+      <CCard className="mb-4">
+        <CCardHeader className="bg-body-secondary">
+          <CRow className="align-items-center">
+            <CCol>
+              <h4 className="mb-0">Gestión de Categorías</h4>
+            </CCol>
+          </CRow>
+        </CCardHeader>
+        <CCardBody>
+          {isLoading ? (
+            <div className="text-center my-3">
+              <CSpinner color="primary" />
+            </div>
+          ) : error ? (
+            <CAlert color="danger">{error}</CAlert>
+          ) : (
+            <CRow>
+              <CCol md={4} className="mb-3 mb-md-0">
+                <CCard className="h-100 border-0 shadow-sm">
+                  <CCardHeader className="bg-body-tertiary">
+                    <div className="d-flex justify-content-between align-items-center">
+                      <h5 className="mb-0">Categorías</h5>
+                      <CButton 
+                        color="primary"
+                        size="sm"
+                        onClick={() => setShowCreateCategoriaModal(true)}
+                      >
+                        <CIcon icon={cilPlus} className="me-2" />
+                        Nueva Categoría
+                      </CButton>
+                    </div>
+                  </CCardHeader>
+                  <CCardBody>
+                    <CInputGroup className="mb-3">
+                      <CFormInput
+                        placeholder="Buscar categoría..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                      {searchTerm && (
+                        <CButton color="secondary" variant="outline" onClick={clearSearch}>
+                          <CIcon icon={cilX} />
+                        </CButton>
+                      )}
+                    </CInputGroup>
+                    <CFormSelect
+                      className="mb-3"
+                      value={estadoFilter}
+                      onChange={(e) => setEstadoFilter(e.target.value)}
+                    >
+                      <option value="all">Todos los estados</option>
+                      <option value="activo">Activo</option>
+                      <option value="inactivo">Inactivo</option>
+                    </CFormSelect>
+                    <CategoriaList
+                      categorias={filteredCategorias}
+                      selectedCategoria={selectedCategoria}
+                      setSelectedCategoria={setSelectedCategoria}
+                      handleEdit={(categoria) => {
+                        setCategoriaToEdit(categoria);
+                        setShowEditCategoriaModal(true);
+                      }}
+                      handleDelete={handleDeleteCategoria}
+                    />
+                    <div className="mt-3">
+                      <CategoriaPagination
+                        currentPage={currentPage}
+                        setCurrentPage={setCurrentPage}
+                        totalPages={totalPages}
+                        itemsPerPage={itemsPerPage}
+                        handleItemsPerPageChange={(e) => {
+                          setItemsPerPage(Number(e.target.value));
+                          setCurrentPage(1);
+                        }}
+                      />
+                    </div>
+                  </CCardBody>
+                </CCard>
+              </CCol>
+              <CCol md={8}>
+                <CCard className="h-100 border-0 shadow-sm">
+                  <CCardHeader className="bg-body-tertiary">
+                    <div className="d-flex justify-content-between align-items-center">
+                      <h5 className="mb-0">
+                        {selectedCategoria 
+                          ? `Subcategorías de ${selectedCategoria.nombre}`
+                          : 'Subcategorías'
+                        }
+                      </h5>
+                      <CButton
+                        color="primary"
+                        size="sm"
+                        onClick={() => setShowCreateSubcategoriaModal(true)}
+                        disabled={!selectedCategoria}
+                      >
+                        <CIcon icon={cilPlus} className="me-2" />
+                        Nueva Subcategoría
+                      </CButton>
+                    </div>
+                  </CCardHeader>
+                  <CCardBody>
+                    <CInputGroup className="mb-3">
+                      <CFormInput
+                        placeholder="Buscar subcategoría..."
+                        value={subcategoriaSearchTerm}
+                        onChange={(e) => setSubcategoriaSearchTerm(e.target.value)}
+                      />
+                      {subcategoriaSearchTerm && (
+                        <CButton color="secondary" variant="outline" onClick={() => setSubcategoriaSearchTerm('')}>
+                          <CIcon icon={cilX} />
+                        </CButton>
+                      )}
+                    </CInputGroup>
+                    {selectedSubcategorias.length > 0 && (
+                      <div className="mb-3">
+                        <CButton
+                          color="danger"
+                          variant="outline"
+                          onClick={handleDeleteSelected}
+                        >
+                          Eliminar Seleccionados ({selectedSubcategorias.length})
+                        </CButton>
+                      </div>
+                    )}
+                    <SubcategoriaTable
+                      subcategorias={currentSubcategorias || []}
+                      selectedSubcategorias={selectedSubcategorias}
+                      setSelectedSubcategorias={setSelectedSubcategorias}
+                      handleEdit={(subcategoria) => {
+                        setSubcategoriaToEdit(subcategoria);
+                        setShowEditSubcategoriaModal(true);
+                      }}
+                      handleDelete={handleDeleteSubcategoria}
+                    />
+                  </CCardBody>
+                </CCard>
+              </CCol>
+            </CRow>
+          )}
+        </CCardBody>
+      </CCard>
 
       {/* Modales */}
       <CategoriaCreateModal
@@ -292,7 +432,7 @@ const Categoria = () => {
         setShowCreateModal={setShowCreateSubcategoriaModal}
         handleCreate={handleCreateSubcategoria}
         categorias={categorias}
-        selectedCategoriaId={selectedCategoria?.idCategoria} // Pasa el ID de la categoría seleccionada
+        selectedCategoriaId={selectedCategoria?.idCategoria}
       />
       <CategoriaEditModal
         showEditModal={showEditCategoriaModal}
@@ -314,138 +454,6 @@ const Categoria = () => {
         confirmDeleteSelected={confirmDeleteSelected}
         entityType={categoriaToDelete ? 'categoría' : 'subcategoría'}
       />
-
-      <CRow style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap' }}>
-
-        {/* Panel Izquierdo: Categorías */}
-        <CCol xs={12} md={4} style={{ flex: '1 1 auto', minWidth: '300px' }}>
-          <CCard>
-            <CCardHeader>Categorías</CCardHeader>
-            <CCardBody>
-              <CInputGroup className="mb-3">
-                <CFormInput
-                  placeholder="Buscar categoría..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                <CInputGroupText>
-                  <CButton color="transparent" size="sm" onClick={clearSearch}>
-                    <CIcon icon={cilX} />
-                  </CButton>
-                </CInputGroupText>
-              </CInputGroup>
-              <CButton
-                color="primary"
-                onClick={() => setShowCreateCategoriaModal(true)}
-                className="mb-3 w-100"
-              >
-                Nueva Categoría
-              </CButton>
-
-              {/* Selector de Estado */}
-              <CRow className="mb-3">
-                <CCol xs={12}>
-                  <CFormSelect
-                    value={estadoFilter}
-                    onChange={(e) => setEstadoFilter(e.target.value)}
-                    style={{ width: '200px' }}
-                  >
-                    <option value="all">Todos los estados</option>
-                    <option value="activo">ACTIVO</option>
-                    <option value="inactivo">INACTIVO</option>
-                  </CFormSelect>
-                </CCol>
-              </CRow>
-
-              {/* Lista de Categorías */}
-              <div style={{ maxHeight: '500px', overflowY: 'auto', flexGrow: 1 }}>
-                <CategoriaList
-                  categorias={filteredCategorias} // Usar filteredCategorias en lugar de filtrar directamente
-                  selectedCategoria={selectedCategoria}
-                  setSelectedCategoria={setSelectedCategoria}
-                  handleEdit={(categoria) => {
-                    setCategoriaToEdit(categoria);
-                    setShowEditCategoriaModal(true);
-                  }}
-                  handleDelete={handleDeleteCategoria}
-                />
-              </div>
-            </CCardBody>
-          </CCard>
-        </CCol>
-
-        {/* Panel Derecho: Subcategorías */}
-        <CCol xs={12} md={8} style={{ flex: '2 1 auto', minWidth: '400px' }}>
-          <CCard>
-            <CCardHeader>
-              <CRow className="mb-3">
-                <CCol xs={12}>
-                  <CInputGroup>
-                    <CFormInput
-                      placeholder="Buscar subcategoría..."
-                      value={subcategoriaSearchTerm}
-                      onChange={(e) => setSubcategoriaSearchTerm(e.target.value)}
-                    />
-                    <CInputGroupText>
-                      <CButton color="transparent" size="sm" onClick={() => setSubcategoriaSearchTerm('')}>
-                        <CIcon icon={cilX} />
-                      </CButton>
-                    </CInputGroupText>
-                  </CInputGroup>
-                </CCol>
-              </CRow>
-              Subcategorías de {selectedCategoria?.nombre || 'Ninguna'}
-            </CCardHeader>
-            <CCardBody>
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                {/* Botón "Nueva Subcategoría" */}
-                <CButton
-                  color="primary"
-                  disabled={!selectedCategoria}
-                  onClick={() => setShowCreateSubcategoriaModal(true)}
-                >
-                  Nueva Subcategoría
-                </CButton>
-
-                {/* Botón "Eliminar Seleccionados" */}
-                <div className="d-flex justify-content-start mb-3">
-                  {selectedSubcategorias.length > 0 && (
-                    <CButton
-                      color="danger"
-                      onClick={handleDeleteSelected} // Conecta el botón con la función
-                    >
-                      Eliminar Seleccionados ({selectedSubcategorias.length})
-                    </CButton>
-                  )}
-                </div>
-              </div>
-
-
-
-              <SubcategoriaTable
-                subcategorias={currentSubcategorias || []} // Asegúrate de que sea un array vacío si no hay datos
-                selectedSubcategorias={selectedSubcategorias}
-                setSelectedSubcategorias={setSelectedSubcategorias}
-                handleEdit={(subcategoria) => {
-                  setSubcategoriaToEdit(subcategoria);
-                  setShowEditSubcategoriaModal(true);
-                }}
-                handleDelete={handleDeleteSubcategoria}
-              />
-              <CategoriaPagination
-                currentPage={currentPage}
-                setCurrentPage={setCurrentPage}
-                totalPages={totalPages}
-                itemsPerPage={itemsPerPage}
-                handleItemsPerPageChange={(e) => {
-                  setItemsPerPage(Number(e.target.value));
-                  setCurrentPage(1); // Reinicia la página actual al cambiar la cantidad de elementos
-                }}
-              />
-            </CCardBody>
-          </CCard>
-        </CCol>
-      </CRow>
     </CContainer>
   );
 };

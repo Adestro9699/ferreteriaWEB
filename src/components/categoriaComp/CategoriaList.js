@@ -9,7 +9,7 @@ import {
   CBadge,
 } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilChevronBottom, cilChevronTop } from '@coreui/icons';
+import { cilChevronBottom, cilChevronTop, cilPencil, cilTrash } from '@coreui/icons';
 
 const CategoriaList = ({ categorias, selectedCategoria, setSelectedCategoria, handleEdit, handleDelete }) => {
   // Estado para controlar qué categoría está expandida
@@ -26,69 +26,66 @@ const CategoriaList = ({ categorias, selectedCategoria, setSelectedCategoria, ha
 
   return (
     <div>
-      <CListGroup>
+      <CListGroup className="border-0">
         {categorias.map((categoria) => (
-          <div key={categoria.idCategoria}>
-            {/* Encabezado de la categoría */}
+          <div key={categoria.idCategoria} className="mb-2">
             <CListGroupItem
               active={selectedCategoria?.idCategoria === categoria.idCategoria}
               onClick={() => {
                 setSelectedCategoria(categoria);
-                toggleExpansion(categoria.idCategoria); // Alternar expansión
+                toggleExpansion(categoria.idCategoria);
               }}
-              style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+              className="d-flex justify-content-between align-items-center rounded shadow-sm border-0 bg-body text-body-emphasis px-3 py-2"
+              style={{ cursor: 'pointer', transition: 'box-shadow 0.2s', minHeight: '56px' }}
             >
-              <span>{categoria.nombre}</span>
-              <CButton
-  style={{
-    color:
-      document.documentElement.getAttribute('data-coreui-theme') === 'dark'
-        ? '#ffffff' // Color blanco para modo oscuro
-        : '#000000', // Color negro para modo claro
-  }}
-  size="sm"
-  onClick={(e) => {
-    e.stopPropagation(); // Evitar que el clic afecte a setSelectedCategoria
-    toggleExpansion(categoria.idCategoria);
-  }}
->
-  <CIcon
-    icon={expandedCategoriaId === categoria.idCategoria ? cilChevronTop : cilChevronBottom}
-  />
-</CButton>
+              <span className="fw-semibold text-truncate" style={{ maxWidth: '120px' }}>{categoria.nombre}</span>
+              <div className="d-flex align-items-center gap-2">
+                <CBadge color={categoria.estado === 'ACTIVO' ? 'success' : 'danger'} className="px-2 py-1 fw-normal">
+                  {categoria.estado}
+                </CBadge>
+                <CButton
+                  color="link"
+                  size="sm"
+                  className="p-0"
+                  style={{ color: 'inherit' }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleExpansion(categoria.idCategoria);
+                  }}
+                  title={expandedCategoriaId === categoria.idCategoria ? 'Colapsar' : 'Expandir'}
+                >
+                  <CIcon icon={expandedCategoriaId === categoria.idCategoria ? cilChevronTop : cilChevronBottom} />
+                </CButton>
+              </div>
             </CListGroupItem>
-
-            {/* Submenú con descripción y estado */}
             <CCollapse visible={expandedCategoriaId === categoria.idCategoria}>
-              <CCard className="mt-2">
+              <CCard className="mt-2 border-0 shadow-sm bg-body-tertiary text-body-emphasis">
                 <CCardBody>
-                  <p><strong>Descripción:</strong> {categoria.descripcion}</p>
-                  <p>
-                    <strong>Estado:</strong>{' '}
-                    <CBadge color={categoria.estado === 'ACTIVO' ? 'success' : 'danger'}>
-                      {categoria.estado}
-                    </CBadge>
-                  </p>
-                  <div className="d-flex gap-2">
+                  <p className="mb-2"><strong>Descripción:</strong> {categoria.descripcion}</p>
+                  <div className="d-flex flex-wrap gap-2 flex-md-row flex-column align-items-stretch align-items-md-center w-100">
                     <CButton
                       color="warning"
                       size="sm"
+                      className="fw-semibold flex-fill"
                       onClick={(e) => {
-                        e.stopPropagation(); // Evitar que el clic afecte a setSelectedCategoria
+                        e.stopPropagation();
                         handleEdit(categoria);
                       }}
+                      title="Editar categoría"
                     >
-                      Editar
+                      <CIcon icon={cilPencil} className="me-1" />Editar
                     </CButton>
                     <CButton
                       color="danger"
                       size="sm"
+                      className="fw-semibold flex-fill"
                       onClick={(e) => {
-                        e.stopPropagation(); // Evitar que el clic afecte a setSelectedCategoria
+                        e.stopPropagation();
                         handleDelete(categoria.idCategoria);
                       }}
+                      title="Eliminar categoría"
                     >
-                      Eliminar
+                      <CIcon icon={cilTrash} className="me-1" />Eliminar
                     </CButton>
                   </div>
                 </CCardBody>

@@ -13,3 +13,55 @@
 
 // If you want to add custom CSS you can put it here
 @import "custom";
+
+// Custom styles for Dashboard
+
+// Icon circles for quick access links
+.icon-lg {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+// Hover effects for cards
+.hover-card {
+  transition: all 0.3s ease;
+  border: 1px solid #ebedef;
+  
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+    
+    .icon-lg {
+      transform: scale(1.1);
+    }
+  }
+}
+
+// Better spacing for dashboard stats
+.stats-card {
+  height: 100%;
+  .card-body {
+    padding: 1.5rem;
+  }
+}
+
+// Animation for dashboard loading
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.loading-pulse {
+  animation: pulse 1.5s infinite ease-in-out;
+}

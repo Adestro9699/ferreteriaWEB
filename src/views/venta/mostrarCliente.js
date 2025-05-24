@@ -83,11 +83,15 @@ const MostrarCliente = ({ visible, onClose, onSeleccionarCliente }) => {
       if (value.length > 0) {
         if (/^\d+$/.test(value)) {
           const response = await apiClient.get(`/clientes/buscarPorNumeroDocumento?numeroDocumento=${value}`);
+          const response = await apiClient.get(`/clientes/buscarPorNumeroDocumento?numeroDocumento=${value}`);
           if (response.data) {
             resultados = Array.isArray(response.data) ? response.data : [response.data];
           }
         } else {
           const endpoints = [
+            `/clientes/buscarPorNombre?nombres=${encodeURIComponent(value)}`,
+            `/clientes/buscarPorApellido?apellidos=${encodeURIComponent(value)}`,
+            `/clientes/buscarPorRazonSocial?razonSocial=${encodeURIComponent(value)}`,
             `/clientes/buscarPorNombre?nombres=${encodeURIComponent(value)}`,
             `/clientes/buscarPorApellido?apellidos=${encodeURIComponent(value)}`,
             `/clientes/buscarPorRazonSocial?razonSocial=${encodeURIComponent(value)}`,

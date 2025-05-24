@@ -3,11 +3,15 @@ import {
   CCard,
   CCardBody,
   CCardHeader,
+  CCardFooter,
   CCol,
   CRow,
   CProgress,
   CImage,
-  CSpinner, // Spinner de CoreUI
+  CSpinner,
+  CBadge,
+  CButton,
+  CTooltip
 } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import {
@@ -18,199 +22,357 @@ import {
   cilTruck,
   cilFolder,
   cilListRich,
+  cilMoney,
+  cilCart,
+  cilCalendar,
+  cilInfo,
+  cilImage
 } from '@coreui/icons';
-import apiClient from '../../services/apiClient'; // Importa tu apiClient
+import apiClient from '../../services/apiClient';
 
-//FORMULARIO QUUE APARECE AL AR CLICK EN MOSTRAR
+// FORMULARIO QUE APARECE AL DAR CLICK EN MOSTRAR
 
 const ProductoForm = ({ producto }) => {
   // Calcular el porcentaje de stock
-  const maxStock = 1000; // Stock máximo de referencia
-  const stockPercentage = (producto.stock / maxStock) * 100;
+  const maxStock = Math.max(producto.stock * 2, 100); // Valor dinámico para el stock máximo
+  const stockPercentage = Math.min((producto.stock / maxStock) * 100, 100);
 
   // Determinar el color de la barra de stock
   const getStockColor = () => {
-    if (stockPercentage < 25) return 'danger'; // Rojo
-    if (stockPercentage >= 25 && stockPercentage <= 74) return 'warning'; // Amarillo
-    return 'success'; // Verde
+    if (stockPercentage < 25) return 'danger';
+    if (stockPercentage >= 25 && stockPercentage <= 74) return 'warning';
+    return 'success';
+  };
+
+  // Determinar el badge de estado del producto
+  const getStatusBadge = () => {
+    switch (producto.estadoProducto) {
+      case 'ACTIVO':
+        return <CBadge color="success" shape="rounded-pill">Activo</CBadge>;
+      case 'INACTIVO':
+        return <CBadge color="secondary" shape="rounded-pill">Inactivo</CBadge>;
+      case 'PENDIENTE':
+        return <CBadge color="warning" shape="rounded-pill">Pendiente</CBadge>;
+      case 'BANEADO':
+        return <CBadge color="danger" shape="rounded-pill">Baneado</CBadge>;
+      default:
+        return <CBadge color="info" shape="rounded-pill">{producto.estadoProducto}</CBadge>;
+    }
   };
 
   // Extraer el nombre del archivo de la ruta completa
   const getFileNameFromPath = (path) => {
     if (!path) return null;
-    return path.split('\\').pop(); // Extrae el nombre del archivo de la ruta completa
+    return path.split(/[\\\/]/).pop(); // Modificado para manejar tanto / como \
+  };
+  
+  // Función para obtener la URL de imagen del servidor
+  const getImageUrl = (fileName) => {
+    if (!fileName) return null;
+    // Extraer solo el nombre del archivo si es una ruta completa
+    const justFileName = fileName.split(/[\\\/]/).pop();
+    // Usar la URL relativa al servidor
+    return `${apiClient.defaults.baseURL}/productos/imagen/${justFileName}`;
   };
 
   // Estados para manejar la URL de la imagen y el estado de carga
-  const [imageUrl, setImageUrl] = useState(null); // URL de la imagen
-  const [isLoading, setIsLoading] = useState(true); // Estado de carga
+  const [imageUrl, setImageUrl] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Efecto para cargar la imagen usando apiClient
+  // Formatear fecha
+  const formatDate = (dateString) => {
+    if (!dateString) return 'No disponible';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Efecto para cargar la imagen usando la URL directa
   useEffect(() => {
     const loadImage = async () => {
-      const fileName = getFileNameFromPath(producto.imagenURL);
-      if (fileName) {
-        try {
-          // Obtener la imagen como un Blob usando apiClient
-          const response = await apiClient.get(`/productos/imagen/${fileName}`, {
-            responseType: 'blob', // Indicar que la respuesta es un Blob
-          });
-
-          // Convertir el Blob en una URL válida
-          const blobUrl = URL.createObjectURL(response.data);
-          setImageUrl(blobUrl);
-        } catch (error) {
-          console.error('Error al cargar la imagen:', error);
-          setImageUrl(null); // No hay imagen disponible
-        } finally {
-          setIsLoading(false); // Finalizar la carga
+      if (producto.imagenURL) {
+        const fileName = getFileNameFromPath(producto.imagenURL);
+        if (fileName) {
+          try {
+            const response = await apiClient.get(`/productos/imagen/${fileName}`, {
+              responseType: 'blob',
+              withCredentials: true
+            });
+            const blobUrl = URL.createObjectURL(response.data);
+            setImageUrl(blobUrl);
+          } catch (error) {
+            console.error('Error al cargar la imagen:', error);
+            setImageUrl(null);
+          }
         }
-      } else {
-        setIsLoading(false); // No hay imagen para cargar
       }
+      setIsLoading(false);
     };
 
     loadImage();
+
+    // Limpiar el blob al desmontar
+    return () => {
+      if (imageUrl && imageUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(imageUrl);
+      }
+    };
   }, [producto.imagenURL]);
 
   return (
-    <CCard className="mb-3 shadow-sm">
-      <CCardHeader className="bg-gradient-primary text-white">
-        <h5 className="mb-0">Detalles del Producto</h5>
+    <CCard className="shadow border-0 bg-body">
+      <CCardHeader className="d-flex flex-wrap justify-content-between align-items-center py-3 bg-body-secondary text-body-emphasis">
+        <div className="d-flex align-items-center mb-2 mb-sm-0">
+          <CIcon icon={cilInfo} className="me-2" size="lg" />
+          <h5 className="mb-0 fw-bold">Detalle del Producto</h5>
+        </div>
+        <div>{getStatusBadge()}</div>
       </CCardHeader>
-      <CCardBody>
-        {/* Título */}
-        <h4 className="mb-4">{producto.nombreProducto}</h4>
+      
+      <CCardBody className="p-3 p-md-4 bg-body text-body">
+        {/* Encabezado con nombre del producto */}
+        <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4 pb-3 border-bottom">
+          <h3 className="fw-bold text-primary mb-2 mb-sm-0 fs-4 fs-md-3">{producto.nombreProducto}</h3>
+          <h4 className="text-success fw-bold mb-0 fs-5 fs-md-4">
+            <CIcon icon={cilMoney} className="me-2" />
+            S/. {Number(producto.precio).toFixed(2)}
+          </h4>
+        </div>
 
-        {/* Sección de imagen, descripción y detalles */}
-        <CRow className="mb-4">
+        {/* Sección de imagen y detalles principales */}
+        <CRow className="mb-4 g-3">
           {/* Columna izquierda: Imagen */}
-          <CCol md={4} className="mb-3 mb-md-0 d-flex justify-content-center align-items-center">
-            {isLoading ? (
-              <CSpinner color="primary" /> // Spinner de carga mientras se carga la imagen
-            ) : imageUrl ? (
-              <CImage
-                src={imageUrl}
-                alt={producto.nombreProducto}
-                fluid
-                className="rounded"
-                onError={(e) => {
-                  e.target.src = 'https://placehold.co/300x300'; // Mostrar una imagen de respaldo si falla la carga
-                }}
-              />
-            ) : (
-              <CImage
-                src="https://placehold.co/300x300" // Imagen por defecto si no hay imagen
-                alt="Imagen no disponible"
-                fluid
-                className="rounded"
-              />
-            )}
+          <CCol xs={12} md={4}>
+            <CCard className="border-0 shadow-sm h-100 bg-body-secondary text-body-emphasis">
+              <CCardBody className="p-2 p-md-3 d-flex justify-content-center align-items-center">
+                {isLoading ? (
+                  <div className="text-center py-4">
+                    <CSpinner color="primary" />
+                    <div className="mt-2 text-muted">Cargando imagen...</div>
+                  </div>
+                ) : imageUrl ? (
+                  <CImage
+                    src={imageUrl}
+                    alt={producto.nombreProducto}
+                    fluid
+                    className="rounded"
+                    style={{ 
+                      maxHeight: '200px', 
+                      width: '100%',
+                      objectFit: 'contain',
+                      transition: 'transform 0.3s ease',
+                      cursor: 'pointer'
+                    }}
+                    onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
+                    onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+                    onError={(e) => {
+                      e.target.src = 'https://placehold.co/300x300?text=Sin+imagen';
+                    }}
+                  />
+                ) : (
+                  <div className="text-center py-4">
+                    <CIcon icon={cilImage} size="3xl" className="text-muted mb-3" />
+                    <div className="text-muted">Imagen no disponible</div>
+                  </div>
+                )}
+              </CCardBody>
+            </CCard>
           </CCol>
 
-          {/* Columna derecha: Descripción y Detalles */}
-          <CCol md={8}>
-            {/* Descripción */}
-            <div className="mb-4">
-              <h6 className="mb-3">
-                <CIcon icon={cilListRich} className="me-2" />
-                DESCRIPCIÓN
-              </h6>
-              <p style={{ paddingLeft: '20px' }}>{producto.descripcion}</p>
-            </div>
-
-            {/* Detalles */}
-            <div>
-              <h6 className="mb-3">
-                <CIcon icon={cilBarcode} className="me-2" />
-                DETALLES
-              </h6>
-              <div className="d-flex align-items-center mb-2" style={{ paddingLeft: '20px' }}>
-                <CIcon icon={cilBarcode} className="me-2" />
-                <div>
-                  <strong>Código de Barras:</strong> {producto.codigoBarra || 'No especificado'}
-                </div>
-              </div>
-              <div className="d-flex align-items-center mb-2" style={{ paddingLeft: '20px' }}>
-                <CIcon icon={cilTag} className="me-2" />
-                <div>
-                  <strong>SKU:</strong> {producto.codigoSKU || 'No especificado'}
-                </div>
-              </div>
-              <div className="d-flex align-items-center mb-2" style={{ paddingLeft: '20px' }}>
-                <CIcon icon={cilIndustry} className="me-2" />
-                <div>
-                  <strong>Marca:</strong> {producto.marca || 'No especificado'}
-                </div>
-              </div>
-              <div className="d-flex align-items-center mb-2" style={{ paddingLeft: '20px' }}>
-                <CIcon icon={cilLayers} className="me-2" />
-                <div>
-                  <strong>Material:</strong> {producto.material || 'No especificado'}
-                </div>
-              </div>
-            </div>
+          {/* Columna derecha: Detalles principales */}
+          <CCol xs={12} md={8}>
+            <CCard className="border-0 shadow-sm h-100 bg-body-secondary text-body-emphasis">
+              <CCardHeader className="bg-body-tertiary text-body-emphasis">
+                <h6 className="mb-0 fw-bold">
+                  <CIcon icon={cilListRich} className="me-2 text-primary" />
+                  Descripción del Producto
+                </h6>
+              </CCardHeader>
+              <CCardBody className="p-2 p-md-3">
+                <p className="mb-3 pb-2 border-bottom small text-break">
+                  {producto.descripcion || "No hay descripción disponible."}
+                </p>
+                
+                <CRow className="g-2">
+                  <CCol xs={12} sm={6}>
+                    <div className="mb-3">
+                      <div className="d-flex align-items-center mb-1">
+                        <CIcon icon={cilBarcode} className="me-2 text-primary" />
+                        <span className="fw-semibold small">Código de Barras:</span>
+                      </div>
+                      <div className="ms-4 small text-break">{producto.codigoBarra || 'No especificado'}</div>
+                    </div>
+                    <div className="mb-3">
+                      <div className="d-flex align-items-center mb-1">
+                        <CIcon icon={cilTag} className="me-2 text-primary" />
+                        <span className="fw-semibold small">SKU:</span>
+                      </div>
+                      <div className="ms-4 small text-break">{producto.codigoSKU || 'No especificado'}</div>
+                    </div>
+                  </CCol>
+                  <CCol xs={12} sm={6}>
+                    <div className="mb-3">
+                      <div className="d-flex align-items-center mb-1">
+                        <CIcon icon={cilIndustry} className="me-2 text-primary" />
+                        <span className="fw-semibold small">Marca:</span>
+                      </div>
+                      <div className="ms-4 small text-break">{producto.marca || 'No especificado'}</div>
+                    </div>
+                    <div className="mb-3">
+                      <div className="d-flex align-items-center mb-1">
+                        <CIcon icon={cilLayers} className="me-2 text-primary" />
+                        <span className="fw-semibold small">Material:</span>
+                      </div>
+                      <div className="ms-4 small text-break">{producto.material || 'No especificado'}</div>
+                    </div>
+                  </CCol>
+                </CRow>
+              </CCardBody>
+            </CCard>
           </CCol>
         </CRow>
 
-        {/* Sección de detalles adicionales */}
-        <CRow className="mb-4">
-          <CCol md={6} className="mb-3 mb-md-0">
-            <h6 className="mb-3">
-              <CIcon icon={cilFolder} className="me-2" />
-              INFORMACIÓN DE MEDIDA
-            </h6>
-            <div className="d-flex align-items-center mb-2" style={{ paddingLeft: '20px' }}>
-              <strong>Unidad de Medida:&nbsp;</strong> {producto.unidadMedida?.nombreUnidad || "No especificado"}
-            </div>
-          </CCol>
-          <CCol md={6}>
-            <h6 className="mb-3">
-              <CIcon icon={cilTruck} className="me-2" />
-              INFORMACIÓN DEL PROVEEDOR
-            </h6>
-            <div className="d-flex align-items-center mb-2" style={{ paddingLeft: '20px' }}>
-              <strong>Proveedor:&nbsp;</strong> {producto.proveedor?.nombre || "No especificado"}
-            </div>
-          </CCol>
-        </CRow>
+        {/* Sección inferior con información adicional */}
+        <CRow className="g-3">
+          {/* Columna izquierda: Categorías y Medidas */}
+          <CCol xs={12} lg={7} className="mb-3 mb-lg-0">
+            <CCard className="border-0 shadow-sm h-100 bg-body-secondary text-body-emphasis">
+              <CCardHeader className="bg-body-tertiary text-body-emphasis">
+                <h6 className="mb-0 fw-bold">
+                  <CIcon icon={cilFolder} className="me-2 text-primary" />
+                  Categorización y Medidas
+                </h6>
+              </CCardHeader>
+              <CCardBody className="p-2 p-md-3">
+                <CRow className="g-2">
+                  <CCol xs={12} sm={6}>
+                    <div className="mb-3">
+                      <div className="d-flex align-items-center mb-1">
+                        <CIcon icon={cilFolder} className="me-2 text-primary" />
+                        <span className="fw-semibold small">Categoría:</span>
+                      </div>
+                      <CBadge color="info" className="ms-4 py-1 py-md-2 px-2 px-md-3 small text-break">
+                        {producto.subcategoria?.categoria?.nombre || "No especificado"}
+                      </CBadge>
+                    </div>
+                    <div className="mb-3">
+                      <div className="d-flex align-items-center mb-1">
+                        <CIcon icon={cilListRich} className="me-2 text-primary" />
+                        <span className="fw-semibold small">Subcategoría:</span>
+                      </div>
+                      <CBadge color="light" className="ms-4 py-1 py-md-2 px-2 px-md-3 text-dark border small text-break">
+                        {producto.subcategoria?.nombre || "No especificado"}
+                      </CBadge>
+                    </div>
+                  </CCol>
+                  <CCol xs={12} sm={6}>
+                    <div className="mb-3">
+                      <div className="d-flex align-items-center mb-1">
+                        <CIcon icon={cilTruck} className="me-2 text-primary" />
+                        <span className="fw-semibold small">Proveedor:</span>
+                      </div>
+                      <div className="ms-4 small text-break">{producto.proveedor?.nombre || "No especificado"}</div>
+                    </div>
+                    <div className="mb-3">
+                      <div className="d-flex align-items-center mb-1">
+                        <CIcon icon={cilLayers} className="me-2 text-primary" />
+                        <span className="fw-semibold small">Unidad de Medida:</span>
+                      </div>
+                      <div className="ms-4 small text-break">{producto.unidadMedida?.nombreUnidad || "No especificado"}</div>
+                    </div>
+                  </CCol>
+                </CRow>
 
-        {/* Sección de categorías */}
-        <CRow className="mb-4">
-          <CCol md={6} className="mb-3 mb-md-0">
-            <h6 className="mb-3">
-              <CIcon icon={cilFolder} className="me-2" />
-              CATEGORÍA
-            </h6>
-            <p style={{ paddingLeft: '20px' }}>{producto.subcategoria?.categoria?.nombre || "No especificado"}</p>
+                <div className="mt-2">
+                  <div className="d-flex align-items-center mb-1">
+                    <CIcon icon={cilCalendar} className="me-2 text-primary" />
+                    <span className="fw-semibold small">Última actualización:</span>
+                  </div>
+                  <div className="ms-4 small text-break">{formatDate(producto.fechaModificacion)}</div>
+                </div>
+              </CCardBody>
+            </CCard>
           </CCol>
-          <CCol md={6}>
-            <h6 className="mb-3">
-              <CIcon icon={cilListRich} className="me-2" />
-              SUBCATEGORÍA
-            </h6>
-            <p style={{ paddingLeft: '20px' }}>{producto.subcategoria?.nombre || "No especificado"}</p>
-          </CCol>
-        </CRow>
 
-        {/* Sección de stock y precio */}
-        <CRow>
-          <CCol md={6} className="mb-3 mb-md-0">
-            <h6 className="mb-3">Stock Disponible</h6>
-            <CProgress
-              value={stockPercentage}
-              max={100}
-              color={getStockColor()}
-              className="mb-2"
-            />
-            <small>{producto.stock} unidades disponibles</small>
-          </CCol>
-          <CCol md={6}>
-            <h6 className="mb-3">Precio</h6>
-            <h4 className="text-success">S/. {producto.precio}</h4>
+          {/* Columna derecha: Stock */}
+          <CCol xs={12} lg={5}>
+            <CCard className="border-0 shadow-sm h-100 bg-body-secondary text-body-emphasis">
+              <CCardHeader className="bg-body-tertiary text-body-emphasis">
+                <h6 className="mb-0 fw-bold">
+                  <CIcon icon={cilCart} className="me-2 text-primary" />
+                  Disponibilidad en Inventario
+                </h6>
+              </CCardHeader>
+              <CCardBody className="p-2 p-md-3 d-flex flex-column">
+                <div className="text-center mb-3">
+                  <div className="mb-2">
+                    <span className={`h3 fw-bold text-${getStockColor()}`}>{producto.stock}</span>
+                    <span className="ms-2 text-muted small">unidades disponibles</span>
+                  </div>
+                  
+                  <CProgress 
+                    value={stockPercentage} 
+                    max={100} 
+                    color={getStockColor()} 
+                    className="mb-3" 
+                    height={15}
+                  />
+                  
+                  <CBadge color={getStockColor()} shape="rounded-pill" className="px-3 py-2">
+                    {stockPercentage < 25 
+                      ? 'Stock Bajo' 
+                      : stockPercentage <= 74 
+                        ? 'Stock Medio' 
+                        : 'Stock Alto'
+                    }
+                  </CBadge>
+                </div>
+                
+                <div className="mt-auto d-grid gap-2 d-md-flex justify-content-center">
+                  <CTooltip content="Solo disponible para administradores" placement="top">
+                    <CButton 
+                      color="primary" 
+                      variant="outline" 
+                      className="mb-2 mb-md-0 w-100 w-md-auto"
+                      disabled
+                      size="sm"
+                    >
+                      <CIcon icon={cilTag} className="me-2" />
+                      <span className="d-none d-md-inline">Ver historial de precios</span>
+                      <span className="d-inline d-md-none">Historial precios</span>
+                    </CButton>
+                  </CTooltip>
+                  <CTooltip content="Solo disponible para administradores" placement="top">
+                    <CButton 
+                      color="success" 
+                      variant="outline"
+                      className="w-100 w-md-auto"
+                      disabled
+                      size="sm"
+                    >
+                      <CIcon icon={cilCart} className="me-2" />
+                      <span className="d-none d-md-inline">Ver ventas del producto</span>
+                      <span className="d-inline d-md-none">Ventas</span>
+                    </CButton>
+                  </CTooltip>
+                </div>
+              </CCardBody>
+            </CCard>
           </CCol>
         </CRow>
       </CCardBody>
+
+      <CCardFooter className="bg-body-secondary p-3 text-body-emphasis">
+        <small className="d-flex align-items-center">
+          <CIcon icon={cilInfo} className="me-2" size="sm" />
+          ID del Producto: {producto.idProducto}
+        </small>
+      </CCardFooter>
     </CCard>
   );
 };

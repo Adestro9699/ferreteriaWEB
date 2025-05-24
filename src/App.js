@@ -1,21 +1,45 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import { HashRouter, Route, Routes, Navigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { CSpinner } from '@coreui/react';
+import { CSpinner, CAlert } from '@coreui/react';
 import './scss/style.scss';
 import apiClient from './services/apiClient'; // Importa tu apiClient
 import { loginSuccess } from './actions/authActions'; // Importa la acción de autenticación
 import ProtectedRoute from './components/ProtectedRoute'; // Importa el componente ProtectedRoute
 
+// Componente de error para la carga dinámica
+const ErrorBoundary = ({ children }) => {
+  const [hasError, setHasError] = useState(false);
+  const [error, setError] = useState(null);
+
+  if (hasError) {
+    return (
+      <CAlert color="danger" className="m-3">
+        <h4>Error al cargar el componente</h4>
+        <p>{error?.message || 'Ha ocurrido un error inesperado'}</p>
+      </CAlert>
+    );
+  }
+
+  return children;
+};
+
+// Componente de carga
+const LoadingSpinner = () => (
+  <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
+    <CSpinner color="primary" />
+  </div>
+);
+
 //COMPONENTE QUE PERMITE UNA VISTA SE RENDERICE SI TIENE LOS PERMISOS
 
-// Componentes lazy-loaded
+// Componentes lazy-loaded con manejo de errores mejorado
 const DefaultLayout = React.lazy(() => import('./layout/DefaultLayout'));
 const Login = React.lazy(() => import('./views/pages/login/Login'));
 const Register = React.lazy(() => import('./views/pages/register/Register'));
 const Page404 = React.lazy(() => import('./views/pages/page404/Page404'));
 const Page500 = React.lazy(() => import('./views/pages/page500/Page500'));
-const AccesoDenegado = React.lazy(() => import('./views/pages/page404/Page404')); // Importa la página de acceso denegado
+const AccesoDenegado = React.lazy(() => import('./views/pages/page404/Page404'));
 
 // Importar componentes de las vistas
 const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard'));
@@ -41,46 +65,98 @@ const App = () => {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
   const userRole = useSelector((state) => state.auth.role);
   const userPermissions = useSelector((state) => state.auth.permissions);
-  const [isLoading, setIsLoading] = useState(true); // Estado para manejar la carga inicial
+  const [isLoading, setIsLoading] = useState(true);
+  const [sessionChecked, setSessionChecked] = useState(false);
 
   // Verificar la autenticación al cargar la aplicación
   useEffect(() => {
     const token = localStorage.getItem('token');
+    
+    if (sessionChecked) {
+      return;
+    }
+
     if (token && !isAuthenticated) {
-      // Si hay un token pero el estado no está autenticado, intenta restaurar la sesión
-      apiClient.get('/user') // Endpoint para obtener los datos del usuario
-        .then((response) => {
-          const { user, trabajador, role, permissions } = response.data;
+      setIsLoading(true);
+      
+      try {
+        const userData = JSON.parse(localStorage.getItem('user') || '{}');
+        const trabajadorData = JSON.parse(localStorage.getItem('trabajador') || '{}');
+        const rol = localStorage.getItem('rol');
+        const permissions = JSON.parse(localStorage.getItem('permissions') || '{}');
+        
+        if (userData.idUsuario && rol) {
           dispatch(
             loginSuccess({
               token,
-              user,
-              trabajador,
-              role,
+              user: userData,
+              trabajador: trabajadorData,
+              role: rol,
               permissions: permissions || {},
             })
           );
-        })
-        .catch((error) => {
-          console.error('Error al restaurar la sesión:', error);
-          localStorage.removeItem('token'); // Limpiar el token si hay un error
-        })
-        .finally(() => {
-          setIsLoading(false); // Finalizar la carga
-        });
+          
+          apiClient.get('/usuarios')
+            .catch((error) => {
+              console.error('Token inválido detectado:', error);
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
+              localStorage.removeItem('trabajador');
+              localStorage.removeItem('rol');
+              localStorage.removeItem('permissions');
+              dispatch({ type: 'LOGOUT' });
+              window.location.href = '/#/login';
+            });
+            
+          setIsLoading(false);
+          setSessionChecked(true);
+          return;
+        }
+        
+        apiClient.get('/usuarios')
+          .then((response) => {
+              throw new Error('Datos de sesión incompletos, se requiere reinicio de sesión');
+          })
+          .catch((error) => {
+            console.error('Error al restaurar la sesión:', error);
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('trabajador');
+            localStorage.removeItem('rol');
+            localStorage.removeItem('permissions');
+            dispatch({ type: 'LOGOUT' });
+            window.location.href = '/#/login';
+          })
+          .finally(() => {
+            setIsLoading(false);
+            setSessionChecked(true);
+          });
+      } catch (error) {
+        console.error('Error al restaurar sesión desde localStorage:', error);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('trabajador');
+        localStorage.removeItem('rol');
+        localStorage.removeItem('permissions');
+        dispatch({ type: 'LOGOUT' });
+        setIsLoading(false);
+        setSessionChecked(true);
+        window.location.href = '/#/login';
+      }
     } else {
-      setIsLoading(false); // Finalizar la carga si no hay token
+      setIsLoading(false);
+      setSessionChecked(true);
     }
-  }, [dispatch, isAuthenticated]);
+  }, [dispatch, isAuthenticated, sessionChecked]);
 
-  // Mostrar un spinner mientras se verifica la autenticación
   if (isLoading) {
-    return <CSpinner color="primary" />;
+    return <LoadingSpinner />;
   }
 
   return (
     <HashRouter>
-      <Suspense fallback={<CSpinner color="primary" />}>
+      <ErrorBoundary>
+        <Suspense fallback={<LoadingSpinner />}>
         <Routes>
           {/* Rutas públicas */}
           <Route path="/login" element={<Login />} />
@@ -89,198 +165,33 @@ const App = () => {
           <Route path="/500" element={<Page500 />} />
           <Route path="/acceso-denegado" element={<AccesoDenegado />} />
 
-          {/* Ruta raíz */}
-          <Route
-            path="/"
-            element={
-              isAuthenticated ? (
-                <ProtectedRoute requiredPermissions={[]}>
-                  <DefaultLayout />
-                </ProtectedRoute>
-              ) : (
-                <Navigate to="/login" />
-              )
-            }
-          >
-            {/* Rutas secundarias protegidas */}
-            <Route
-              path="dashboard"
-              element={
-                <ProtectedRoute requiredPermissions={[]}>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="producto"
-              element={
-                <ProtectedRoute requiredPermissions={[
-                  '/productos',
-                  '/productos/:id:GET',
-                  '/productos/:id:PUT',
-                  '/productos/:id:DELETE',
-                  '/productos/upload',
-                  '/productos/imagen/{fileName:.+}',
-                  '/categorias',
-                  '/subcategorias',
-                  '/proveedores',
-                  '/unidades-medida']}>
-                  <Producto />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="categorias"
-              element={
-                <ProtectedRoute requiredPermissions={[
-                  '/categorias', // Permiso para acceder a la vista de categorías
-                  '/categorias/:id:GET', // Permiso para obtener una categoría por ID
-                  '/categorias/:id:PUT', // Permiso para actualizar una categoría por ID
-                  '/categorias/:id:DELETE', // Permiso para eliminar una categoría por ID
-                  '/subcategorias', // Permiso para acceder a subcategorías
-                  '/subcategorias/:id:GET', // Permiso para obtener una subcategoría por ID
-                  '/subcategorias/:id:PUT', // Permiso para actualizar una subcategoría por ID
-                  '/subcategorias/:id:DELETE', // Permiso para eliminar una subcategoría por ID
-                ]}>
-                  <Categoria />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="proveedor"
-              element={
-                <ProtectedRoute requiredPermissions={[
-                  '/proveedores',
-                  '/proveedores/:id:GET',
-                  '/proveedores/:id:PUT',
-                  '/proveedores/:id:DELETE',
-                ]}>
-                  <Proveedor />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="venta"
-              element={
-                <ProtectedRoute requiredPermissions={['/ventas', '/listarVenta']}>
-                  <Venta />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="usuario"
-              element={
-                <ProtectedRoute requiredPermissions={['/usuarios', '/rolesYpermisos']}>
-                  <Usuario />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="cliente"
-              element={
-                <ProtectedRoute requiredPermissions={['/clientes', '/creditos']}>
-                  <Cliente />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="rolesYpermisos/:usuarioId?"
-              element={
-                <ProtectedRoute requiredPermissions={['/rolesYpermisos', '/usuarios']}>
-                  <RolesYPermisos />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="caja"
-              element={
-                <ProtectedRoute requiredPermissions={[
-                  '/cajas',
-                  '/cajas/:id:GET',
-                  '/cajas/:id:PUT',
-                  '/cajas/abrir:POST',
-                  '/cajas/cerrar:POST',
-                  '/cajas/:idCaja/entrada-manual:POST',
-                  '/cajas/:idCaja/salida-manual:POST',
-                ]}>
-                  <Caja />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="empresa"
-              element={
-                <ProtectedRoute requiredPermissions={['/empresa']}>
-                  <Empresa />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="listarVenta"
-              element={
-                <ProtectedRoute requiredPermissions={['/listarVenta']}>
-                  <ListarVenta />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="venta/detalle/:id"
-              element={
-                <ProtectedRoute requiredPermissions={['/ventas/detalle']}>
-                  <DetalleVentaPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="utilidad"
-              element={
-                <ProtectedRoute requiredPermissions={[
-
-                ]}>
-                  <Utilidad />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="compra"
-              element={
-                <ProtectedRoute requiredPermissions={[
-                  '/compras',
-                  '/compras/:id:GET',
-                  '/compras/:id:PUT',
-                  '/compras/:id:DELETE',
-                  '/detalles-compras',
-                  '/detalles-compras/:id:GET',
-                  '/detalles-compras/:id:PUT',
-                  '/detalles-compras/:id:DELETE',
-                ]}>
-                  <Compra />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="cotizacion"
-              element={
-                <ProtectedRoute requiredPermissions={[ '/cotizacion']}> 
-                  <Cotizacion />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="cotizaciones/:id/detalle"
-              element={
-                <ProtectedRoute requiredPermissions={['/cotizaciones']}>
-                  <DetalleCotizacionPage />
-                </ProtectedRoute>
-              }
-            />
-
+            {/* Rutas protegidas */}
+            <Route element={<ProtectedRoute />}>
+              <Route element={<DefaultLayout />}>
+                <Route path="/" element={<Navigate to="/dashboard" />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/producto" element={<Producto />} />
+                <Route path="/categorias" element={<Categoria />} />
+                <Route path="/proveedor" element={<Proveedor />} />
+                <Route path="/venta" element={<Venta />} />
+                <Route path="/usuario" element={<Usuario />} />
+                <Route path="/cliente" element={<Cliente />} />
+                <Route path="/rolesYpermisos/:usuarioId?" element={<RolesYPermisos />} />
+                <Route path="/caja" element={<Caja />} />
+                <Route path="/empresa" element={<Empresa />} />
+                <Route path="/listarVenta" element={<ListarVenta />} />
+                <Route path="/venta/detalle/:id" element={<DetalleVentaPage />} />
+                <Route path="/utilidad" element={<Utilidad />} />
+                <Route path="/compra" element={<Compra />} />
+                <Route path="/cotizacion" element={<Cotizacion />} />
+              </Route>
           </Route>
-          {/* Ruta para manejar rutas no encontradas */}
-          <Route path="*" element={<Page404 />} />
+
+            {/* Ruta por defecto */}
+            <Route path="*" element={<Navigate to="/404" />} />
         </Routes>
       </Suspense>
+      </ErrorBoundary>
     </HashRouter>
   );
 };
