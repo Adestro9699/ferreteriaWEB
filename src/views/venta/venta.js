@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import CIcon from '@coreui/icons-react';
 import { cilTrash, cilSearch, cilSave, cilChevronBottom } from '@coreui/icons';
-import { cilTrash, cilSearch, cilSave, cilChevronBottom } from '@coreui/icons';
 import {
   CCard,
   CCardBody,
@@ -26,21 +25,13 @@ import {
   CDropdownToggle,
   CDropdownMenu,
   CDropdownItem,
-  CCol,
-  CInputGroup,
-  CInputGroupText,
-  CDropdown,
-  CDropdownToggle,
-  CDropdownMenu,
-  CDropdownItem,
 } from '@coreui/react';
-import ModalProductos from './modalProducto'; // Importamos el modal
-import CompletarVenta from './completarVenta'; // Importamos el modal
-import apiClient from '../../services/apiClient'; // Importamos el cliente de API
+import ModalProductos from './modalProducto';
+import CompletarVenta from './completarVenta';
+import apiClient from '../../services/apiClient';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 const DetalleVenta = () => {
-  // Agrega al inicio del componente, después de los otros estados
   const location = useLocation();
   const navigate = useNavigate();
   const [modoEdicion, setModoEdicion] = useState(false);
@@ -49,18 +40,17 @@ const DetalleVenta = () => {
   const [completarVentaModalVisible, setCompletarVentaModalVisible] = useState(false);
   const [productosVendidos, setProductosVendidos] = useState([]);
   const [datosComplementarios, setDatosComplementarios] = useState({
-    tipoPagoId: null, // Cambiar a tipoPagoId
-    empresaId: null, // Cambiar a empresaId
-    clienteId: null, // Cambiar a clienteId
-    tipoComprobanteId: null, // Cambiar a tipoComprobanteId
-    trabajadorId: null, // Cambiar a trabajadorId
-    fecha: new Date().toISOString().slice(0, 19), // Fecha en formato LocalDateTime
-    moneda: 'SOLES' //valor por defecto soles
+    tipoPagoId: null,
+    empresaId: null,
+    clienteId: null,
+    tipoComprobanteId: null,
+    trabajadorId: null,
+    fecha: new Date().toISOString().slice(0, 19),
+    moneda: 'SOLES'
   });
   const [reiniciarModalProductos, setReiniciarModalProductos] = useState(null);
   const [reiniciarModalDatosComplementarios, setReiniciarModalDatosComplementarios] = useState(null);
   const [toast, setToast] = useState({ visible: false, message: '', color: 'danger' });
-  const [codigoCotizacion, setCodigoCotizacion] = useState('');
   const [codigoCotizacion, setCodigoCotizacion] = useState('');
 
   const monedas = {
@@ -77,16 +67,14 @@ const DetalleVenta = () => {
     }, 3000);
   };
 
-  // Esta función se pasará al componente modalProducto
   const registrarReinicioModalProductos = (reiniciarFn) => {
     setReiniciarModalProductos(() => reiniciarFn);
   };
 
-  // Esta función se pasará al componente completarVenta
   const registrarReinicioModalDatosComplementarios = (reiniciarFn) => {
     setReiniciarModalDatosComplementarios(() => reiniciarFn);
   };
-  // Función para manejar cambios en la cantidad
+
   const handleCantidadChange = (index, value) => {
     if (value === '') {
       setProductosVendidos((prevProductos) => {
@@ -116,7 +104,6 @@ const DetalleVenta = () => {
       const nuevosProductos = [...prevProductos];
       nuevosProductos[index].cantidad = nuevaCantidad;
 
-      // Calcular el subtotal con el descuento como porcentaje
       const precioConDescuento = nuevosProductos[index].precio * (1 - (nuevosProductos[index].descuento || 0) / 100);
       nuevosProductos[index].subtotal = (
         precioConDescuento * nuevaCantidad
@@ -126,12 +113,11 @@ const DetalleVenta = () => {
     });
   };
 
-  // Función para manejar cambios en el descuento
   const handleDescuentoChange = (index, value) => {
     if (value === '') {
       setProductosVendidos((prevProductos) => {
         const nuevosProductos = [...prevProductos];
-        nuevosProductos[index].descuento = 0; // Establecer descuento en 0 si el campo está vacío
+        nuevosProductos[index].descuento = 0;
         nuevosProductos[index].subtotal = (
           nuevosProductos[index].precio * (nuevosProductos[index].cantidad || 1)
         ).toFixed(2);
@@ -150,7 +136,6 @@ const DetalleVenta = () => {
       const nuevosProductos = [...prevProductos];
       nuevosProductos[index].descuento = nuevoDescuento;
 
-      // Calcular el subtotal con el descuento como porcentaje
       const precioConDescuento = nuevosProductos[index].precio * (1 - nuevoDescuento / 100);
       nuevosProductos[index].subtotal = (
         precioConDescuento * (nuevosProductos[index].cantidad || 1)
@@ -160,12 +145,10 @@ const DetalleVenta = () => {
     });
   };
 
-  // Función para abrir el modal de productos
   const handleAñadirProducto = () => {
     setModalVisible(true);
   };
 
-  // Función para recibir los productos seleccionados desde el modal
   const handleProductosSeleccionados = (productosSeleccionados) => {
     setProductosVendidos((prevProductos) => {
       const nuevosProductos = productosSeleccionados.filter(
@@ -176,14 +159,12 @@ const DetalleVenta = () => {
     setModalVisible(false);
   };
 
-  // Función para eliminar un producto de la lista
   const eliminarProducto = (index) => {
     setProductosVendidos((prevProductos) =>
       prevProductos.filter((_, i) => i !== index)
     );
   };
 
-  // Función para guardar los datos complementarios desde el modal
   const handleGuardarDatosComplementarios = (datos) => {
     setDatosComplementarios(prev => ({
       ...prev,
@@ -193,19 +174,16 @@ const DetalleVenta = () => {
       tipoComprobanteId: datos.tipoComprobanteId,
       trabajadorId: datos.trabajadorId,
       fecha: datos.fecha,
-      moneda: datos.moneda || 'SOLES', // Usamos el valor del enum directamente
+      moneda: datos.moneda || 'SOLES',
     }));
   };
 
-  // Función para guardar la venta completa en el backend
   const handleGuardarVenta = async () => {
-    // Validar que se hayan agregado productos
     if (productosVendidos.length === 0) {
       showToast('Debes agregar al menos un producto para guardar la venta.', 'danger');
       return;
     }
 
-    // Validar que las cantidades de los productos sean válidas
     const productosInvalidos = productosVendidos.some(
       (producto) => !producto.cantidad || isNaN(producto.cantidad) || producto.cantidad <= 0
     );
@@ -215,7 +193,6 @@ const DetalleVenta = () => {
       return;
     }
 
-    // Validar que los datos complementarios estén completos
     const datosComplementariosIncompletos = !datosComplementarios.tipoPagoId ||
       !datosComplementarios.empresaId ||
       !datosComplementarios.clienteId ||
@@ -227,11 +204,9 @@ const DetalleVenta = () => {
       return;
     }
 
-    // Guardar el estado actual antes de intentar la actualización
     const productosActuales = [...productosVendidos];
     const datosComplementariosActuales = { ...datosComplementarios };
 
-    // Preparar los datos para enviar al backend
     const ventaData = {
       fechaVenta: datosComplementarios.fecha,
       idTipoPago: datosComplementarios.tipoPagoId,
@@ -239,7 +214,7 @@ const DetalleVenta = () => {
       idCliente: datosComplementarios.clienteId,
       idTipoComprobantePago: datosComplementarios.tipoComprobanteId,
       idTrabajador: datosComplementarios.trabajadorId,
-      moneda: datosComplementarios.moneda, // Enviamos el código ISO al backend
+      moneda: datosComplementarios.moneda,
       detalles: productosVendidos.map((producto) => ({
         idProducto: producto.idProducto,
         cantidad: producto.cantidad,
@@ -251,17 +226,14 @@ const DetalleVenta = () => {
     try {
       let response;
       if (modoEdicion) {
-        // Asegurarse de que el token esté en los headers
         const config = {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
         };
         response = await apiClient.put(`/ventas/${ventaId}`, ventaData, config);
-        response = await apiClient.put(`/ventas/${ventaId}`, ventaData, config);
         showToast('Venta actualizada correctamente.', 'success');
         
-        // Limpiar el estado después de actualizar
         setProductosVendidos([]);
         setDatosComplementarios({
           tipoPagoId: null,
@@ -273,19 +245,15 @@ const DetalleVenta = () => {
           moneda: 'SOLES'
         });
 
-        // Reiniciar los estados de los modales
         if (reiniciarModalProductos) reiniciarModalProductos();
         if (reiniciarModalDatosComplementarios) reiniciarModalDatosComplementarios();
 
-        // Redirigir a la lista de ventas pendientes
         navigate('/listarVenta');
         return;
       } else {
         response = await apiClient.post('/ventas', ventaData);
-        response = await apiClient.post('/ventas', ventaData);
         showToast('Venta guardada correctamente.', 'success');
         
-        // Limpiar el estado después de guardar
         setProductosVendidos([]);
         setDatosComplementarios({
           tipoPagoId: null,
@@ -297,7 +265,6 @@ const DetalleVenta = () => {
           moneda: 'SOLES'
         });
 
-        // Reiniciar los estados de los modales
         if (reiniciarModalProductos) reiniciarModalProductos();
         if (reiniciarModalDatosComplementarios) reiniciarModalDatosComplementarios();
       }
@@ -306,7 +273,6 @@ const DetalleVenta = () => {
       const errorMessage = error.response?.data?.message || error.message;
       showToast(`Error al ${modoEdicion ? 'actualizar' : 'guardar'} la venta: ${errorMessage}`, 'danger');
       
-      // En caso de error, restaurar el estado anterior
       if (modoEdicion) {
         setProductosVendidos(productosActuales);
         setDatosComplementarios(datosComplementariosActuales);
@@ -314,58 +280,38 @@ const DetalleVenta = () => {
     }
   };
 
-  // Función para abrir el modal de completar venta
   const handleCompletarVenta = () => {
     setCompletarVentaModalVisible(true);
   };
 
-  // Calcular el subtotal total de todos los productos
   const subtotalTotal = productosVendidos.reduce((total, producto) => {
-    // Calcular el subtotal de cada producto
     const subtotalProducto = producto.precio * (1 - (producto.descuento || 0) / 100) * (producto.cantidad || 1);
-
-    // Sumar al total
     return total + subtotalProducto;
-  }, 0).toFixed(2); // Formatear con 2 decimales
+  }, 0).toFixed(2);
 
-  // Calcular el total general
   const totalGeneral = productosVendidos.reduce((total, producto) => {
-    // Aplicar el descuento como porcentaje al precio
     const precioConDescuento = producto.precio * (1 - (producto.descuento || 0) / 100);
-
-    // Calcular el subtotal del producto (precio con descuento * cantidad)
     const subtotalProducto = precioConDescuento * (producto.cantidad || 1);
-
-    // Sumar al total general
     return total + subtotalProducto;
-  }, 0).toFixed(2); // Formatear con 2 decimales
+  }, 0).toFixed(2);
 
   const tasaIGV = 0.18;
-  // Calcular el subtotal sin IGV
   const subtotalSinIGV = productosVendidos.reduce(
     (total, producto) => {
-      // Aplicar el descuento al precio
       const precioConDescuento = producto.precio * (1 - (producto.descuento || 0) / 100);
-      // Calcular el subtotal para este producto
       const subtotalProducto = precioConDescuento * (producto.cantidad || 1);
-      // Sumar al total
       return total + subtotalProducto;
     },
     0
   );
 
-  // Calcular el subtotal sin IGV dividiendo por (1 + tasaIGV)
   const subtotalSinIGVFinal = (subtotalTotal / (1 + tasaIGV)).toFixed(2);
-
-  // Calcular el IGV aplicado (18% del subtotal sin IGV)
   const igvAplicado = (subtotalTotal - subtotalSinIGVFinal).toFixed(2);
 
-  // En la tabla de totales:
   const getSimboloMoneda = (moneda) => {
     return monedas[moneda]?.simbolo || 'S/';
   };
 
-  // Agrega este efecto después de los estados
   useEffect(() => {
     console.log("Estado recibido:", location.state);
     if (location.state?.ventaParaEditar) {
@@ -375,7 +321,6 @@ const DetalleVenta = () => {
       setModoEdicion(true);
       setVentaId(venta.idVenta);
 
-      // Verifica si venta.detalles existe antes de usarlo
       if (venta.detalles && Array.isArray(venta.detalles)) {
         const productosTransformados = venta.detalles.map(d => ({
           idProducto: d.idProducto,
@@ -392,7 +337,6 @@ const DetalleVenta = () => {
         console.error("La venta no tiene detalles o no están en formato esperado");
       }
 
-      // Cargar datos complementarios con verificaciones
       setDatosComplementarios(prev => ({
         ...prev,
         tipoPagoId: venta.idTipoPago || venta.tipoPago?.idTipoPago,
@@ -401,7 +345,7 @@ const DetalleVenta = () => {
         tipoComprobanteId: venta.idTipoComprobantePago || venta.tipoComprobantePago?.idTipoComprobantePago,
         trabajadorId: venta.idTrabajador || venta.trabajador?.idTrabajador,
         fecha: venta.fechaVenta || new Date().toISOString(),
-        moneda: venta.moneda || 'SOLES' // Usamos el valor del enum directamente
+        moneda: venta.moneda || 'SOLES'
       }));
     }
   }, [location.state]);
@@ -410,7 +354,6 @@ const DetalleVenta = () => {
     const cargarVentaParaEditar = async () => {
       if (location.state?.ventaParaEditar) {
         try {
-          // Limpiar estados antes de cargar nueva venta
           setProductosVendidos([]);
           setDatosComplementarios({
             tipoPagoId: null,
@@ -426,16 +369,12 @@ const DetalleVenta = () => {
           setModoEdicion(true);
           setVentaId(venta.idVenta);
 
-          // 1. Cargar los detalles completos de la venta desde la API
-          const response = await apiClient.get(`/ventas/${venta.idVenta}`);
           const response = await apiClient.get(`/ventas/${venta.idVenta}`);
           const ventaCompleta = response.data;
 
-          // 2. Obtener la información completa de cada producto
           const productosCompletos = await Promise.all(
             ventaCompleta.detalles.map(async (detalle) => {
               try {
-                const productoResponse = await apiClient.get(`/productos/${detalle.idProducto}`);
                 const productoResponse = await apiClient.get(`/productos/${detalle.idProducto}`);
                 return {
                   idProducto: detalle.idProducto,
@@ -461,10 +400,8 @@ const DetalleVenta = () => {
             })
           );
 
-          // 3. Actualizar el estado con los productos completos
           setProductosVendidos(productosCompletos);
 
-          // 4. Cargar datos complementarios
           setDatosComplementarios(prev => ({
             ...prev,
             tipoPagoId: ventaCompleta.idTipoPago,
@@ -473,7 +410,7 @@ const DetalleVenta = () => {
             tipoComprobanteId: ventaCompleta.idTipoComprobantePago,
             trabajadorId: ventaCompleta.idTrabajador,
             fecha: ventaCompleta.fechaVenta,
-            moneda: ventaCompleta.moneda || 'SOLES' // Usamos el valor del enum directamente
+            moneda: ventaCompleta.moneda || 'SOLES'
           }));
 
         } catch (error) {
@@ -481,7 +418,6 @@ const DetalleVenta = () => {
           showToast("Error al cargar los detalles de la venta", "danger");
         }
       } else {
-        // Si no hay venta para editar, limpiar estados
         setModoEdicion(false);
         setVentaId(null);
         setProductosVendidos([]);
@@ -510,7 +446,6 @@ const DetalleVenta = () => {
       const response = await apiClient.get(`/ventas/precargar-venta/${codigoCotizacion}`);
       const datosCotizacion = response.data;
 
-      // Actualizar los productos vendidos
       if (datosCotizacion.detalles) {
         setProductosVendidos(datosCotizacion.detalles.map(detalle => ({
           idProducto: detalle.idProducto,
@@ -523,7 +458,6 @@ const DetalleVenta = () => {
         })));
       }
 
-      // Actualizar datos complementarios con la información disponible
       setDatosComplementarios(prev => ({
         ...prev,
         tipoPagoId: datosCotizacion.idTipoPago,
@@ -543,13 +477,11 @@ const DetalleVenta = () => {
   };
 
   const handleGuardarComoCotizacion = async () => {
-    // Validar que se hayan agregado productos
     if (productosVendidos.length === 0) {
       showToast('Debes agregar al menos un producto para guardar la cotización.', 'danger');
       return;
     }
 
-    // Validar que las cantidades de los productos sean válidas
     const productosInvalidos = productosVendidos.some(
       (producto) => !producto.cantidad || isNaN(producto.cantidad) || producto.cantidad <= 0
     );
@@ -559,7 +491,6 @@ const DetalleVenta = () => {
       return;
     }
 
-    // Validar que los datos complementarios estén completos
     const datosComplementariosIncompletos = !datosComplementarios.tipoPagoId ||
       !datosComplementarios.empresaId ||
       !datosComplementarios.clienteId ||
@@ -570,13 +501,11 @@ const DetalleVenta = () => {
       return;
     }
 
-    // Calcular el total de la venta
     const totalVenta = productosVendidos.reduce((total, producto) => {
       const subtotal = (producto.precio * (1 - (producto.descuento || 0) / 100)) * producto.cantidad;
       return total + subtotal;
     }, 0);
 
-    // Preparar los datos para enviar al backend
     const ventaData = {
       idVenta: null,
       serieComprobante: "",
@@ -593,7 +522,7 @@ const DetalleVenta = () => {
       idTrabajador: datosComplementarios.trabajadorId,
       idCliente: datosComplementarios.clienteId,
       idTipoPago: datosComplementarios.tipoPagoId,
-      detalles: productosVendidos.map((producto, index) => {
+      detalles: productosVendidos.map((producto) => {
         const subtotal = (producto.precio * (1 - (producto.descuento || 0) / 100)) * producto.cantidad;
         const subtotalSinIGV = subtotal / 1.18;
         const igvAplicado = subtotal - subtotalSinIGV;
@@ -614,14 +543,10 @@ const DetalleVenta = () => {
       })
     };
 
-    // Agregar console.log para ver el JSON que se envía
-    console.log('JSON enviado al convertir venta a cotización:', JSON.stringify(ventaData, null, 2));
-
     try {
       const response = await apiClient.post('/cotizaciones/convertir-venta', ventaData);
       showToast('Cotización guardada correctamente.', 'success');
       
-      // Limpiar el estado después de guardar
       setProductosVendidos([]);
       setDatosComplementarios({
         tipoPagoId: null,
@@ -633,150 +558,6 @@ const DetalleVenta = () => {
         moneda: 'SOLES'
       });
 
-      // Reiniciar los estados de los modales
-      if (reiniciarModalProductos) reiniciarModalProductos();
-      if (reiniciarModalDatosComplementarios) reiniciarModalDatosComplementarios();
-    } catch (error) {
-      console.error('Error al guardar la cotización:', error);
-      const errorMessage = error.response?.data?.message || error.message;
-      showToast(`Error al guardar la cotización: ${errorMessage}`, 'danger');
-    }
-  };
-
-  const handleBuscarCotizacion = async () => {
-    if (!codigoCotizacion) {
-      showToast('Por favor ingrese un código de cotización', 'warning');
-      return;
-    }
-
-    try {
-      const response = await apiClient.get(`/ventas/precargar-venta/${codigoCotizacion}`);
-      const datosCotizacion = response.data;
-
-      // Actualizar los productos vendidos
-      if (datosCotizacion.detalles) {
-        setProductosVendidos(datosCotizacion.detalles.map(detalle => ({
-          idProducto: detalle.idProducto,
-          nombre: detalle.nombreProducto,
-          precio: detalle.precioUnitario,
-          cantidad: detalle.cantidad,
-          descuento: detalle.descuento || 0,
-          unidadMedida: detalle.unidadMedida,
-          subtotal: detalle.subtotal
-        })));
-      }
-
-      // Actualizar datos complementarios con la información disponible
-      setDatosComplementarios(prev => ({
-        ...prev,
-        tipoPagoId: datosCotizacion.idTipoPago,
-        empresaId: datosCotizacion.idEmpresa,
-        clienteId: datosCotizacion.idCliente,
-        tipoComprobanteId: datosCotizacion.idTipoComprobantePago,
-        trabajadorId: datosCotizacion.idTrabajador,
-        fecha: datosCotizacion.fechaVenta || new Date().toISOString().slice(0, 19),
-        moneda: datosCotizacion.moneda || 'SOLES'
-      }));
-
-      showToast('Cotización cargada exitosamente', 'success');
-    } catch (error) {
-      console.error('Error al cargar la cotización:', error);
-      showToast('Error al cargar la cotización', 'danger');
-    }
-  };
-
-  const handleGuardarComoCotizacion = async () => {
-    // Validar que se hayan agregado productos
-    if (productosVendidos.length === 0) {
-      showToast('Debes agregar al menos un producto para guardar la cotización.', 'danger');
-      return;
-    }
-
-    // Validar que las cantidades de los productos sean válidas
-    const productosInvalidos = productosVendidos.some(
-      (producto) => !producto.cantidad || isNaN(producto.cantidad) || producto.cantidad <= 0
-    );
-
-    if (productosInvalidos) {
-      showToast('Por favor, ingresa una cantidad válida para todos los productos.', 'danger');
-      return;
-    }
-
-    // Validar que los datos complementarios estén completos
-    const datosComplementariosIncompletos = !datosComplementarios.tipoPagoId ||
-      !datosComplementarios.empresaId ||
-      !datosComplementarios.clienteId ||
-      !datosComplementarios.trabajadorId;
-
-    if (datosComplementariosIncompletos) {
-      showToast('Falta agregar Datos Venta. Por favor, completa todos los campos requeridos.', 'danger');
-      return;
-    }
-
-    // Calcular el total de la venta
-    const totalVenta = productosVendidos.reduce((total, producto) => {
-      const subtotal = (producto.precio * (1 - (producto.descuento || 0) / 100)) * producto.cantidad;
-      return total + subtotal;
-    }, 0);
-
-    // Preparar los datos para enviar al backend
-    const ventaData = {
-      idVenta: null,
-      serieComprobante: "",
-      numeroComprobante: "",
-      fechaVenta: datosComplementarios.fecha,
-      estadoVenta: "PENDIENTE",
-      totalVenta: Number(totalVenta.toFixed(2)),
-      fechaModificacion: null,
-      moneda: "SOLES",
-      observaciones: null,
-      idCaja: null,
-      idEmpresa: datosComplementarios.empresaId,
-      idTipoComprobantePago: datosComplementarios.tipoComprobanteId,
-      idTrabajador: datosComplementarios.trabajadorId,
-      idCliente: datosComplementarios.clienteId,
-      idTipoPago: datosComplementarios.tipoPagoId,
-      detalles: productosVendidos.map((producto, index) => {
-        const subtotal = (producto.precio * (1 - (producto.descuento || 0) / 100)) * producto.cantidad;
-        const subtotalSinIGV = subtotal / 1.18;
-        const igvAplicado = subtotal - subtotalSinIGV;
-
-        return {
-          idDetalleVenta: null,
-          idVenta: null,
-          idProducto: producto.idProducto,
-          nombreProducto: null,
-          unidadMedida: null,
-          cantidad: Number(producto.cantidad.toFixed(2)),
-          precioUnitario: Number(producto.precio.toFixed(2)),
-          descuento: Number((producto.descuento || 0).toFixed(2)),
-          subtotal: Number(subtotal.toFixed(2)),
-          subtotalSinIGV: Number(subtotalSinIGV.toFixed(2)),
-          igvAplicado: Number(igvAplicado.toFixed(2))
-        };
-      })
-    };
-
-    // Agregar console.log para ver el JSON que se envía
-    console.log('JSON enviado al convertir venta a cotización:', JSON.stringify(ventaData, null, 2));
-
-    try {
-      const response = await apiClient.post('/cotizaciones/convertir-venta', ventaData);
-      showToast('Cotización guardada correctamente.', 'success');
-      
-      // Limpiar el estado después de guardar
-      setProductosVendidos([]);
-      setDatosComplementarios({
-        tipoPagoId: null,
-        empresaId: null,
-        clienteId: null,
-        tipoComprobanteId: null,
-        trabajadorId: null,
-        fecha: new Date().toISOString().slice(0, 19),
-        moneda: 'SOLES'
-      });
-
-      // Reiniciar los estados de los modales
       if (reiniciarModalProductos) reiniciarModalProductos();
       if (reiniciarModalDatosComplementarios) reiniciarModalDatosComplementarios();
     } catch (error) {
@@ -795,27 +576,23 @@ const DetalleVenta = () => {
       paddingRight: '3rem'
     }}>
       <CRow className="mb-3 justify-content-center">
-        {/* Modal para seleccionar productos */}
         <ModalProductos
           modalVisible={modalVisible}
           setModalVisible={setModalVisible}
           handleProductosSeleccionados={handleProductosSeleccionados}
-          registrarReinicio={registrarReinicioModalProductos} // Pasar la función de reinicio
+          registrarReinicio={registrarReinicioModalProductos}
         />
 
-        {/* Modal para completar venta */}
         <CompletarVenta
           visible={completarVentaModalVisible}
           onClose={() => setCompletarVentaModalVisible(false)}
           onSave={handleGuardarDatosComplementarios}
-          registrarReinicio={registrarReinicioModalDatosComplementarios} // Pasar la función de reinicio
-          initialData={datosComplementarios} // Pasar los datos complementarios como initialData
+          registrarReinicio={registrarReinicioModalDatosComplementarios}
+          initialData={datosComplementarios}
         />
 
-        {/* Tabla de productos seleccionados */}
         <CCard>
           <CCardBody>
-            {/* Botones para añadir producto, completar venta y guardar venta */}
             <div className="d-flex justify-content-between mb-3">
               <div>
                 <CButton color="primary" onClick={handleAñadirProducto} className="me-2">
@@ -874,7 +651,6 @@ const DetalleVenta = () => {
               </div>
             </div>
 
-            {/* Tabla de productos seleccionados */}
             <CTable striped hover responsive>
               <CTableHead>
                 <CTableRow>
@@ -943,7 +719,6 @@ const DetalleVenta = () => {
                     </CTableDataCell>
                   </CTableRow>
                 ))}
-                {/* Fila para el subtotal sin IGV */}
                 <CTableRow>
                   <CTableDataCell colSpan="7" className="text-end">
                     <strong>Subtotal sin IGV:</strong>
@@ -958,7 +733,6 @@ const DetalleVenta = () => {
                       style={{ width: '100px', textAlign: 'right' }}
                     />
                   </CTableDataCell>
-                  {/* Fila para el IGV aplicado */}
                 </CTableRow>
                 <CTableRow>
                   <CTableDataCell colSpan="7" className="text-end">
@@ -975,7 +749,6 @@ const DetalleVenta = () => {
                     />
                   </CTableDataCell>
                 </CTableRow>
-                {/* Fila para el total general */}
                 <CTableRow>
                   <CTableDataCell colSpan="7" className="text-end">
                     <strong>Total:</strong>

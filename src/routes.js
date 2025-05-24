@@ -64,6 +64,7 @@ const DetalleVentaPage = lazy(() => import('./components/listarVentaComp/Detalle
 const Utilidad = lazy(() => import('./views/utilidad/utilidad'));
 const Compra = lazy(() => import('./views/compra/compra'));
 const Cotizacion = lazy(() => import('./views/cotizacion/cotizacion'));
+const DetalleCotizacion = lazy(() => import('./components/cotizacionComp/DetalleCotizacionPage'));
 
 // Componente que envuelve un componente lazy con ErrorBoundary y Suspense
 const LazyComponent = ({ component: Component }) => (
@@ -139,6 +140,10 @@ const routes = [
   { 
     path: '/cotizacion', 
     element: <LazyComponent component={Cotizacion} />
+  },
+  {
+    path: '/cotizaciones/:id/detalle',
+    element: <LazyComponent component={DetalleCotizacion} />
   }
 ];
 
