@@ -15,6 +15,7 @@ const ListarVenta = React.lazy (() => import('./views/listarVenta/listarVenta'))
 const DetalleVentaPage = React.lazy(() => import('./components/listarVentaComp/DetalleVentaPage'));
 const Compra = React.lazy(() => import('./views/compra/compra'));
 const Cotizacion = React.lazy(() => import('./views/cotizacion/cotizacion'));
+const DetalleCotizacionPage = React.lazy(() => import('./components/cotizacionComp/DetalleCotizacionPage'));
 
 const routes = [
   { path: '/', name: 'Home' },
@@ -32,6 +33,7 @@ const routes = [
   { path: '/venta/detalle/:id', name: 'Detalle de Venta', element: DetalleVentaPage},
   { path: '/compra', name: 'Compra', element: Compra },
   { path: '/cotizacion', name: 'Cotizacion', element: Cotizacion },
+  { path: '/cotizaciones/detalle/:id', name: 'Detalle de Cotización', element: DetalleCotizacionPage },
 ];
 
 export default routes;

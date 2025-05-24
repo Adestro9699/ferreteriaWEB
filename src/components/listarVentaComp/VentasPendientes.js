@@ -3,6 +3,7 @@ import {
   CButton,
   CBadge,
   CPagination,
+  CPaginationItem,
   CCard,
   CCardBody,
   CAlert,
@@ -26,7 +27,8 @@ const VentasPendientes = ({
   pagination = {
     currentPage: 1,
     itemsPerPage: 10,
-    totalItems: 0
+    totalItems: 0,
+    totalPages: 1
   },
   onPageChange,
   onItemsPerPageChange,
@@ -91,9 +93,6 @@ const VentasPendientes = ({
       setModalConfirmacion(false);
       setVentaParaAccion(null);
       setAccionConfirmacion(null);
-      if (tablaRef.current) {
-        tablaRef.current.focus();
-      }
     }
   };
 
@@ -101,9 +100,6 @@ const VentasPendientes = ({
     setModalConfirmacion(false);
     setVentaParaAccion(null);
     setAccionConfirmacion(null);
-    if (tablaRef.current) {
-      tablaRef.current.focus();
-    }
   };
 
   const handleObservar = (venta) => {
@@ -126,7 +122,7 @@ const VentasPendientes = ({
 
   const startIndex = (pagination.currentPage - 1) * pagination.itemsPerPage;
   const endIndex = startIndex + pagination.itemsPerPage;
-  const currentItems = ventas.slice(startIndex, endIndex);
+  const currentItems = ventas;
 
   if (loading) {
     return (
@@ -207,8 +203,7 @@ const VentasPendientes = ({
                               color="success"
                               size="sm"
                               onClick={() => handleConfirmarClick(venta)}
-                              disabled={confirmandoId === venta.idVenta || !idCaja}
-                              title={!idCaja ? "Debe abrir una caja primero" : ""}
+                              disabled={confirmandoId === venta.idVenta}
                             >
                               {confirmandoId === venta.idVenta ?
                                 <><CSpinner size="sm" /> Confirmando...</> :
@@ -246,18 +241,43 @@ const VentasPendientes = ({
                     <option key={num} value={num}>{num}</option>
                   ))}
                 </CFormSelect>
-                <CPagination
-                  activePage={pagination.currentPage}
-                  pages={Math.ceil(ventas.length / pagination.itemsPerPage)}
-                  onActivePageChange={onPageChange}
-                  doubleArrows={false}
-                  align="end"
-                />
+                <CPagination align="end">
+                  <CPaginationItem 
+                    disabled={pagination.currentPage === 1}
+                    onClick={() => onPageChange(pagination.currentPage - 1)}
+                  >
+                    Anterior
+                  </CPaginationItem>
+                  {[...Array(pagination.totalPages)].map((_, index) => (
+                    <CPaginationItem
+                      key={index + 1}
+                      active={pagination.currentPage === index + 1}
+                      onClick={() => onPageChange(index + 1)}
+                    >
+                      {index + 1}
+                    </CPaginationItem>
+                  ))}
+                  <CPaginationItem
+                    disabled={pagination.currentPage === pagination.totalPages}
+                    onClick={() => onPageChange(pagination.currentPage + 1)}
+                  >
+                    Siguiente
+                  </CPaginationItem>
+                </CPagination>
               </div>
             </>
           )}
         </CCardBody>
       </CCard>
+
+      <VentaDetalleModal
+        venta={ventaSeleccionada}
+        visible={modalDetalle}
+        onClose={() => setModalDetalle(false)}
+        showPrintButton={true}
+        showConfirmButton={false}
+        showDeleteButton={false}
+      />
 
       <CModal
         visible={modalConfirmacion}
@@ -265,7 +285,9 @@ const VentasPendientes = ({
         backdrop="static"
       >
         <CModalHeader>
-          <CModalTitle>Confirmar Acción</CModalTitle>
+          <CModalTitle>
+            {accionConfirmacion === 'confirmar' ? 'Confirmar Venta' : 'Eliminar Venta'}
+          </CModalTitle>
         </CModalHeader>
         <CModalBody>
           ¿Está seguro que desea {accionConfirmacion === 'confirmar' ? 'confirmar' : 'eliminar'} esta venta?
@@ -282,33 +304,6 @@ const VentasPendientes = ({
           </CButton>
         </CModalFooter>
       </CModal>
-
-      <VentaDetalleModal
-        venta={ventaSeleccionada}
-        visible={modalDetalle}
-        onClose={() => setModalDetalle(false)}
-        showConfirmButton={true}
-        confirmButtonText="Confirmar Venta"
-        confirmButtonDisabled={!idCaja || confirmandoId === ventaSeleccionada?.idVenta}
-        showDeleteButton={true}
-        deleteButtonText="Eliminar Venta"
-        deleteButtonDisabled={eliminandoId === ventaSeleccionada?.idVenta}
-        onConfirm={() => {
-          if (ventaSeleccionada) {
-            handleConfirmarClick(ventaSeleccionada);
-            setModalDetalle(false);
-          }
-        }}
-        onDelete={() => {
-          if (ventaSeleccionada) {
-            handleEliminarClick(ventaSeleccionada);
-            setModalDetalle(false);
-          }
-        }}
-        isConfirming={confirmandoId === ventaSeleccionada?.idVenta}
-        isDeleting={eliminandoId === ventaSeleccionada?.idVenta}
-        idCaja={idCaja}
-      />
     </>
   );
 };

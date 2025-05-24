@@ -33,11 +33,8 @@ apiClient.interceptors.response.use(
     if (error.response) {
       if (error.response.status === 401) {
         console.error('Error 401: No autorizado. El token podría haber expirado.');
-        localStorage.removeItem('token');
-        window.location.href = '/login';
       } else if (error.response.status === 403) {
         console.error('Error 403: Prohibido. No tienes permisos para acceder a este recurso.');
-        window.location.href = '/acceso-denegado';
       } else if (error.response.status === 500) {
         console.error('Error 500: Error interno del servidor.');
       }

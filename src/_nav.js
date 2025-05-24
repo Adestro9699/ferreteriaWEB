@@ -68,7 +68,7 @@ const _nav = () => {
   // Estructura del menú para mostrar el título dependiendo si hay algún subelemento activado(endpoint activados)
   const menuStructure = {
     inventario: ['/productos', '/categorias', '/proveedores', '/movimientos', '/unidades-medida'],
-    facturacion: ['/venta', '/lis-tventas', '/compras', '/cotizaciones', '/trans'],
+    facturacion: ['/venta', '/listarVenta', '/compras', '/cotizaciones', '/trans'],
     clientes: ['/clientes', '/creditos'],
     usuarios: ['/usuarios', '/rolesYpermisos', '/cajas'],
     reportes: ['/reportes-ventas', '/reportes-compras', '/reportes-inventario', '/reportes-transferencias'],

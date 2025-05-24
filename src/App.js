@@ -33,6 +33,7 @@ const DetalleVentaPage = React.lazy(() => import('./components/listarVentaComp/D
 const Utilidad = React.lazy(() => import('./views/utilidad/utilidad'));
 const Compra = React.lazy(() => import('./views/compra/compra'));
 const Cotizacion = React.lazy(() => import('./views/cotizacion/cotizacion'));
+const DetalleCotizacionPage = React.lazy(() => import('./components/cotizacionComp/DetalleCotizacionPage'));
 
 
 const App = () => {
@@ -161,7 +162,7 @@ const App = () => {
             <Route
               path="venta"
               element={
-                <ProtectedRoute requiredPermissions={['/ventas', '/lista-ventas']}>
+                <ProtectedRoute requiredPermissions={['/ventas', '/listarVenta']}>
                   <Venta />
                 </ProtectedRoute>
               }
@@ -263,6 +264,14 @@ const App = () => {
               element={
                 <ProtectedRoute requiredPermissions={[ '/cotizacion']}> 
                   <Cotizacion />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="cotizaciones/:id/detalle"
+              element={
+                <ProtectedRoute requiredPermissions={['/cotizaciones']}>
+                  <DetalleCotizacionPage />
                 </ProtectedRoute>
               }
             />

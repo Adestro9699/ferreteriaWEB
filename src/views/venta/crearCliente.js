@@ -52,6 +52,21 @@ const CrearCliente = ({ visible, onClose, onGuardar }) => {
   const [loading, setLoading] = useState(false); // Estado para manejar la carga
   const [error, setError] = useState(null); // Estado para manejar errores
 
+  // Función para validar el formato del documento
+  const validarFormatoDocumento = (numeroDocumento, tipoDocumento) => {
+    const numero = numeroDocumento.trim();
+    
+    if (tipoDocumento === 'DNI') {
+      if (!/^\d{8}$/.test(numero)) {
+        throw new Error('El DNI debe tener 8 dígitos numéricos');
+      }
+    } else if (tipoDocumento === 'RUC') {
+      if (!/^\d{11}$/.test(numero)) {
+        throw new Error('El RUC debe tener 11 dígitos numéricos');
+      }
+    }
+  };
+
   // Obtener los tipos de documento al cargar el componente
   useEffect(() => {
     const fetchTiposDocumento = async () => {
@@ -77,8 +92,17 @@ const CrearCliente = ({ visible, onClose, onGuardar }) => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
-    // Si está cambiando el número de documento, resetear el estado de consultado
+    // Si está cambiando el número de documento, validar el formato
     if (name === 'numeroDocumento') {
+      try {
+        if (value && nuevoCliente.tipoDocumento.abreviatura) {
+          validarFormatoDocumento(value, nuevoCliente.tipoDocumento.abreviatura);
+          setError(null); // Limpiar error si la validación es exitosa
+        }
+      } catch (error) {
+        setError(error.message);
+      }
+      
       setNuevoCliente(prev => ({
         ...prev,
         [name]: value,
@@ -179,6 +203,22 @@ const CrearCliente = ({ visible, onClose, onGuardar }) => {
         throw new Error('Seleccione un tipo de documento e ingrese un número para consultar');
       }
 
+      // Validar el formato del documento según el tipo seleccionado
+      validarFormatoDocumento(nuevoCliente.numeroDocumento, nuevoCliente.tipoDocumento.abreviatura);
+
+      // Primero verificar si el cliente ya existe en la base de datos
+      try {
+        const clienteExistente = await apiClient.get(`/clientes/buscarPorNumeroDocumento?numeroDocumento=${nuevoCliente.numeroDocumento}`);
+        if (clienteExistente.data) {
+          setError('Este cliente ya existe en la base de datos. Por favor, utilice otro número de documento.');
+          setLoading(false);
+          return;
+        }
+      } catch (error) {
+        // Si hay un error en la búsqueda, continuamos con la consulta externa
+        console.log('Cliente no encontrado en la base de datos, procediendo con consulta externa');
+      }
+
       // Verificar que tenemos la abreviatura
       if (!nuevoCliente.tipoDocumento.abreviatura) {
         throw new Error('Tipo de documento no tiene abreviatura configurada');
@@ -194,7 +234,7 @@ const CrearCliente = ({ visible, onClose, onGuardar }) => {
         direccion: '',
         telefono: '',
         correo: '',
-        consultado: false // Resetear el estado de consultado
+        consultado: false
       }));
 
       const requestBody = {
@@ -213,7 +253,7 @@ const CrearCliente = ({ visible, onClose, onGuardar }) => {
             ...(response.data.tipoDocumento || nuevoCliente.tipoDocumento),
             abreviatura: nuevoCliente.tipoDocumento.abreviatura
           },
-          consultado: true // Marcar como ya consultado
+          consultado: true
         });
         setError('Cliente encontrado. Puede editar los datos si es necesario.');
       } else {

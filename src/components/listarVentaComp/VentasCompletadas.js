@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   CBadge,
   CPagination,
+  CPaginationItem,
   CCard,
   CCardBody,
   CAlert,
@@ -26,7 +27,8 @@ const VentasCompletadas = ({
   pagination = {
     currentPage: 1,
     itemsPerPage: 10,
-    totalItems: 0
+    totalItems: 0,
+    totalPages: 0
   }, 
   onPageChange, 
   onItemsPerPageChange,
@@ -79,7 +81,7 @@ const getCodigoComprobante = (venta) => {
 
   const startIndex = (pagination.currentPage - 1) * pagination.itemsPerPage;
   const endIndex = startIndex + pagination.itemsPerPage;
-  const currentItems = ventas.slice(startIndex, endIndex);
+  const currentItems = ventas;
 
   if (loading) {
     return (
@@ -157,13 +159,29 @@ const getCodigoComprobante = (venta) => {
                     <option key={num} value={num}>{num}</option>
                   ))}
                 </CFormSelect>
-                <CPagination
-                  activePage={pagination.currentPage}
-                  pages={Math.ceil(ventas.length / pagination.itemsPerPage)}
-                  onActivePageChange={onPageChange}
-                  doubleArrows={false}
-                  align="end"
-                />
+                <CPagination align="end">
+                  <CPaginationItem 
+                    disabled={pagination.currentPage === 1}
+                    onClick={() => onPageChange(pagination.currentPage - 1)}
+                  >
+                    Anterior
+                  </CPaginationItem>
+                  {[...Array(pagination.totalPages)].map((_, index) => (
+                    <CPaginationItem
+                      key={index + 1}
+                      active={pagination.currentPage === index + 1}
+                      onClick={() => onPageChange(index + 1)}
+                    >
+                      {index + 1}
+                    </CPaginationItem>
+                  ))}
+                  <CPaginationItem
+                    disabled={pagination.currentPage === pagination.totalPages}
+                    onClick={() => onPageChange(pagination.currentPage + 1)}
+                  >
+                    Siguiente
+                  </CPaginationItem>
+                </CPagination>
               </div>
             </>
           )}

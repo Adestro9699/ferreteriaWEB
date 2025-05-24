@@ -686,21 +686,35 @@ const DetalleVenta = () => {
                     Buscar
                   </CButton>
                 </CInputGroup>
-                <CDropdown>
-                  <CDropdownToggle color="success">
-                    {modoEdicion ? 'Actualizar Venta' : 'Guardar Venta'}
-                  </CDropdownToggle>
-                  <CDropdownMenu>
-                    <CDropdownItem onClick={handleGuardarVenta} style={{ cursor: 'pointer' }}>
-                      <CIcon icon={cilSave} className="me-2" />
-                      Guardar como Venta
-                    </CDropdownItem>
-                    <CDropdownItem onClick={handleGuardarComoCotizacion} style={{ cursor: 'pointer' }}>
-                      <CIcon icon={cilSave} className="me-2" />
-                      Guardar como Cotización
-                    </CDropdownItem>
-                  </CDropdownMenu>
-                </CDropdown>
+                <CRow className="mt-3">
+                  <CCol className="d-flex justify-content-end">
+                    {modoEdicion ? (
+                      <CButton
+                        color="success"
+                        onClick={handleGuardarVenta}
+                        className="me-2"
+                      >
+                        <CIcon icon={cilSave} className="me-2" />
+                        Actualizar Venta
+                      </CButton>
+                    ) : (
+                      <CDropdown>
+                        <CDropdownToggle color="success" className="me-2">
+                          <CIcon icon={cilSave} className="me-2" />
+                          Guardar Venta
+                        </CDropdownToggle>
+                        <CDropdownMenu>
+                          <CDropdownItem onClick={handleGuardarVenta} style={{ cursor: 'pointer' }}>
+                            Guardar como Venta
+                          </CDropdownItem>
+                          <CDropdownItem onClick={handleGuardarComoCotizacion} style={{ cursor: 'pointer' }}>
+                            Guardar como Cotización
+                          </CDropdownItem>
+                        </CDropdownMenu>
+                      </CDropdown>
+                    )}
+                  </CCol>
+                </CRow>
               </div>
             </div>
 

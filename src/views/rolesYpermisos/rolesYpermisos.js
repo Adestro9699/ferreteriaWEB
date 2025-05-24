@@ -47,7 +47,7 @@ const RolesYPermisos = () => {
     "/movimientos": false,
     // FACTURACIÓN
     "/ventas": false,
-    "/lista-ventas": false,
+    "/listarVenta": false,
     "/cotizaciones": false,
     "/compras": false,
     "/transferencias": false,
@@ -328,7 +328,7 @@ const RolesYPermisos = () => {
                   label="Ventas"
                   checked={
                     permisos['/ventas'] &&
-                    permisos['/lista-ventas']
+                    permisos['/listarVenta']
                   }
                   onChange={() => handleGroupCheckboxChange('ventas')}
                   className="mb-3"
