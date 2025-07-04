@@ -15,7 +15,9 @@ import {
   CModalHeader,
   CModalTitle,
   CModalBody,
-  CModalFooter
+  CModalFooter,
+  CFormLabel,
+  CFormInput
 } from '@coreui/react';
 import { CIcon } from '@coreui/icons-react';
 import { cilPencil, cilCheckCircle, cilTrash, cilSearch } from '@coreui/icons';
@@ -45,6 +47,9 @@ const VentasPendientes = ({
   const [modalConfirmacion, setModalConfirmacion] = useState(false);
   const [accionConfirmacion, setAccionConfirmacion] = useState(null);
   const [ventaParaAccion, setVentaParaAccion] = useState(null);
+  const [modalCobranza, setModalCobranza] = useState(false);
+  const [montoRecibido, setMontoRecibido] = useState('');
+  const [vuelto, setVuelto] = useState(0);
   const navigate = useNavigate();
   const tablaRef = useRef(null);
 
@@ -72,8 +77,49 @@ const VentasPendientes = ({
 
   const handleConfirmarClick = (venta) => {
     setVentaParaAccion(venta);
-    setAccionConfirmacion('confirmar');
-    setModalConfirmacion(true);
+    setModalCobranza(true);
+  };
+
+  const handleCobranzaConfirmar = async () => {
+    // Si es efectivo, validar el monto recibido
+    if (ventaParaAccion.tipoPago?.toUpperCase() === 'EFECTIVO') {
+      if (!montoRecibido || parseFloat(montoRecibido) < ventaParaAccion.totalVenta) {
+        alert('El monto recibido debe ser mayor o igual al total de la venta');
+        return;
+      }
+    }
+
+    try {
+      await onConfirmarVenta(ventaParaAccion.idVenta);
+      setModalCobranza(false);
+      setMontoRecibido('');
+      setVuelto(0);
+      setVentaParaAccion(null);
+    } catch (error) {
+      console.error('Error al confirmar la venta:', error);
+    }
+  };
+
+  const handleCobranzaCancelar = () => {
+    setModalCobranza(false);
+    setMontoRecibido('');
+    setVuelto(0);
+    setVentaParaAccion(null);
+  };
+
+  const calcularVuelto = (monto) => {
+    if (!monto || !ventaParaAccion || ventaParaAccion.tipoPago?.toUpperCase() !== 'EFECTIVO') return 0;
+    const montoNum = parseFloat(monto);
+    const total = ventaParaAccion.totalVenta;
+    return montoNum >= total ? montoNum - total : 0;
+  };
+
+  const handleMontoRecibidoChange = (e) => {
+    const valor = e.target.value;
+    setMontoRecibido(valor);
+    if (ventaParaAccion?.tipoPago?.toUpperCase() === 'EFECTIVO') {
+      setVuelto(calcularVuelto(valor));
+    }
   };
 
   const handleEliminarClick = (venta) => {
@@ -301,6 +347,66 @@ const VentasPendientes = ({
             onClick={confirmarAccion}
           >
             {accionConfirmacion === 'confirmar' ? 'Confirmar' : 'Eliminar'}
+          </CButton>
+        </CModalFooter>
+      </CModal>
+
+      {/* Modal de Cobranza */}
+      <CModal visible={modalCobranza} onClose={handleCobranzaCancelar} size="sm">
+        <CModalHeader>
+          <CModalTitle>Modal de Cobranza</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          {ventaParaAccion && (
+            <div>
+              <div className="mb-4">
+                <h5>Detalles de la Venta</h5>
+                <p><strong>Cliente:</strong> {getNombreCliente(ventaParaAccion)}</p>
+                <p><strong>Total a Pagar:</strong> S/ {ventaParaAccion.totalVenta?.toFixed(2)}</p>
+                <p><strong>Tipo de Pago:</strong> {ventaParaAccion.tipoPago || 'N/A'}</p>
+                <p><strong>Fecha:</strong> {formatFecha(ventaParaAccion.fechaVenta)}</p>
+              </div>
+              
+              {ventaParaAccion.tipoPago?.toUpperCase() === 'EFECTIVO' && (
+                <>
+                  <div className="mb-3">
+                    <CFormLabel htmlFor="montoRecibido">Monto Recibido (S/)</CFormLabel>
+                    <CFormInput
+                      id="montoRecibido"
+                      type="number"
+                      step="0.01"
+                      min={ventaParaAccion.totalVenta}
+                      value={montoRecibido}
+                      onChange={handleMontoRecibidoChange}
+                      placeholder="Ingrese el monto recibido"
+                      className="mb-2"
+                    />
+                  </div>
+                  
+                  <div className="alert alert-info">
+                    <strong>Vuelto a Entregar:</strong> S/ {vuelto.toFixed(2)}
+                  </div>
+                  
+                  {parseFloat(montoRecibido) < ventaParaAccion.totalVenta && montoRecibido && (
+                    <div className="alert alert-warning">
+                      El monto recibido es menor al total de la venta
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="secondary" onClick={handleCobranzaCancelar}>
+            Cancelar
+          </CButton>
+          <CButton 
+            color="success" 
+            onClick={handleCobranzaConfirmar}
+            disabled={ventaParaAccion?.tipoPago?.toUpperCase() === 'EFECTIVO' && (!montoRecibido || parseFloat(montoRecibido) < (ventaParaAccion?.totalVenta || 0))}
+          >
+            Confirmar Venta
           </CButton>
         </CModalFooter>
       </CModal>

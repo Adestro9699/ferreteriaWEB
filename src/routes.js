@@ -65,6 +65,10 @@ const Utilidad = lazy(() => import('./views/utilidad/utilidad'));
 const Compra = lazy(() => import('./views/compra/compra'));
 const Cotizacion = lazy(() => import('./views/cotizacion/cotizacion'));
 const DetalleCotizacion = lazy(() => import('./components/cotizacionComp/DetalleCotizacionPage'));
+const Transferencias = lazy(() => import('./views/transferencias/transferencias'));
+const Sucursales = lazy(() => import('./views/sucursales/sucursales'));
+const Almacenes = lazy(() => import('./views/almacenes/almacenes'));
+const Trabajadores = lazy(() => import('./views/trabajadores/trabajadores'));
 
 // Componente que envuelve un componente lazy con ErrorBoundary y Suspense
 const LazyComponent = ({ component: Component }) => (
@@ -144,6 +148,22 @@ const routes = [
   {
     path: '/cotizaciones/:id/detalle',
     element: <LazyComponent component={DetalleCotizacion} />
+  },
+  {
+    path: '/transferencias',
+    element: <LazyComponent component={Transferencias} />
+  },
+  {
+    path: '/sucursales',
+    element: <LazyComponent component={Sucursales} />
+  },
+  {
+    path: '/almacenes',
+    element: <LazyComponent component={Almacenes} />
+  },
+  {
+    path: '/trabajadores',
+    element: <LazyComponent component={Trabajadores} />
   }
 ];
 

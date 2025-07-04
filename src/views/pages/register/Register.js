@@ -596,6 +596,8 @@ const Register = () => {
                         </CInputGroup>
                       </div>
                     </div>
+                    
+
                   </div>
                   
                   <div className="register-section">

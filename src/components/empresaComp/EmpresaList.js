@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react'; // Importa useState y useEffect
+import React, { useState, useEffect, forwardRef } from 'react'; // Importa useState, useEffect y forwardRef
 import apiClient from '../../services/apiClient'; // Importa el cliente Axios
 
-const EmpresaList = ({ onEdit, onAdd }) => {
+const EmpresaList = ({ onEdit, onAdd }, ref) => {
   const [empresas, setEmpresas] = useState([]); // Estado para almacenar la lista de empresas
 
   useEffect(() => {
@@ -27,6 +27,16 @@ const EmpresaList = ({ onEdit, onAdd }) => {
       }
     }
   };
+
+  // Función para recargar la lista (se puede llamar desde el padre)
+  const refreshList = () => {
+    fetchEmpresas();
+  };
+
+  // Exponer la función refreshList al componente padre
+  React.useImperativeHandle(ref, () => ({
+    refreshList
+  }));
 
   return (
     <div className="card shadow-sm p-4" style={{ maxWidth: '1200px', margin: '0 auto' }}>
@@ -88,4 +98,4 @@ const EmpresaList = ({ onEdit, onAdd }) => {
   );
 };
 
-export default EmpresaList;
+export default forwardRef(EmpresaList);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { CContainer, CButton, CCard, CCardBody, CCardText, CCardTitle, CModal, CModalHeader, CModalBody, CModalFooter, CToast, CToastBody, CToastHeader } from '@coreui/react';
+import { CContainer, CButton, CCard, CCardBody, CCardText, CCardTitle, CModal, CModalHeader, CModalBody, CModalFooter, CToast, CToastBody, CToastHeader, CFormInput, CFormLabel } from '@coreui/react';
 import apiClient from '../../services/apiClient';
 import { cilPencil } from '@coreui/icons';
 import { CIcon } from '@coreui/icons-react';
@@ -21,6 +21,12 @@ const Caja = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('success'); // 'success' o 'danger'
 
+  // Estados para el modal de movimiento de caja
+  const [modalMovimientoVisible, setModalMovimientoVisible] = useState(false);
+  const [tipoMovimiento, setTipoMovimiento] = useState('');
+  const [montoMovimiento, setMontoMovimiento] = useState('');
+  const [observacionesMovimiento, setObservacionesMovimiento] = useState('');
+
   // Referencias para manejar el foco
   const mainContainerRef = useRef(null);
   const eliminarButtonRef = useRef(null);
@@ -29,6 +35,10 @@ const Caja = () => {
   // Obtenemos el usuario actual desde el estado de Redux
   const usuarioActual = useSelector(state => state.auth.user);
   console.log("Usuario actual desde Redux:", usuarioActual);
+
+  // Estado para el reporte de cierre
+  const [reporteCierre, setReporteCierre] = useState(null);
+  const [modalReporteVisible, setModalReporteVisible] = useState(false);
 
   const obtenerCajas = async () => {
     try {
@@ -334,6 +344,290 @@ const Caja = () => {
     }, 50);
   };
 
+  const handleRegistrarMovimiento = async () => {
+    if (!montoMovimiento || parseFloat(montoMovimiento) <= 0) {
+      setToastMessage('El monto debe ser mayor que cero');
+      setToastType('danger');
+      setToastVisible(true);
+      return;
+    }
+
+    // Buscar la caja abierta
+    const cajaAbierta = cajas.find(caja => caja.estado === 'ABIERTA');
+    if (!cajaAbierta) {
+      setToastMessage('No hay una caja abierta para registrar movimientos');
+      setToastType('danger');
+      setToastVisible(true);
+      return;
+    }
+
+    const movimientoDTO = {
+      monto: parseFloat(montoMovimiento),
+      observaciones: observacionesMovimiento
+    };
+
+    try {
+      const endpoint = tipoMovimiento === 'ENTRADA' ? 
+        `/cajas/${cajaAbierta.idCaja}/entrada-manual` : 
+        `/cajas/${cajaAbierta.idCaja}/salida-manual`;
+
+      await apiClient.post(endpoint, movimientoDTO);
+
+      // Limpiar el formulario
+      setMontoMovimiento('');
+      setObservacionesMovimiento('');
+      setModalMovimientoVisible(false);
+
+      // Mostrar mensaje de éxito
+      setToastMessage(`${tipoMovimiento === 'ENTRADA' ? 'Entrada' : 'Salida'} registrada exitosamente`);
+      setToastType('success');
+      setToastVisible(true);
+
+      // Actualizar la lista de cajas
+      obtenerCajas();
+    } catch (error) {
+      console.error('Error al registrar movimiento:', error);
+      let mensajeError = 'Error al registrar el movimiento';
+
+      if (error.response) {
+        switch (error.response.status) {
+          case 400:
+            mensajeError = error.response.data || 'El monto debe ser mayor que cero';
+            break;
+          case 404:
+            mensajeError = 'Caja no encontrada';
+            break;
+          case 409:
+            mensajeError = 'La caja está cerrada o no se pueden realizar movimientos';
+            break;
+          case 422:
+            mensajeError = 'Saldo insuficiente para realizar la operación';
+            break;
+          default:
+            mensajeError = error.response.data || 'Error al registrar el movimiento';
+        }
+      }
+
+      setToastMessage(mensajeError);
+      setToastType('danger');
+      setToastVisible(true);
+    }
+  };
+
+  const mostrarModalMovimiento = (tipo) => {
+    setTipoMovimiento(tipo);
+    setModalMovimientoVisible(true);
+  };
+
+  const obtenerReporteCierre = async (idCaja) => {
+    try {
+      const response = await apiClient.get(`/cajas/${idCaja}/reporte-cierre`);
+      setReporteCierre(response.data);
+      setModalReporteVisible(true);
+    } catch (error) {
+      console.error('Error al obtener el reporte de cierre:', error);
+      setToastMessage('Error al obtener el reporte de cierre');
+      setToastType('danger');
+      setToastVisible(true);
+    }
+  };
+
+  const formatearFecha = (fechaString) => {
+    const fecha = new Date(fechaString);
+    return fecha.toLocaleString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const formatearMoneda = (monto) => {
+    return new Intl.NumberFormat('es-ES', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(monto);
+  };
+
+  const renderReporteCierre = () => {
+    if (!reporteCierre) return null;
+
+    return (
+      <div className="reporte-cierre">
+        <div className="mb-4">
+          <h4 className="text-center mb-3">CIERRE DE CAJA</h4>
+          <div className="row mb-3">
+            <div className="col-md-6">
+              <p><strong>CAJA:</strong> #{reporteCierre.idCaja} - {reporteCierre.nombreCaja}</p>
+              <p><strong>RESPONSABLE:</strong> {reporteCierre.responsable}</p>
+            </div>
+            <div className="col-md-6">
+              <p><strong>FECHA APERTURA:</strong> {formatearFecha(reporteCierre.fechaApertura)}</p>
+              <p><strong>FECHA CIERRE:</strong> {formatearFecha(reporteCierre.fechaCierre)}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="row mb-4">
+          <div className="col-md-6">
+            <div className="card">
+              <div className="card-header bg-success text-white">
+                <h5 className="mb-0">ENTRADAS</h5>
+              </div>
+              <div className="card-body">
+                <table className="table table-sm">
+                  <tbody>
+                    <tr>
+                      <td>SALDO INICIAL</td>
+                      <td className="text-end">{formatearMoneda(reporteCierre.saldoInicial)}</td>
+                    </tr>
+                    <tr>
+                      <td>VENTAS EN EFECTIVO</td>
+                      <td className="text-end">{formatearMoneda(reporteCierre.ventasEfectivo)}</td>
+                    </tr>
+                    <tr>
+                      <td>INGRESOS MANUALES</td>
+                      <td className="text-end">{formatearMoneda(reporteCierre.ingresosManuales)}</td>
+                    </tr>
+                    <tr className="table-success">
+                      <td><strong>TOTAL</strong></td>
+                      <td className="text-end"><strong>{formatearMoneda(reporteCierre.saldoInicial + reporteCierre.ventasEfectivo + reporteCierre.ingresosManuales)}</strong></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div className="col-md-6">
+            <div className="card">
+              <div className="card-header bg-danger text-white">
+                <h5 className="mb-0">SALIDAS</h5>
+              </div>
+              <div className="card-body">
+                <table className="table table-sm">
+                  <tbody>
+                    {reporteCierre.egresosManualesList.map((egreso, index) => (
+                      <tr key={index}>
+                        <td>EGRESO MANUAL</td>
+                        <td className="text-end">{formatearMoneda(egreso.monto)}</td>
+                      </tr>
+                    ))}
+                    <tr className="table-danger">
+                      <td><strong>TOTAL</strong></td>
+                      <td className="text-end"><strong>{formatearMoneda(reporteCierre.egresosManuales)}</strong></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-header bg-primary text-white">
+            <h5 className="mb-0">RESUMEN FINAL</h5>
+          </div>
+          <div className="card-body">
+            <div className="row">
+              <div className="col-12">
+                <h4 className="text-center">
+                  SALDO CAJA: {formatearMoneda(reporteCierre.saldoFinal)}
+                </h4>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Versión para impresión (oculta por defecto) */}
+        <div className="d-none" id="printable-report">
+          {`-------------------------------------------------------------
+                   CIERRE DE CAJA
+-------------------------------------------------------------
+CAJA: ${reporteCierre.nombreCaja}
+RESPONSABLE: ${reporteCierre.responsable}
+FECHA APERTURA: ${formatearFecha(reporteCierre.fechaApertura)}
+FECHA CIERRE: ${formatearFecha(reporteCierre.fechaCierre)}
+--------------------------------------------------------------
+                    ENTRADAS
+--------------------------------------------------------------
+SALDO INICIAL                           ${formatearMoneda(reporteCierre.saldoInicial)}
+VENTAS EN EFECTIVO                      ${formatearMoneda(reporteCierre.ventasEfectivo)}
+INGRESOS MANUALES                       ${formatearMoneda(reporteCierre.ingresosManuales)}
+--------------------------------------------------------------
+TOTAL ENTRADAS                          ${formatearMoneda(reporteCierre.saldoInicial + reporteCierre.ventasEfectivo + reporteCierre.ingresosManuales)}
+--------------------------------------------------------------
+                    SALIDAS
+--------------------------------------------------------------
+${reporteCierre.egresosManualesList.map(egreso => 
+  `EGRESO MANUAL                         ${formatearMoneda(egreso.monto)}`
+).join('\n')}
+--------------------------------------------------------------
+TOTAL SALIDAS                           ${formatearMoneda(reporteCierre.egresosManuales)}
+--------------------------------------------------------------
+                    RESUMEN
+--------------------------------------------------------------
+SALDO FINAL CAJA                        ${formatearMoneda(reporteCierre.saldoFinal)}
+-------------------------------------------------------------`}
+        </div>
+      </div>
+    );
+  };
+
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    const printContent = document.getElementById('printable-report').innerText;
+    
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Reporte de Cierre de Caja</title>
+          <style>
+            body {
+              font-family: monospace;
+              white-space: pre;
+              margin: 0;
+              padding: 20px;
+              font-size: 12px;
+              line-height: 1.2;
+            }
+            @media print {
+              body {
+                width: 80mm;
+                margin: 0;
+                padding: 0;
+                font-size: 10px;
+                line-height: 1;
+              }
+              @page {
+                size: 80mm auto;
+                margin: 0;
+              }
+              /* Asegura que el contenido se ajuste al ancho del papel */
+              pre {
+                width: 80mm;
+                margin: 0;
+                padding: 2mm;
+                overflow: hidden;
+                white-space: pre-wrap;
+                word-wrap: break-word;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <pre>${printContent}</pre>
+        </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+  };
+
   return (
     <>
       <CContainer
@@ -350,10 +644,10 @@ const Caja = () => {
 
           {/* Contenedor para los botones de registrar entrada y salida */}
           <div>
-            <CButton color="success" className="me-2" onClick={() => alert('Registrar Entrada')}>
+            <CButton color="success" className="me-2" onClick={() => mostrarModalMovimiento('ENTRADA')}>
               Registrar Entrada
             </CButton>
-            <CButton color="danger" onClick={() => alert('Registrar Salida')}>
+            <CButton color="danger" onClick={() => mostrarModalMovimiento('SALIDA')}>
               Registrar Salida
             </CButton>
           </div>
@@ -423,6 +717,16 @@ const Caja = () => {
                     >
                       Eliminar
                     </CButton>
+                    {/* Botón para ver reporte de cierre */}
+                    {caja.estado === 'CERRADA' && (
+                      <CButton
+                        color="info"
+                        onClick={() => obtenerReporteCierre(caja.idCaja)}
+                        className="me-2"
+                      >
+                        Ver Reporte
+                      </CButton>
+                    )}
                   </div>
                 </CCardBody>
               </CCard>
@@ -482,6 +786,81 @@ const Caja = () => {
               onClick={confirmarEliminarCaja}
             >
               Confirmar
+            </CButton>
+          </CModalFooter>
+        </CModal>
+
+        {/* Modal para registrar movimiento */}
+        <CModal
+          visible={modalMovimientoVisible}
+          onClose={() => setModalMovimientoVisible(false)}
+          alignment="center"
+        >
+          <CModalHeader closeButton>
+            <h5>Registrar {tipoMovimiento === 'ENTRADA' ? 'Entrada' : 'Salida'}</h5>
+          </CModalHeader>
+          <CModalBody>
+            <div className="mb-3">
+              <CFormLabel>Monto</CFormLabel>
+              <CFormInput
+                type="number"
+                step="0.01"
+                min="0"
+                value={montoMovimiento}
+                onChange={(e) => setMontoMovimiento(e.target.value)}
+                placeholder="Ingrese el monto"
+              />
+            </div>
+            <div className="mb-3">
+              <CFormLabel>Observaciones</CFormLabel>
+              <CFormInput
+                type="text"
+                value={observacionesMovimiento}
+                onChange={(e) => setObservacionesMovimiento(e.target.value)}
+                placeholder="Ingrese las observaciones"
+              />
+            </div>
+          </CModalBody>
+          <CModalFooter>
+            <CButton
+              color="secondary"
+              onClick={() => setModalMovimientoVisible(false)}
+            >
+              Cancelar
+            </CButton>
+            <CButton
+              color={tipoMovimiento === 'ENTRADA' ? 'success' : 'danger'}
+              onClick={handleRegistrarMovimiento}
+            >
+              Registrar
+            </CButton>
+          </CModalFooter>
+        </CModal>
+
+        {/* Modal para mostrar el reporte de cierre */}
+        <CModal
+          visible={modalReporteVisible}
+          onClose={() => setModalReporteVisible(false)}
+          size="lg"
+        >
+          <CModalHeader closeButton>
+            <h5>Reporte de Cierre de Caja</h5>
+          </CModalHeader>
+          <CModalBody>
+            {renderReporteCierre()}
+          </CModalBody>
+          <CModalFooter>
+            <CButton
+              color="secondary"
+              onClick={() => setModalReporteVisible(false)}
+            >
+              Cerrar
+            </CButton>
+            <CButton
+              color="primary"
+              onClick={handlePrint}
+            >
+              Imprimir
             </CButton>
           </CModalFooter>
         </CModal>

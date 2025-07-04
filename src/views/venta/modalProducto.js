@@ -83,17 +83,18 @@ const ModalProductos = ({ modalVisible, setModalVisible, handleProductosSeleccio
     setError(null);
 
     try {
-      const response = await apiClient.get(`/productos/paginados?page=${page}&pageSize=${pageSize}`);
-      setProductos(response.data.data); // Datos de la página actual
-      setPagination({
-        page: response.data.page,
-        pageSize: response.data.pageSize,
-        total: response.data.total,
-        totalPages: response.data.totalPages,
-      });
+      const response = await apiClient.get(`/productos/venta?page=${page}&pageSize=${pageSize}`);
+      // Si la respuesta es un array:
+      setProductos(response.data);
+      // Si no hay paginación en la respuesta, ajusta el estado de paginación a valores por defecto
+      setPagination((prev) => ({
+        ...prev,
+        total: response.data.length || 0,
+        totalPages: 1,
+      }));
     } catch (error) {
-      console.error('Error al cargar los productos:', error);
       setError('Error al cargar los productos. Inténtalo de nuevo.');
+      setProductos([]);
     } finally {
       setLoading(false);
     }
@@ -186,7 +187,7 @@ const ModalProductos = ({ modalVisible, setModalVisible, handleProductosSeleccio
         cantidad !== '' &&
         !isNaN(cantidad) &&
         cantidad > 0 &&
-        cantidad <= producto.stock
+        cantidad <= producto.stockSucursal
       );
     });
 
@@ -199,9 +200,9 @@ const ModalProductos = ({ modalVisible, setModalVisible, handleProductosSeleccio
       idProducto: producto.idProducto,
       nombre: producto.nombreProducto,
       precio: producto.precio,
-      unidadMedida: producto.unidadMedida?.abreviatura || '',
+      unidadMedida: producto.abreviaturaUnidadMedida || '',
       cantidad: parseFloat(cantidades[producto.idProducto]) || 1,
-      stock: producto.stock,
+      stock: producto.stockSucursal,
     }));
 
     handleProductosSeleccionados(productosConCantidad); // Pasar los productos seleccionados al padre
@@ -311,20 +312,20 @@ const ModalProductos = ({ modalVisible, setModalVisible, handleProductosSeleccio
                               size="sm"
                               style={{ width: '60px' }}
                               min={1}
-                              max={producto.stock}
+                              max={producto.stockSucursal}
                             />
                           )}
                         </CTableDataCell>
                         <CTableDataCell>{producto.nombreProducto}</CTableDataCell>
                         <CTableDataCell>{producto.precio}</CTableDataCell>
-                        <CTableDataCell>{producto.unidadMedida?.abreviatura}</CTableDataCell>
-                        <CTableDataCell>{producto.stock}</CTableDataCell>
+                        <CTableDataCell>{producto.abreviaturaUnidadMedida}</CTableDataCell>
+                        <CTableDataCell>{producto.stockSucursal}</CTableDataCell>
                         <CTableDataCell>{producto.codigoSKU}</CTableDataCell>
                         <CTableDataCell>{producto.marca}</CTableDataCell>
                         <CTableDataCell>{producto.material}</CTableDataCell>
                         <CTableDataCell>{producto.codigoBarra}</CTableDataCell>
-                        <CTableDataCell>{producto.subcategoria?.nombre}</CTableDataCell>
-                        <CTableDataCell>{producto.subcategoria?.categoria?.nombre}</CTableDataCell>
+                        <CTableDataCell>{producto.nombreSubcategoria}</CTableDataCell>
+                        <CTableDataCell>{producto.nombreCategoria}</CTableDataCell>
                       </CTableRow>
                     ))
                   ) : (

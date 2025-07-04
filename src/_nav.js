@@ -68,7 +68,7 @@ const _nav = () => {
   // Estructura del menú para mostrar el título dependiendo si hay algún subelemento activado(endpoint activados)
   const menuStructure = {
     inventario: ['/productos', '/categorias', '/proveedores', '/movimientos', '/unidades-medida'],
-    facturacion: ['/venta', '/listarVenta', '/compras', '/cotizaciones', '/trans'],
+    facturacion: ['/venta', '/listarVenta', '/compras', '/cotizaciones', '/transferencias'],
     clientes: ['/clientes', '/creditos'],
     usuarios: ['/usuarios', '/rolesYpermisos', '/cajas'],
     reportes: ['/reportes-ventas', '/reportes-compras', '/reportes-inventario', '/reportes-transferencias'],
@@ -149,7 +149,7 @@ const _nav = () => {
     {
       component: CNavTitle,
       name: 'Facturacion',
-      show: isAuthenticated && (hasPermission('/venta') || hasPermission('/compras')),
+      show: isAuthenticated && (hasPermission('/venta') || hasPermission('/compras') || hasPermission('/transferencias')),
     },
     {
       component: CNavItem,
@@ -182,7 +182,7 @@ const _nav = () => {
     {
       component: CNavItem,
       name: 'Transferencias',
-      to: '/trans',
+      to: '/transferencias',
       icon: <CIcon icon={cilTransfer} customClassName="nav-icon" />,
       show: isAuthenticated && hasPermission('/transferencias'),
     },
@@ -216,6 +216,14 @@ const _nav = () => {
       icon: <CIcon icon={cilUserPlus} customClassName="nav-icon" />,
       permissionsRequired: ['/usuarios'],
       show: isAuthenticated && hasPermission(['/usuarios']),
+    },
+    {
+      component: CNavItem,
+      name: 'Trabajadores',
+      to: '/trabajadores',
+      icon: <CIcon icon={cilWc} customClassName="nav-icon" />,
+      permissionsRequired: ['/trabajadores'],
+      show: isAuthenticated && hasPermission(['/trabajadores']),
     },
     {
       component: CNavItem,
@@ -295,6 +303,20 @@ const _nav = () => {
       to: '/empresa',
       icon: <CIcon icon={cilFactory} customClassName="nav-icon" />,
       show: isAuthenticated && hasPermission('/empresa'),
+    },
+    {
+      component: CNavItem,
+      name: 'Sucursales',
+      to: '/sucursales',
+      icon: <CIcon icon={cilFactory} customClassName="nav-icon" />,
+      show: isAuthenticated && hasPermission('/sucursales'),
+    },
+    {
+      component: CNavItem,
+      name: 'Almacenes',
+      to: '/almacenes',
+      icon: <CIcon icon={cilStorage} customClassName="nav-icon" />,
+      show: isAuthenticated && hasPermission('/almacenes'),
     },
     {
       component: CNavItem,

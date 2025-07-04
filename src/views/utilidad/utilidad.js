@@ -5,6 +5,7 @@ import SpecificUtilidad from './SpecificUtilidad';
 import UnidadMedida from './UnidadMedida';
 import Comprobante from './Comprobante';
 import TipoPago from './TipoPago';
+import TipoDocumento from './TipoDocumento';
 
 const Utilidad = () => {
   const [activeKey, setActiveKey] = useState(1);
@@ -58,6 +59,15 @@ const Utilidad = () => {
               Tipos de Pago
             </CNavLink>
           </CNavItem>
+          <CNavItem>
+            <CNavLink
+              active={activeKey === 6}
+              onClick={() => setActiveKey(6)}
+              style={{ cursor: 'pointer' }}
+            >
+              Tipos de Documento
+            </CNavLink>
+          </CNavItem>
         </CNav>
         <CTabContent>
           <CTabPane role="tabpanel" aria-labelledby="global-tab" visible={activeKey === 1}>
@@ -74,6 +84,9 @@ const Utilidad = () => {
           </CTabPane>
           <CTabPane role="tabpanel" aria-labelledby="pago-tab" visible={activeKey === 5}>
             <TipoPago />
+          </CTabPane>
+          <CTabPane role="tabpanel" aria-labelledby="documento-tab" visible={activeKey === 6}>
+            <TipoDocumento />
           </CTabPane>
         </CTabContent>
       </CCardBody>

@@ -68,13 +68,20 @@ const Cotizacion = () => {
     navigate(`/cotizaciones/${cotizacion.idCotizacion}/detalle`)
   }
 
-  const handleEditar = (cotizacion) => {
-    navigate('/venta', {
-      state: {
-        cotizacionParaEditar: cotizacion,
-        modoEdicion: true
-      }
-    })
+  const handleEditar = async (cotizacion) => {
+    try {
+      const response = await apiClient.get(`/ventas/precargar-venta/por-id/${cotizacion.idCotizacion}`);
+      navigate('/venta', {
+        state: {
+          cotizacionParaEditar: response.data,
+          modoCotizacion: true,
+          idCotizacion: cotizacion.idCotizacion
+        }
+      });
+    } catch (error) {
+      console.error('Error al obtener datos de la cotización:', error);
+      alert('No se pudo cargar la información de la cotización');
+    }
   }
 
   const handleNuevaCotizacion = () => {

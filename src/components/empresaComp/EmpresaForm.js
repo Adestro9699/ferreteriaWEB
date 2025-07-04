@@ -18,18 +18,34 @@ const EmpresaForm = ({ empresaEdit, onSave, firstEmpresa, isFormActive }) => {
   const [logoPreview, setLogoPreview] = useState(null); // URL de vista previa del logo
 
   useEffect(() => {
-    // Actualiza el formulario cuando cambia empresaEdit o firstEmpresa
+    console.log('=== DEBUG: useEffect ejecutándose ===');
+    console.log('empresaEdit:', empresaEdit);
+    console.log('firstEmpresa:', firstEmpresa);
+    console.log('isFormActive:', isFormActive);
+    
+    // Lógica simplificada:
     if (empresaEdit) {
+      // Modo edición: usar datos de la empresa a editar
+      console.log('Estableciendo formData con empresaEdit');
       setFormData(empresaEdit);
       setLogoPreview(empresaEdit.logo ? URL.createObjectURL(new Blob([empresaEdit.logo])) : defaultLogo);
-    } else if (firstEmpresa && !empresaEdit) {
+    } else if (isFormActive) {
+      // Modo creación: usar estado inicial vacío
+      console.log('Estableciendo formData con initialState (modo creación)');
+      setFormData(initialState);
+      setLogoPreview(null);
+    } else if (firstEmpresa) {
+      // Modo visualización: mostrar datos de la primera empresa
+      console.log('Estableciendo formData con firstEmpresa (modo visualización)');
       setFormData(firstEmpresa);
       setLogoPreview(firstEmpresa.logo ? URL.createObjectURL(new Blob([firstEmpresa.logo])) : defaultLogo);
     } else {
+      // Estado por defecto
+      console.log('Estableciendo formData con initialState (estado por defecto)');
       setFormData(initialState);
       setLogoPreview(null);
     }
-  }, [empresaEdit, firstEmpresa]);
+  }, [empresaEdit, firstEmpresa, isFormActive]);
 
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
@@ -44,23 +60,50 @@ const EmpresaForm = ({ empresaEdit, onSave, firstEmpresa, isFormActive }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('=== DEBUG: handleSubmit iniciando ===');
+    console.log('formData completo:', formData);
+    console.log('empresaEdit:', empresaEdit);
+    console.log('¿Hay idEmpresa en formData?', !!formData.idEmpresa);
+    
     try {
-      const formDataToSend = new FormData(); // Crear FormData para manejar archivos
-      Object.keys(formData).forEach((key) => {
-        formDataToSend.append(key, formData[key]);
-      });
+      let dataToSend;
+      let headers = {};
+      
+      // Si hay un archivo de logo, usar FormData, sino usar JSON
+      if (formData.logo && formData.logo instanceof File) {
+        const formDataToSend = new FormData();
+        Object.keys(formData).forEach((key) => {
+          if (empresaEdit || key !== 'idEmpresa') {
+            formDataToSend.append(key, formData[key]);
+          }
+        });
+        dataToSend = formDataToSend;
+        headers = { 'Content-Type': 'multipart/form-data' };
+      } else {
+        // Crear objeto JSON
+        dataToSend = {
+          ruc: formData.ruc,
+          razonSocial: formData.razonSocial,
+          direccion: formData.direccion,
+          telefono: formData.telefono,
+          correo: formData.correo,
+          estado: formData.estado
+        };
+        headers = { 'Content-Type': 'application/json' };
+      }
+      
+      console.log('Datos a enviar:', dataToSend);
 
+      let response;
       if (empresaEdit) {
         // Actualizar empresa
-        await apiClient.put(`/empresas/${empresaEdit.idEmpresa}`, formDataToSend, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+        response = await apiClient.put(`/empresas/${empresaEdit.idEmpresa}`, dataToSend, { headers });
       } else {
         // Crear nueva empresa
-        await apiClient.post('/empresas', formDataToSend, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+        response = await apiClient.post('/empresas', dataToSend, { headers });
       }
+      
+      console.log('Respuesta exitosa:', response);
       onSave(); // Llama al callback para actualizar la lista
     } catch (error) {
       console.error('Error al guardar la empresa:', error);

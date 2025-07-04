@@ -58,6 +58,10 @@ const Utilidad = React.lazy(() => import('./views/utilidad/utilidad'));
 const Compra = React.lazy(() => import('./views/compra/compra'));
 const Cotizacion = React.lazy(() => import('./views/cotizacion/cotizacion'));
 const DetalleCotizacionPage = React.lazy(() => import('./components/cotizacionComp/DetalleCotizacionPage'));
+const Transferencias = React.lazy(() => import('./views/transferencias/transferencias'));
+const Sucursales = React.lazy(() => import('./views/sucursales/sucursales'));
+const Almacenes = React.lazy(() => import('./views/almacenes/almacenes'));
+const Trabajadores = React.lazy(() => import('./views/trabajadores/trabajadores'));
 
 
 const App = () => {
@@ -185,6 +189,10 @@ const App = () => {
                 <Route path="/compra" element={<Compra />} />
                 <Route path="/cotizacion" element={<Cotizacion />} />
                 <Route path="/cotizaciones/:id/detalle" element={<DetalleCotizacionPage />} />
+                <Route path="/transferencias" element={<Transferencias />} />
+                <Route path="/sucursales" element={<Sucursales />} />
+                <Route path="/almacenes" element={<Almacenes />} />
+                <Route path="/trabajadores" element={<Trabajadores />} />
               </Route>
           </Route>
 

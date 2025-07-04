@@ -15,12 +15,24 @@ import {
   CTableDataCell,
   CFormSelect,
   CTooltip,
-  CSpinner
+  CSpinner,
+  CModal,
+  CModalHeader,
+  CModalTitle,
+  CModalBody,
+  CModalFooter,
+  CFormInput,
+  CFormLabel,
+  CToaster,
+  CToast,
+  CToastHeader,
+  CToastBody
 } from '@coreui/react';
-import { cilSearch } from '@coreui/icons';
+import { cilSearch, cilTrash } from '@coreui/icons';
 import CIcon from '@coreui/icons-react';
 import { useNavigate } from 'react-router-dom';
 import VentaDetalleModal from './DetalleVentaPage';
+import apiClient from '../../services/apiClient';
 
 const VentasCompletadas = ({ 
   ventas = [], 
@@ -37,6 +49,8 @@ const VentasCompletadas = ({
 }) => {
   const [modalDetalle, setModalDetalle] = useState(false);
   const [ventaSeleccionada, setVentaSeleccionada] = useState(null);
+  const [modalAnulacion, setModalAnulacion] = useState(false);
+  const [toast, setToast] = useState({ visible: false, message: '', color: 'danger' });
   const navigate = useNavigate();
 
   // Función para obtener el nombre del cliente según la estructura de datos
@@ -77,6 +91,38 @@ const getCodigoComprobante = (venta) => {
   const handleObservar = (venta) => {
     setVentaSeleccionada(venta);
     setModalDetalle(true);
+  };
+
+  const handleAnularVenta = async () => {
+    try {
+      const response = await apiClient.post(`/ventas/${ventaSeleccionada.idVenta}/anular`);
+
+      if (response.status === 200) {
+        setToast({
+          visible: true,
+          message: 'Venta anulada exitosamente',
+          color: 'success'
+        });
+        // Recargar la página después de 2 segundos
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Error al anular la venta:', error);
+      setToast({
+        visible: true,
+        message: 'Error al anular la venta',
+        color: 'danger'
+      });
+    } finally {
+      setModalAnulacion(false);
+    }
+  };
+
+  const handleAnularClick = (venta) => {
+    setVentaSeleccionada(venta);
+    setModalAnulacion(true);
   };
 
   const startIndex = (pagination.currentPage - 1) * pagination.itemsPerPage;
@@ -134,15 +180,28 @@ const getCodigoComprobante = (venta) => {
                         </CBadge>
                       </CTableDataCell>
                       <CTableDataCell className="text-center">
-                        <CTooltip content="Ver detalles">
-                          <CButton
-                            color="info"
-                            size="sm"
-                            onClick={() => handleVerDetalle(venta)}
-                          >
-                            <CIcon icon={cilSearch} />
-                          </CButton>
-                        </CTooltip>
+                        <div className="d-flex gap-2 justify-content-center">
+                          <CTooltip content="Ver detalles">
+                            <CButton
+                              color="info"
+                              size="sm"
+                              onClick={() => handleVerDetalle(venta)}
+                            >
+                              <CIcon icon={cilSearch} />
+                            </CButton>
+                          </CTooltip>
+                          {venta.estadoVenta === 'COMPLETADA' && (
+                            <CTooltip content="Anular venta">
+                              <CButton
+                                color="danger"
+                                size="sm"
+                                onClick={() => handleAnularClick(venta)}
+                              >
+                                <CIcon icon={cilTrash} />
+                              </CButton>
+                            </CTooltip>
+                          )}
+                        </div>
                       </CTableDataCell>
                     </CTableRow>
                   ))}
@@ -187,6 +246,39 @@ const getCodigoComprobante = (venta) => {
           )}
         </CCardBody>
       </CCard>
+
+      {/* Modal de Anulación */}
+      <CModal visible={modalAnulacion} onClose={() => setModalAnulacion(false)}>
+        <CModalHeader>
+          <CModalTitle>Confirmar Anulación</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          ¿Está seguro que desea anular esta venta?
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="secondary" onClick={() => setModalAnulacion(false)}>
+            Cancelar
+          </CButton>
+          <CButton 
+            color="danger" 
+            onClick={handleAnularVenta}
+          >
+            Anular
+          </CButton>
+        </CModalFooter>
+      </CModal>
+
+      {/* Toast para mensajes */}
+      <CToaster placement="top-center">
+        {toast.visible && (
+          <CToast autohide={true} visible={toast.visible} color={toast.color}>
+            <CToastHeader closeButton>
+              <strong className="me-auto">Aviso</strong>
+            </CToastHeader>
+            <CToastBody>{toast.message}</CToastBody>
+          </CToast>
+        )}
+      </CToaster>
 
       <VentaDetalleModal
         venta={ventaSeleccionada}

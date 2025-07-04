@@ -35,6 +35,7 @@ const DetalleVenta = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [modoEdicion, setModoEdicion] = useState(false);
+  const [modoCotizacion, setModoCotizacion] = useState(false);
   const [ventaId, setVentaId] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [completarVentaModalVisible, setCompletarVentaModalVisible] = useState(false);
@@ -226,52 +227,45 @@ const DetalleVenta = () => {
     try {
       let response;
       if (modoEdicion) {
-        const config = {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        };
-        response = await apiClient.put(`/ventas/${ventaId}`, ventaData, config);
-        showToast('Venta actualizada correctamente.', 'success');
-        
-        setProductosVendidos([]);
-        setDatosComplementarios({
-          tipoPagoId: null,
-          empresaId: null,
-          clienteId: null,
-          tipoComprobanteId: null,
-          trabajadorId: null,
-          fecha: new Date().toISOString().slice(0, 19),
-          moneda: 'SOLES'
-        });
-
-        if (reiniciarModalProductos) reiniciarModalProductos();
-        if (reiniciarModalDatosComplementarios) reiniciarModalDatosComplementarios();
-
-        navigate('/listarVenta');
-        return;
+        if (modoCotizacion) {
+          // Si estamos editando una cotización
+          response = await apiClient.put(`/cotizaciones/${ventaId}`, ventaData);
+          showToast('Cotización actualizada correctamente.', 'success');
+          navigate('/cotizacion');
+        } else {
+          // Si estamos editando una venta
+          const config = {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          };
+          response = await apiClient.put(`/ventas/${ventaId}`, ventaData, config);
+          showToast('Venta actualizada correctamente.', 'success');
+          navigate('/listarVenta');
+        }
       } else {
         response = await apiClient.post('/ventas', ventaData);
         showToast('Venta guardada correctamente.', 'success');
-        
-        setProductosVendidos([]);
-        setDatosComplementarios({
-          tipoPagoId: null,
-          empresaId: null,
-          clienteId: null,
-          tipoComprobanteId: null,
-          trabajadorId: null,
-          fecha: new Date().toISOString().slice(0, 19),
-          moneda: 'SOLES'
-        });
-
-        if (reiniciarModalProductos) reiniciarModalProductos();
-        if (reiniciarModalDatosComplementarios) reiniciarModalDatosComplementarios();
       }
+      
+      setProductosVendidos([]);
+      setDatosComplementarios({
+        tipoPagoId: null,
+        empresaId: null,
+        clienteId: null,
+        tipoComprobanteId: null,
+        trabajadorId: null,
+        fecha: new Date().toISOString().slice(0, 19),
+        moneda: 'SOLES'
+      });
+
+      if (reiniciarModalProductos) reiniciarModalProductos();
+      if (reiniciarModalDatosComplementarios) reiniciarModalDatosComplementarios();
+
     } catch (error) {
-      console.error('Error al guardar la venta:', error);
+      console.error('Error al guardar:', error);
       const errorMessage = error.response?.data?.message || error.message;
-      showToast(`Error al ${modoEdicion ? 'actualizar' : 'guardar'} la venta: ${errorMessage}`, 'danger');
+      showToast(`Error al ${modoEdicion ? (modoCotizacion ? 'actualizar la cotización' : 'actualizar la venta') : 'guardar la venta'}: ${errorMessage}`, 'danger');
       
       if (modoEdicion) {
         setProductosVendidos(productosActuales);
@@ -436,6 +430,73 @@ const DetalleVenta = () => {
     cargarVentaParaEditar();
   }, [location.state]);
 
+  useEffect(() => {
+    console.log("Estado recibido:", location.state);
+    if (location.state?.cotizacionParaEditar) {
+      const datosCotizacion = location.state.cotizacionParaEditar;
+      console.log("Cotización a editar:", datosCotizacion);
+
+      // Establecer modo cotización y edición
+      setModoEdicion(true);
+      setModoCotizacion(true);
+      setVentaId(location.state.idCotizacion);
+
+      // Precargar los detalles de productos
+      if (datosCotizacion.detalles && Array.isArray(datosCotizacion.detalles)) {
+        const productosFormateados = datosCotizacion.detalles.map(detalle => ({
+          idProducto: detalle.idProducto,
+          nombre: detalle.nombreProducto || 'Producto sin nombre',
+          precio: detalle.precioUnitario || 0,
+          cantidad: detalle.cantidad || 1,
+          descuento: detalle.descuento || 0,
+          unidadMedida: detalle.unidadMedida || 'UND',
+          stock: 999, // Valor por defecto, se actualizará después
+          subtotal: detalle.subtotal || (detalle.precioUnitario * detalle.cantidad)
+        }));
+
+        setProductosVendidos(productosFormateados);
+
+        // Actualizar el stock de cada producto
+        const actualizarStockProductos = async () => {
+          try {
+            const productosActualizados = await Promise.all(
+              productosFormateados.map(async (producto) => {
+                try {
+                  const productoResponse = await apiClient.get(`/productos/${producto.idProducto}`);
+                  return {
+                    ...producto,
+                    stock: productoResponse.data.stock || 0,
+                    nombre: productoResponse.data.nombreProducto || producto.nombre
+                  };
+                } catch (error) {
+                  console.error(`Error al obtener detalles del producto ${producto.idProducto}:`, error);
+                  return producto;
+                }
+              })
+            );
+            setProductosVendidos(productosActualizados);
+          } catch (error) {
+            console.error('Error al actualizar stock de productos:', error);
+          }
+        };
+
+        actualizarStockProductos();
+      }
+
+      // Precargar datos complementarios
+      setDatosComplementarios(prev => ({
+        ...prev,
+        tipoPagoId: datosCotizacion.idTipoPago || prev.tipoPagoId,
+        empresaId: datosCotizacion.idEmpresa || prev.empresaId,
+        clienteId: datosCotizacion.idCliente || prev.clienteId,
+        tipoComprobanteId: datosCotizacion.idTipoComprobantePago || prev.tipoComprobanteId,
+        trabajadorId: datosCotizacion.idTrabajador || prev.trabajadorId,
+        fecha: datosCotizacion.fechaVenta || new Date().toISOString().slice(0, 19),
+        moneda: datosCotizacion.moneda || 'SOLES'
+      }));
+    }
+  }, [location.state]);
+
   const handleBuscarCotizacion = async () => {
     if (!codigoCotizacion) {
       showToast('Por favor ingrese un código de cotización', 'warning');
@@ -443,28 +504,56 @@ const DetalleVenta = () => {
     }
 
     try {
+      // Obtener datos de la cotización
       const response = await apiClient.get(`/ventas/precargar-venta/${codigoCotizacion}`);
       const datosCotizacion = response.data;
 
-      if (datosCotizacion.detalles) {
-        setProductosVendidos(datosCotizacion.detalles.map(detalle => ({
+      // Precargar los detalles de productos
+      if (datosCotizacion.detalles && Array.isArray(datosCotizacion.detalles)) {
+        const productosFormateados = datosCotizacion.detalles.map(detalle => ({
           idProducto: detalle.idProducto,
-          nombre: detalle.nombreProducto,
-          precio: detalle.precioUnitario,
-          cantidad: detalle.cantidad,
+          nombre: detalle.nombreProducto || 'Producto sin nombre',
+          precio: detalle.precioUnitario || 0,
+          cantidad: detalle.cantidad || 1,
           descuento: detalle.descuento || 0,
-          unidadMedida: detalle.unidadMedida,
-          subtotal: detalle.subtotal
-        })));
+          unidadMedida: detalle.unidadMedida || 'UND',
+          stock: 999, // Valor por defecto, se actualizará después
+          subtotal: detalle.subtotal || (detalle.precioUnitario * detalle.cantidad)
+        }));
+
+        setProductosVendidos(productosFormateados);
+
+        // Actualizar el stock de cada producto
+        try {
+          const productosActualizados = await Promise.all(
+            productosFormateados.map(async (producto) => {
+              try {
+                const productoResponse = await apiClient.get(`/productos/${producto.idProducto}`);
+                return {
+                  ...producto,
+                  stock: productoResponse.data.stock || 0,
+                  nombre: productoResponse.data.nombreProducto || producto.nombre
+                };
+              } catch (error) {
+                console.error(`Error al obtener detalles del producto ${producto.idProducto}:`, error);
+                return producto;
+              }
+            })
+          );
+          setProductosVendidos(productosActualizados);
+        } catch (error) {
+          console.error('Error al actualizar stock de productos:', error);
+        }
       }
 
+      // Precargar datos complementarios
       setDatosComplementarios(prev => ({
         ...prev,
-        tipoPagoId: datosCotizacion.idTipoPago,
-        empresaId: datosCotizacion.idEmpresa,
-        clienteId: datosCotizacion.idCliente,
-        tipoComprobanteId: datosCotizacion.idTipoComprobantePago,
-        trabajadorId: datosCotizacion.idTrabajador,
+        tipoPagoId: datosCotizacion.idTipoPago || prev.tipoPagoId,
+        empresaId: datosCotizacion.idEmpresa || prev.empresaId,
+        clienteId: datosCotizacion.idCliente || prev.clienteId,
+        tipoComprobanteId: datosCotizacion.idTipoComprobantePago || prev.tipoComprobanteId,
+        trabajadorId: datosCotizacion.idTrabajador || prev.trabajadorId,
         fecha: datosCotizacion.fechaVenta || new Date().toISOString().slice(0, 19),
         moneda: datosCotizacion.moneda || 'SOLES'
       }));
@@ -472,7 +561,7 @@ const DetalleVenta = () => {
       showToast('Cotización cargada exitosamente', 'success');
     } catch (error) {
       console.error('Error al cargar la cotización:', error);
-      showToast('Error al cargar la cotización', 'danger');
+      showToast('Error al cargar la cotización: ' + (error.response?.data?.message || error.message), 'danger');
     }
   };
 
@@ -628,7 +717,7 @@ const DetalleVenta = () => {
                         className="me-2"
                       >
                         <CIcon icon={cilSave} className="me-2" />
-                        Actualizar Venta
+                        {modoCotizacion ? 'Actualizar Cotización' : 'Actualizar Venta'}
                       </CButton>
                     ) : (
                       <CDropdown>

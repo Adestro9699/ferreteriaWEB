@@ -1,16 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   CContainer, CCard, CCardHeader, CCardBody, CTabs, CNav, CNavItem, CNavLink,
   CTabContent, CTabPane, CSpinner, CAlert, CButton, CFormInput, CRow, CCol,
-  CToaster, CToast, CToastHeader, CToastBody
+  CToaster, CToast, CToastHeader, CToastBody, CListGroup, CListGroupItem, CBadge,
+  CTable, CTooltip, CInputGroup
 } from '@coreui/react';
 import apiClient from '../../services/apiClient';
 import VentasPendientes from '../../components/listarVentaComp/VentasPendientes';
 import VentasCompletadas from '../../components/listarVentaComp/VentasCompletadas';
+import CIcon from '@coreui/icons-react';
+import { cilX, cilSearch } from '@coreui/icons';
 
 const ListarVenta = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   // Estados principales
   const [ventasPendientes, setVentasPendientes] = useState([]);
   const [ventasCompletadas, setVentasCompletadas] = useState([]);
@@ -44,6 +48,8 @@ const ListarVenta = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [idCaja, setIdCaja] = useState(localStorage.getItem('idCaja'));
 
+  const searchInputRef = useRef(null);
+
   // Efecto para mantener sincronizado el idCaja con localStorage
   useEffect(() => {
     const handleStorageChange = () => {
@@ -53,6 +59,17 @@ const ListarVenta = () => {
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
+
+  // Efecto para manejar el parámetro tab en la URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const tabParam = urlParams.get('tab');
+    if (tabParam === 'completadas') {
+      setActiveKey('completadas');
+    } else if (tabParam === 'pendientes') {
+      setActiveKey('pendientes');
+    }
+  }, [location.search]);
 
   // Función para formatear la fecha
   const formatFecha = (fechaString) => {
@@ -251,24 +268,110 @@ const ListarVenta = () => {
     fetchVentasCompletadas();
   }, [paginationCompletadas.currentPage, paginationCompletadas.itemsPerPage]);
 
-  // Filtrado y búsqueda
-  const filtrarVentas = (ventas) => {
-    if (!searchTerm) return ventas;
-    
-    const searchLower = searchTerm.toLowerCase();
-    return ventas.filter(venta => {
-      return (
-        venta.comprobanteCompleto.toLowerCase().includes(searchLower) ||
-        venta.nombreCliente.toLowerCase().includes(searchLower) ||
-        venta.tipoComprobante.toLowerCase().includes(searchLower) ||
-        venta.tipoPago.toLowerCase().includes(searchLower) ||
-        venta.totalVenta.toString().includes(searchTerm)
-      );
-    });
+  // Función para buscar ventas
+  const buscarVentas = async (criterio) => {
+    try {
+      console.log('Iniciando búsqueda con criterio:', criterio); // Debug
+      
+      if (!criterio) {
+        // Si no hay criterio de búsqueda, cargar todas las ventas
+        console.log('Sin criterio, cargando todas las ventas'); // Debug
+        await fetchVentasPendientes();
+        await fetchVentasCompletadas();
+        return;
+      }
+
+      setLoadingPendientes(true);
+      setLoadingCompletadas(true);
+
+      console.log('Llamando al endpoint:', `/ventas/buscar?criterio=${criterio}`); // Debug
+      const response = await apiClient.get(`/ventas/buscar`, {
+        params: {
+          criterio: criterio
+        }
+      });
+
+      console.log('Respuesta del endpoint:', response.data); // Debug
+
+      // Obtener el array de ventas de la respuesta
+      const ventasRecibidas = response.data.ventas || [];
+      console.log('Ventas recibidas:', ventasRecibidas); // Debug
+
+      // Transformar los datos recibidos
+      const ventasTransformadas = ventasRecibidas.map(venta => ({
+        ...venta,
+        fechaFormateada: formatFecha(venta.fechaVenta),
+        nombreCliente: venta.razonSocialCliente || `${venta.nombresCliente} ${venta.apellidosCliente}`,
+        comprobanteCompleto: `${venta.serieComprobante || ''}${venta.numeroComprobante || ''}`.trim()
+      }));
+
+      // Separar las ventas en pendientes y completadas/anuladas
+      const pendientes = ventasTransformadas.filter(v => v.estadoVenta === 'PENDIENTE');
+      const completadas = ventasTransformadas.filter(v => v.estadoVenta !== 'PENDIENTE');
+
+      console.log('Ventas pendientes encontradas:', pendientes.length); // Debug
+      console.log('Ventas completadas encontradas:', completadas.length); // Debug
+
+      setVentasPendientes(pendientes);
+      setVentasCompletadas(completadas);
+
+      // Actualizar la paginación con los datos del backend
+      setPaginationPendientes(prev => ({
+        ...prev,
+        totalItems: response.data.totalElementos || 0,
+        totalPages: response.data.totalPaginas || 0,
+        currentPage: (response.data.paginaActual || 0) + 1,
+        itemsPerPage: response.data.tamanoPagina || 10
+      }));
+
+      setPaginationCompletadas(prev => ({
+        ...prev,
+        totalItems: response.data.totalElementos || 0,
+        totalPages: response.data.totalPaginas || 0,
+        currentPage: (response.data.paginaActual || 0) + 1,
+        itemsPerPage: response.data.tamanoPagina || 10
+      }));
+
+      // Mostrar mensaje de éxito si existe
+      if (response.data.mensaje) {
+        showToast(response.data.mensaje, 'success');
+      }
+
+    } catch (err) {
+      console.error('Error en la búsqueda:', err); // Debug
+      handleError(err);
+    } finally {
+      setLoadingPendientes(false);
+      setLoadingCompletadas(false);
+    }
   };
 
-  const ventasPendientesFiltradas = filtrarVentas(ventasPendientes);
-  const ventasCompletadasFiltradas = filtrarVentas(ventasCompletadas);
+  // Modificar el manejador del input de búsqueda
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    console.log('Valor del input:', value); // Debug
+    setSearchTerm(value);
+  };
+
+  // Agregar manejador para la tecla Enter
+  const handleKeyDown = (e) => {
+    console.log('Tecla presionada:', e.key); // Debug
+    if (e.key === 'Enter') {
+      console.log('Buscando con término:', searchTerm); // Debug
+      buscarVentas(searchTerm);
+    }
+  };
+
+  // Agregar función para limpiar la búsqueda
+  const handleClearSearch = () => {
+    setSearchTerm('');
+    fetchVentasPendientes();
+    fetchVentasCompletadas();
+    searchInputRef.current?.focus();
+  };
+
+  const ventasPendientesFiltradas = ventasPendientes;
+  const ventasCompletadasFiltradas = ventasCompletadas;
 
   if (loadingPendientes && loadingCompletadas) return (
     <CContainer className="d-flex justify-content-center align-items-center" style={{ height: '50vh' }}>
@@ -304,21 +407,44 @@ const ListarVenta = () => {
               <h4>LISTA DE VENTAS</h4>
             </CCol>
             <CCol md={4}>
-              <CFormInput
-                type="text"
-                placeholder="Buscar por cliente, comprobante o monto..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                size="sm"
-                className="float-end"
-                style={{ width: '250px' }}
-              />
+              <div className="position-relative float-end" style={{ width: '300px' }}>
+                <CInputGroup size="sm">
+                  <CFormInput
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder="Buscar ventas... (Presione Enter)"
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                    onKeyDown={handleKeyDown}
+                  />
+                  <CButton 
+                    color="primary" 
+                    onClick={() => buscarVentas(searchTerm)}
+                    disabled={!searchTerm.trim()}
+                  >
+                    <CIcon icon={cilSearch} />
+                  </CButton>
+                  {searchTerm && (
+                    <CButton
+                      color="secondary"
+                      onClick={handleClearSearch}
+                    >
+                      <CIcon icon={cilX} />
+                    </CButton>
+                  )}
+                </CInputGroup>
+              </div>
             </CCol>
           </CRow>
         </CCardHeader>
 
         <CCardBody>
-          <CTabs activeKey={activeKey} onActiveKeyChange={(key) => setActiveKey(key)}>
+          <CTabs activeKey={activeKey} onActiveKeyChange={(key) => {
+            setActiveKey(key);
+            // Actualizar la URL sin recargar la página
+            const newUrl = `/listarVenta?tab=${key}`;
+            navigate(newUrl, { replace: true });
+          }}>
             <CNav variant="tabs">
               <CNavItem>
                 <CNavLink

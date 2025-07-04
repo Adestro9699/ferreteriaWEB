@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import EmpresaForm from '../../components/empresaComp/EmpresaForm';
 import EmpresaList from '../../components/empresaComp/EmpresaList';
 import apiClient from '../../services/apiClient'; // Importa el cliente Axios
@@ -7,6 +7,7 @@ const Empresa = () => {
   const [empresaEdit, setEmpresaEdit] = useState(null); // Estado para la empresa en edición
   const [firstEmpresa, setFirstEmpresa] = useState(null); // Estado para la primera empresa
   const [isFormActive, setIsFormActive] = useState(false); // Estado para activar el formulario
+  const empresaListRef = useRef(); // Referencia para EmpresaList
 
   useEffect(() => {
     // Cargar la primera empresa al iniciar
@@ -37,6 +38,12 @@ const Empresa = () => {
 
   const handleSave = () => {
     setIsFormActive(false); // Desactivar el formulario después de guardar
+    // Recargar la primera empresa y la lista
+    fetchFirstEmpresa();
+    // Recargar la lista de empresas
+    if (empresaListRef.current) {
+      empresaListRef.current.refreshList();
+    }
   };
 
   return (
@@ -52,6 +59,7 @@ const Empresa = () => {
       <hr />
       {/* Lista de empresas */}
       <EmpresaList
+        ref={empresaListRef}
         onEdit={handleEdit} // Función para activar la edición
         onAdd={handleAdd} // Función para agregar una nueva empresa
       />
